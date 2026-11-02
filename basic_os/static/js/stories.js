@@ -2,11 +2,14 @@
 
 import { esc, staticUrl } from './utils.js';
 
+// Sentence ends, skipping the periods in "No. 6", "Michigan St.", "Jr.", "Sr." and "vs." (same rule as sentences.py)
+const SENTENCE_END = /(?<!\b(?:No|St|Jr|Sr|vs)\.)(?<=[.!?])\s+/;
+
 /** Splits a dispatch into paragraphs: blank lines, or every three sentences for one long block. */
 function paragraphs(text) {
     const blocks = (text || '').split(/\n\s*\n/).map(b => b.trim()).filter(Boolean);
     if (blocks.length !== 1) return blocks;
-    const sentences = blocks[0].split(/(?<=[.!?])\s+/);
+    const sentences = blocks[0].split(SENTENCE_END);
     if (sentences.length <= 4) return blocks;
     const out = [];
     for (let i = 0; i < sentences.length; i += 3) out.push(sentences.slice(i, i + 3).join(' '));
@@ -51,7 +54,7 @@ function leadStory(lead, teamName) {
 }
 
 function archiveEntry(story, teamName) {
-    const excerpt = (story.generated_text || '').split(/(?<=[.!?])\s+/)[0];
+    const excerpt = (story.generated_text || '').split(SENTENCE_END)[0];
     return '<li><details class="mag-index-item"><summary>' +
         (story.image_path ? '<img class="mag-index-thumb" src="' + esc(staticUrl(story.image_path)) + '" alt="" loading="lazy">' : '<span class="mag-index-thumb"></span>') +
         '<div><div class="mag-card-kicker">Week ' + esc(story.week_num) + '</div>' +

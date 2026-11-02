@@ -6,6 +6,7 @@ import media
 import roster
 import storylines
 import team
+from sentences import split as sentence_split
 
 # The season as a story: one entry per week with the game, that week's dispatch and photos,
 # the player of the game, storyline beats and where the team stood in the AP poll.
@@ -50,7 +51,7 @@ def paragraphs(text):
     """Splits generated text into paragraphs (blank lines, or every few sentences for one long block)."""
     blocks = [b.strip() for b in re.split(r"\n\s*\n", text or "") if b.strip()]
     if len(blocks) == 1:
-        sentences = re.split(r"(?<=[.!?])\s+", blocks[0])
+        sentences = sentence_split(blocks[0])
         if len(sentences) > 4:
             blocks = [" ".join(sentences[i:i + 3]) for i in range(0, len(sentences), 3)]
     return blocks

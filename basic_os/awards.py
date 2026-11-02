@@ -4,6 +4,7 @@ import database
 import league
 import media
 import recap
+from sentences import split as sentence_split
 
 # Awards tab: the game's All-America and All-Conference teams, a Heisman column, and bowl season
 # (a projected 12-team playoff bracket until the game sets the real one, plus every bowl on the schedule).
@@ -153,7 +154,7 @@ def paragraphs(text, count=COLUMN_PARAGRAPHS):
     parts = [p.strip() for p in re.split(r"\n\s*\n", text) if p.strip()]
     if len(parts) > 1:
         return "\n\n".join(parts)
-    sentences = re.split(r"(?<=[.!?])\s+", text.strip())
+    sentences = sentence_split(text)
     size = max(1, -(-len(sentences) // count))
     return "\n\n".join(" ".join(sentences[i:i + size]) for i in range(0, len(sentences), size))
 
