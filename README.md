@@ -28,6 +28,7 @@ download and the podcast voices.
 | **Coaches** | A **game plan** for any opponent: player-vs-player matchups scored from the save's ratings (where we win, where they can hurt us, what comes down to the call), keys to the game, scheme tendencies, both quarterbacks, personnel advice and the tale of the tape. Plus **What the Coaches Are Saying**, a magazine news page with the top 10 and hot seat for head coaches, OCs and DCs and AI-written quotes, each coach in his own voice. |
 | **Weekly Podcast** | Pick a game straight from the save (its scoring plays are copied at every sync) or upload post-game Scoring Summary screenshots for a vision model to read. You check the plays, then two hosts (Microsoft neural voices) break the game down by the numbers: strengths, concerns, past and next games. Includes a transcript-synced player, MP3 download, **Retry recording** if the voice service drops out, and a **Back Catalog** of the last five episodes (the oldest rotates out). Uploaded screenshots are erased once used. |
 | **Team pages** | Click any team logo for that team's record, staff, schedule, top players and AP poll history. |
+| **Backups** | The Backups button in the tab bar makes, downloads, restores and deletes copies of the app's database (stories, storylines, podcasts, quotes, game plans, captured scoring summaries and your edits). One is made automatically before every save sync (the last 10 are kept), and restoring first backs up what you have, so it can be undone. Upload a downloaded backup to move your dynasty to another PC. |
 
 ---
 
@@ -117,6 +118,8 @@ python app.py
 | `COMFYUI_URL` | `http://127.0.0.1:8188` | ComfyUI API address. |
 | `CFB_PORTRAIT_DIR` | `C:\Program Files (x86)\Steam\steamapps\common\SMG CFB27` | Folder holding the portrait packs. |
 | `BASIC_OS_DEBUG` | off | Set to `1` for Flask debug mode (auto-reload). Without it, restart the app after changing code. |
+| `BASIC_OS_DB` | `basic_os\dynasty_data.db` | The app's database (the tests point this at a throwaway copy). |
+| `BASIC_OS_BACKUPS` | `basic_osackups` | Where backups are kept. |
 
 Per-team flavour for the AI (the program's identity line and hashtag) lives in `TEAM_FLAVOR` in `basic_os/team.py`.
 
@@ -146,7 +149,7 @@ basic_os/
   static/css, static/js  one stylesheet and ES module per component
 ```
 
-Created at runtime and kept out of git: `dynasty_data.db`, `static/generated/` (AI images), `static/podcasts/` (audio),
+Created at runtime and kept out of git: `dynasty_data.db`, `backups/`, `static/generated/` (AI images), `static/podcasts/` (audio),
 `static/logos/` (downloaded logos), `uploads/` (screenshots awaiting a podcast).
 
 ---

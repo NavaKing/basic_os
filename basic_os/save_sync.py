@@ -3,6 +3,7 @@ import os
 import re
 import shutil
 import subprocess
+import backups
 import database
 import league
 import roster
@@ -58,6 +59,8 @@ def sync_if_changed():
 
     try:
         dynasty = read_save(save_path)
+        if get_state('save_version'):  # nothing worth keeping before the first sync
+            backups.create_backup(backups.AUTO_LABEL)
         sync_schedule(dynasty)
         sync_roster(dynasty)
         league.sync_league(dynasty['league'], dynasty['currentWeek'])

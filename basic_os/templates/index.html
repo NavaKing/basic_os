@@ -17,6 +17,30 @@
 
     {# Team page; filled in by static/js/team.js when a team logo is clicked #}
     <dialog class="team-dialog" id="team_dialog" aria-label="Team details"></dialog>
+
+    {# Backups of the app's database; filled in by static/js/backups.js #}
+    <dialog class="backup-dialog" id="backup_dialog" aria-labelledby="backup_title">
+        <div class="backup-head">
+            <div>
+                <div class="section-label">Your dynasty data</div>
+                <h2 class="backup-title" id="backup_title">Backups</h2>
+            </div>
+            <button class="team-dialog-close" type="button" id="backup_close" aria-label="Close">&times;</button>
+        </div>
+        <p class="muted backup-note">A backup holds everything the app has made: stories, storylines, podcasts, coach quotes, game plans,
+            captured scoring summaries and your depth chart changes. Schedule and stats always re-sync from your dynasty save.
+            A backup is also made automatically right before each save sync (the last {{ backup_auto_keep }} are kept).</p>
+        <form class="backup-make" id="backup_form">
+            <input id="backup_label" maxlength="40" placeholder="Label (optional), e.g. before week 6" aria-label="Backup label">
+            <button type="submit">Back up now</button>
+        </form>
+        <div class="status-text" id="backup_status"></div>
+        <ol class="backup-list" id="backup_list"></ol>
+        <div class="backup-upload">
+            <label class="btn-secondary backup-upload-btn">Upload a backup file<input type="file" id="backup_file" accept=".db" hidden></label>
+            <span class="muted">Moving to another PC? Download a backup here, then upload it there and restore it.</span>
+        </div>
+    </dialog>
 {% endblock %}
 
 {% block scripts %}

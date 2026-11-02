@@ -18,6 +18,7 @@ import gameplan
 import coaches
 import events
 import podcast
+import backups
 import os
 from urllib.parse import urlsplit
 from flask import Flask, render_template, request, jsonify, send_from_directory, abort, url_for
@@ -126,6 +127,7 @@ def home():
 
     return render_template(
         'index.html',
+        backup_auto_keep=backups.AUTO_KEEP,
         game=describe_game(active_game),
         last_game=describe_game(last_game),
         record=f"{wins}-{losses}",
@@ -322,6 +324,44 @@ def resolve_storyline(storyline_id):
     except Exception as e:
         return jsonify({"error": str(e), "storylines": storylines.query_storylines()})
     return jsonify({"storylines": storylines.query_storylines()})
+
+# ---------- Backups ----------
+
+@app.route('/backups', methods=['GET', 'POST'])
+def backup_list():
+    if request.method == 'POST':
+        try:
+            backups.create_backup((request.json or {}).get('label') or "")
+        except Exception as e:
+            return jsonify({"error": str(e), "backups": backups.list_backups()}), 400
+    return jsonify({"backups": backups.list_backups()})
+
+@app.route('/backups/upload', methods=['POST'])
+def backup_upload():
+    try:
+        backups.save_upload(request.get_data())
+    except Exception as e:
+        return jsonify({"error": str(e), "backups": backups.list_backups()}), 400
+    return jsonify({"backups": backups.list_backups()})
+
+@app.route('/backups/<file_name>', methods=['GET', 'DELETE'])
+def backup_file(file_name):
+    try:
+        backups.backup_path(file_name)
+    except ValueError:
+        abort(404)
+    if request.method == 'DELETE':
+        backups.delete_backup(file_name)
+        return jsonify({"backups": backups.list_backups()})
+    return send_from_directory(backups.BACKUP_DIR, file_name, as_attachment=True)
+
+@app.route('/backups/<file_name>/restore', methods=['POST'])
+def backup_restore(file_name):
+    try:
+        safety = backups.restore_backup(file_name)
+    except Exception as e:
+        return jsonify({"error": str(e), "backups": backups.list_backups()}), 400
+    return jsonify({"restored": file_name, "safety": safety, "backups": backups.list_backups()})
 
 if __name__ == '__main__':
     # Debug mode (auto-reload and Werkzeug's in-browser debugger) is for development only: set BASIC_OS_DEBUG=1

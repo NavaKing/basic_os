@@ -1,0 +1,41 @@
+/* Backups: the tab-bar button and the window it opens */
+
+.tabs-tool { width: auto; flex-shrink: 0; margin: 9px 0 9px auto; padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+             background: transparent; color: var(--text-dim); font-size: 11px; letter-spacing: 1.4px; }
+.tabs-tool:hover { background: transparent; color: var(--gold); border-color: var(--gold); }
+
+.backup-dialog { width: min(680px, calc(100vw - 32px)); max-height: calc(100vh - 48px); padding: 22px 24px 24px; border: 1px solid var(--border);
+                 border-radius: 10px; background-color: var(--panel); color: var(--text); box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7); overflow-y: auto; }
+.backup-dialog::backdrop { background: rgba(0, 0, 0, 0.65); }
+.backup-head { position: relative; padding-right: 48px; }
+.backup-head .team-dialog-close { top: 0; right: 0; }
+.backup-title { margin: 2px 0 8px; font-family: var(--font-display); font-size: 26px; letter-spacing: 1px; text-transform: uppercase; color: #fff; }
+.backup-note { margin: 0 0 16px; font-size: 13px; line-height: 1.5; }
+
+.backup-make { display: flex; gap: 10px; }
+.backup-make input { flex: 1; min-width: 0; }
+.backup-make button { width: auto; padding: 10px 16px; }
+
+.backup-list { list-style: none; margin: 14px 0 0; padding: 0; }
+.backup-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border-soft); }
+.backup-item-text { flex: 1; min-width: 0; }
+.backup-item-label { font-weight: 600; color: #fff; overflow-wrap: anywhere; }
+.backup-item--auto .backup-item-label { color: var(--text-dim); font-weight: 500; }
+.backup-item-meta { font-size: 12px; color: #999; }
+.backup-item-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.backup-action { display: inline-block; padding: 6px 10px; text-decoration: none; font-family: var(--font-display); font-weight: 600;
+                 letter-spacing: 1px; text-transform: uppercase; border-radius: 6px; line-height: 1.2; }
+.backup-action--delete { color: #e07a7a; border-color: rgba(224, 122, 122, 0.5); }
+.backup-action--delete:hover { color: #f19a9a; background-color: rgba(224, 122, 122, 0.12); }
+
+.backup-upload { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 18px; font-size: 12px; }
+.backup-upload-btn { display: inline-block; cursor: pointer; font-family: var(--font-display); font-weight: 600; letter-spacing: 1px;
+                     text-transform: uppercase; border-radius: 6px; }
+
+@media (max-width: 560px) {
+    .backup-make { flex-direction: column; }
+    .backup-make button { width: 100%; }
+    .backup-item { flex-wrap: wrap; }
+    .backup-item-actions { width: 100%; }
+    .backup-action { flex: 1; text-align: center; }
+}

@@ -24,3 +24,6 @@ basic_os/static/logos/
 .idea/
 Thumbs.db
 desktop.ini
+
+# Database backups (personal data)
+basic_os/backups/
