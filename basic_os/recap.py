@@ -370,3 +370,31 @@ def build_recap(week):
         "streaks": active_streaks(ctx),
         "heisman": heisman_race(ctx),
     }
+
+# ---------- Scores ticker ----------
+
+TICKER_GAMES = 24
+
+def scoreboard():
+    """The latest week's finals for the ticker under the menu: our game first, then games with ranked teams, then the rest."""
+    weeks = league.query_played_weeks()
+    if not weeks:
+        return None
+    week = weeks[-1][0]
+    teams = league.query_teams()
+    ranks = league.query_poll(week - 1)  # the rank each team carried into the game
+    user = next((tid for tid, t in teams.items() if t.get('is_user')), None)
+    games = []
+    for g in league.query_games(week=week):
+        home, away = teams.get(g['home_id']), teams.get(g['away_id'])
+        if not home or not away:
+            continue
+        best_rank = min(ranks.get(g['home_id']) or 99, ranks.get(g['away_id']) or 99)
+        games.append({
+            "ours": user in (g['home_id'], g['away_id']),
+            "best_rank": best_rank,
+            "rows": [{**team_view(t, ranks.get(t['team_id'])), "score": score, "won": score > other}
+                     for t, score, other in ((away, g['away_score'], g['home_score']), (home, g['home_score'], g['away_score']))],
+        })
+    games.sort(key=lambda g: (not g['ours'], g['best_rank'], abs(g['rows'][0]['score'] - g['rows'][1]['score'])))
+    return {"week": week, "in_progress": week in league.query_unplayed_weeks(), "games": games[:TICKER_GAMES]}

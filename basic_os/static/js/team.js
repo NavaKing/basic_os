@@ -59,7 +59,7 @@ function render(dialog, t) {
             '<div class="team-dialog-title">' +
                 '<div class="team-dialog-kicker">' + (t.rank ? 'AP #' + esc(t.rank) + ' &middot; ' : '') + esc(t.record) + (t.is_user ? ' &middot; Your team' : '') + '</div>' +
                 '<h2>' + esc(t.full_name) + '</h2>' +
-                (t.stadium ? '<div class="team-dialog-stadium">🏟️ ' + esc(t.stadium) + '</div>' : '') +
+                (t.stadium ? '<div class="team-dialog-stadium">' + esc(t.stadium) + '</div>' : '') +
             '</div>' +
             '<button class="team-dialog-close" type="button" aria-label="Close">&times;</button>' +
         '</div>' +

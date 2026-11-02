@@ -117,7 +117,7 @@ function reviewForm(draft) {
         board +
         '<table class="pod-plays"><thead><tr><th>Qtr</th><th>Team</th><th>Scoring play</th><th>Clock</th><th>Pts</th><th></th></tr></thead><tbody>' + rows + '</tbody></table>' +
         '<div class="pod-actions"><button type="button" class="btn-secondary" id="pod_add">Add a play</button>' +
-        '<button type="button" id="pod_generate">🎙️ Record the episode</button><div class="status-text" id="pod_gen_status"></div></div>';
+        '<button type="button" id="pod_generate">Record the episode</button><div class="status-text" id="pod_gen_status"></div></div>';
 }
 
 function collect(draft, root) {
@@ -188,7 +188,7 @@ function episodeCard(ep) {
     const hasAudio = ep.script.some(l => l.audio);
     return '<article class="panel pod-episode" data-episode="' + esc(ep.episode_id) + '">' +
         '<div class="pod-episode-head">' +
-            (ep.cover_image ? '<img class="pod-cover" src="' + esc(staticUrl(ep.cover_image)) + '" alt="">' : '<div class="pod-cover pod-cover--blank">🎙️</div>') +
+            (ep.cover_image ? '<img class="pod-cover" src="' + esc(staticUrl(ep.cover_image)) + '" alt="">' : '<div class="pod-cover pod-cover--blank">ON AIR</div>') +
             '<div class="pod-episode-id">' +
                 '<div class="section-label">' + (ep.week_num !== null ? 'Week ' + esc(ep.week_num) + ' &middot; ' : '') + 'Weekly Podcast</div>' +
                 '<h2 class="pod-title">' + esc(ep.title) + '</h2>' +

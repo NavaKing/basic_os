@@ -65,8 +65,6 @@ def security_headers(response):
     response.headers.setdefault("Cross-Origin-Resource-Policy", "same-origin")
     return response
 
-WEATHER_ICONS = {"Rain": "🌧️", "Snow": "❄️", "Overcast": "☁️", "Cloudy": "☁️", "PartlyCloudy": "⛅", "Clear": "☀️", "Sunny": "☀️"}
-
 def spaced(value):
     """'LightBreeze' -> 'Light breeze'"""
     return re.sub(r"(?<!^)(?=[A-Z])", " ", value or "").capitalize()
@@ -88,7 +86,6 @@ def describe_game(game):
         g['venue'] = "Neutral site"
     elif g.get('site') == 'Away':
         g['venue'] = f"Away at {g['venue']}"
-    g['weather_icon'] = WEATHER_ICONS.get(g.get('weather'), "🌤️")
     g['weather_text'] = spaced(g.get('weather'))
     g['wind_text'] = spaced(g.get('wind'))
     opponent = team_media(g.get('opponent_name'))
@@ -153,7 +150,8 @@ def home():
         storylines=storylines.query_storylines(),
         recap_weeks=recap.available_weeks(),
         recap=recap.build_recap(recap.default_week()) if recap.default_week() is not None else None,
-        sync_status=sync_status
+        sync_status=sync_status,
+        scoreboard=recap.scoreboard()
     )
 
 @app.route('/portraits/<kind>/<path:file_name>')

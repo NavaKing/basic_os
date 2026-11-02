@@ -24,7 +24,7 @@
 .injury-detail { margin-top: 5px; color: #ddd; font-size: 12px; }
 
 @media (max-width: 1200px) {
-    .depth-layout { grid-template-columns: 1fr; }
+    .depth-layout { grid-template-columns: minmax(0, 1fr); }
 }
 
 .name-cell { white-space: nowrap; }

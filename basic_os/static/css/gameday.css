@@ -11,7 +11,7 @@
 .gotw-facts dd { margin: 0; color: #fff; }
 
 .forecast { display: flex; align-items: center; gap: 16px; background-color: var(--panel-inset); border-radius: 6px; padding: 14px; margin-top: 14px; }
-.forecast-icon { font-size: 44px; line-height: 1; }
+.forecast-icon { line-height: 0; }
 .forecast-temp { font-size: 30px; font-weight: bold; color: #fff; }
 .forecast-detail { font-size: 12px; color: #bbb; line-height: 1.6; }
 
@@ -20,7 +20,7 @@
 .last-result-detail { font-size: 12px; margin-top: 4px; }
 
 @media (max-width: 1200px) {
-    .gameday-grid { grid-template-columns: 1fr; }
+    .gameday-grid { grid-template-columns: minmax(0, 1fr); }
 }
 
 /* Logo + head coach on each side of the Game of the Week */
@@ -56,3 +56,10 @@
 .scouting-players li:last-child { border-bottom: none; }
 .scouting-player-name { font-weight: 600; color: #fff; }
 .scouting-player-line { font-size: 11px; }
+
+@media (max-width: 700px) {
+    .gotw .headshot { --headshot-size: 44px; }
+    .gotw-sides { gap: 6px; }
+    .gotw-coach { gap: 6px; }
+    .gotw-logo { width: 56px; height: 56px; }
+}

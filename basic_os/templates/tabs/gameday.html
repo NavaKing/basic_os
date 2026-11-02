@@ -1,4 +1,5 @@
 {% from "macros/game.html" import venue_word, result_badge %}
+{% from "macros/ui.html" import section_head, weather_icon %}
 
 {% macro coach_card(member, lead=False) %}
 <div class="gotw-coach{{ ' gotw-coach--lead' if lead else '' }}" title="{{ member.role }}">
@@ -12,7 +13,7 @@
 
 {% macro gotw_side(team, name) %}
 <div class="gotw-side">
-    {% if team.logo %}<img class="gotw-logo" src="{{ team.logo }}" alt="{{ name }}"{% if team.id %} data-team-id="{{ team.id }}"{% endif %}>{% else %}<div class="gotw-logo gotw-logo--blank" aria-hidden="true">🏈</div>{% endif %}
+    {% if team.logo %}<img class="gotw-logo" src="{{ team.logo }}" alt="{{ name }}"{% if team.id %} data-team-id="{{ team.id }}"{% endif %}>{% else %}<div class="gotw-logo gotw-logo--blank" aria-hidden="true">{{ name[:4]|upper }}</div>{% endif %}
     <div class="gotw-team">{{ name }}</div>
     {% for member in team.staff %}{{ coach_card(member, lead=loop.first and member.short_role == 'HC') }}{% endfor %}
 </div>
@@ -39,7 +40,7 @@
                     <dt>Broadcast</dt><dd>{{ game.network or 'TBD' }}</dd>
                 </dl>
                 <div class="forecast">
-                    <div class="forecast-icon" aria-hidden="true">{{ game.weather_icon }}</div>
+                    <div class="forecast-icon">{{ weather_icon(game.weather, 52) }}</div>
                     <div>
                         <div class="forecast-temp">{{ game.temperature if game.temperature is not none else '--' }}&deg;F</div>
                         <div class="forecast-detail">
@@ -93,7 +94,7 @@
 
         {# Season schedule #}
         <div class="panel">
-            <h3>📅 Season Schedule &amp; Ledger</h3>
+            {{ section_head(season_year ~ " season", "Schedule & Ledger") }}
             <div class="table-wrapper">
                 <table>
                     <thead>
@@ -114,7 +115,7 @@
                                     <span class="score-pending">&mdash;</span>
                                 {% endif %}
                             </td>
-                            <td class="nowrap" title="{{ g.weather_text }}">{% if g.weather %}{{ g.weather_icon }} {{ g.temperature }}&deg;{% endif %}</td>
+                            <td class="nowrap" title="{{ g.weather_text }}">{% if g.weather %}<span class="wx-cell">{{ weather_icon(g.weather, 18) }} {{ g.temperature }}&deg;</span>{% endif %}</td>
                             <td>{% if g.is_played %}{{ g.wyo_pass_yds }}/{{ g.wyo_rush_yds }}{% else %}<span class="muted">&mdash;</span>{% endif %}</td>
                             <td>{% if g.is_played %}{{ g.opp_pass_yds }}/{{ g.opp_rush_yds }}{% else %}<span class="muted">&mdash;</span>{% endif %}</td>
                         </tr>
@@ -126,7 +127,7 @@
 
         {# Campus feed (rendered by static/js/feed.js) #}
         <div class="panel">
-            <h3>📱 Campus Feed // {{ us.hashtag }}</h3>
+            {{ section_head("Campus feed", us.hashtag, tone="red") }}
             <div class="twitter-container" id="twitter_feed_box"></div>
         </div>
     </div>

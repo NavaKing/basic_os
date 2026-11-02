@@ -1,0 +1,23 @@
+{# Scores ticker: the latest week's games around the league (recap.scoreboard) #}
+{% if scoreboard and scoreboard.games %}
+<section class="ticker" aria-label="Scores around college football">
+    <div class="ticker-label">
+        <span class="ticker-league">College Football</span>
+        <span class="ticker-week">{{ season_year }} &middot; Week {{ scoreboard.week }} {{ 'scores' if scoreboard.in_progress else 'finals' }}</span>
+    </div>
+    <div class="ticker-games">
+        {% for g in scoreboard.games %}
+        <div class="ticker-game{{ ' ticker-game--ours' if g.ours else '' }}">
+            <div class="ticker-status">{{ 'Your game' if g.ours else 'Final' }}</div>
+            {% for t in g.rows %}
+            <div class="ticker-row{{ ' is-winner' if t.won else '' }}" data-team-id="{{ t.id }}">
+                {% if t.logo %}<img class="team-logo team-logo--sm" src="{{ t.logo }}" alt="">{% else %}<span class="team-chip" data-color="{{ t.color or '' }}">{{ t.short }}</span>{% endif %}
+                <span class="ticker-team">{% if t.rank %}<span class="ticker-rank">{{ t.rank }}</span>{% endif %}{{ t.short }}</span>
+                <span class="ticker-score">{{ t.score }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}

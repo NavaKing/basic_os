@@ -1,0 +1,25 @@
+/* Scores ticker under the menu: the latest week's games around the league */
+
+.ticker { display: flex; align-items: stretch; margin: 0 0 18px; background: var(--panel-inset); border: 1px solid var(--border-soft); border-top: none;
+          border-radius: 0 0 var(--radius) var(--radius); overflow: hidden; }
+.ticker-label { display: flex; flex-direction: column; justify-content: center; gap: 2px; padding: 10px 18px; min-width: 170px; flex-shrink: 0;
+                background: linear-gradient(135deg, var(--red), #8f1418); }
+.ticker-league { font-family: var(--font-display); font-weight: 700; font-size: 14px; letter-spacing: 1.5px; text-transform: uppercase; color: #fff; }
+.ticker-week { font-size: 11px; color: rgba(255, 255, 255, 0.8); }
+.ticker-games { display: flex; overflow-x: auto; scrollbar-width: thin; }
+.ticker-game { min-width: 132px; padding: 8px 14px; border-right: 1px solid var(--border-soft); flex-shrink: 0; }
+.ticker-game--ours { background: var(--gold-soft); }
+.ticker-status { font-family: var(--font-display); font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; }
+.ticker-game--ours .ticker-status { color: var(--gold); }
+.ticker-row { display: flex; align-items: center; gap: 2px; font-family: var(--font-display); font-size: 13px; color: var(--text-dim); padding: 1px 0; }
+.ticker-row .team-logo--sm { margin-right: 6px; }
+.ticker-row .team-chip { min-width: 26px; height: 16px; font-size: 8px; margin-right: 6px; }
+.ticker-row.is-winner { color: #fff; font-weight: 600; }
+.ticker-team { flex: 1; letter-spacing: 0.6px; white-space: nowrap; }
+.ticker-rank { font-size: 10px; color: var(--text-muted); margin-right: 4px; }
+.ticker-score { font-weight: 600; min-width: 20px; text-align: right; }
+.ticker-row:hover .ticker-team { text-decoration: underline; }
+
+@media (max-width: 700px) {
+    .ticker-label { min-width: 110px; padding: 10px 12px; }
+}

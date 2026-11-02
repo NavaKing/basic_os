@@ -1,4 +1,5 @@
 {# Recruiting: our board, our commits and the national top prospects (data from recruiting.py) #}
+{% from "macros/ui.html" import section_head %}
 {% macro stars(count) -%}
 <span class="stars" aria-label="{{ count }} stars">{% for i in range(5) %}<span class="{{ 'star-on' if i < count else 'star-off' }}">★</span>{% endfor %}</span>
 {%- endmacro %}
@@ -14,7 +15,7 @@
 <div class="recruit-id">
     <div class="recruit-name">{{ p.name }}</div>
     <div class="recruit-meta">{{ stars(p.stars) }} <span class="muted">{{ p.position }} &middot; {{ p['class'] }}{% if p.size %} &middot; {{ p.size }}{% endif %}</span></div>
-    {% if p.hometown %}<div class="muted recruit-hometown">📍 {{ p.hometown }}</div>{% endif %}
+    {% if p.hometown %}<div class="muted recruit-hometown">{{ p.hometown }}</div>{% endif %}
 </div>
 {%- endmacro %}
 
@@ -29,7 +30,7 @@
 
     <div class="recruit-layout">
         <div class="panel">
-            <h3>🎯 {{ us.name }} Recruiting Board</h3>
+            {{ section_head("Class of " ~ (season_year|int + 1), "Recruiting Board") }}
             <div class="table-wrapper table-wrapper--tall">
                 <table class="recruit-table">
                     <thead><tr><th>Prospect</th><th>Rank</th><th>Our influence</th><th>Top schools</th><th>Status</th></tr></thead>
@@ -56,7 +57,7 @@
 
         <div class="recruit-side">
             <div class="panel">
-                <h3>✍️ Commits</h3>
+                {{ section_head("Signed on", "Commits", tone="green") }}
                 {% for p in recruiting.commits %}
                 <div class="recruit-commit">{{ prospect_id(p) }}<strong class="nowrap">#{{ p.national_rank }}</strong></div>
                 {% else %}
@@ -65,7 +66,7 @@
             </div>
 
             <div class="panel">
-                <h3>🌟 National Top Prospects</h3>
+                {{ section_head("Nationwide", "Top Prospects") }}
                 <ol class="recruit-top">
                     {% for p in recruiting.top %}
                     <li>

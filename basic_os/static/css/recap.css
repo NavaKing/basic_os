@@ -99,7 +99,7 @@
     .recap-row--4 { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 900px) {
-    .recap-row--3, .recap-row--4 { grid-template-columns: 1fr; }
+    .recap-row--3, .recap-row--4 { grid-template-columns: minmax(0, 1fr); }
     .cfp-list { columns: 1; }
     .heisman-list li { flex-wrap: wrap; }
 }

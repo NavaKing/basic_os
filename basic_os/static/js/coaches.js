@@ -94,7 +94,7 @@ function keysAndStaff(p) {
     return '<div class="plan-row plan-row--3">' +
         '<div class="panel plan-card" id="plan-keys">' + sectionHead('The plan', 'Keys to the game') + keys + '</div>' +
         '<div class="panel plan-card" id="plan-staff">' + sectionHead('Their sideline', 'How ' + p.them.name + ' coach it', esc(p.them.off_scheme) + ' &middot; ' + esc(p.them.def_scheme)) +
-            staff + bullets(p.staff_notes, '📣', 'Scheme tendencies appear when the game plan is written.') + '</div>' +
+            staff + bullets(p.staff_notes, '', 'Scheme tendencies appear when the game plan is written.') + '</div>' +
         '<div class="panel plan-card" id="plan-availability">' + sectionHead('Injury report', 'Availability') +
             '<div class="plan-avail-team">' + logo(p.them, 'team-logo') + esc(p.them.name) + '</div>' + injuries(p.them) +
             '<div class="plan-avail-team">' + logo(p.us, 'team-logo') + esc(p.us.name) + '</div>' + injuries(p.us) + '</div>' +
@@ -162,8 +162,8 @@ function render(root, p) {
         (p.fcs ? '<div class="plan-note">FCS placeholder opponent: the save groups many FCS schools into this team, so its ratings and players are generic.</div>' : '') +
         keysAndStaff(p) +
         '<div class="plan-row plan-row--2" id="plan-qbs">' +
-            qbPanel(p.their_qb, 'Scouting', p.them.name + "'s quarterback", p.their_qb_notes, '👁️', 'How to defend him appears when the game plan is written.') +
-            qbPanel(p.our_qb, 'Our side', 'Our quarterback', p.our_qb_notes, '⚡', 'Where he can hurt them appears when the game plan is written.') +
+            qbPanel(p.their_qb, 'Scouting', p.them.name + "'s quarterback", p.their_qb_notes, '', 'How to defend him appears when the game plan is written.') +
+            qbPanel(p.our_qb, 'Our side', 'Our quarterback', p.our_qb_notes, '', 'Where he can hurt them appears when the game plan is written.') +
         '</div>' +
         matchupSection('attack', 'Offense', 'Attacking the ' + p.them.name + ' defense', p.attack, 'Our personnel', p.personnel.offense) +
         matchupSection('stop', 'Defense', 'Stopping the ' + p.them.name + ' offense', p.stop, 'Our defensive personnel', p.personnel.defense) +

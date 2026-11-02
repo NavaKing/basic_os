@@ -2,7 +2,7 @@
 
 /* Team banner: an oversized logo breaks out of the bar, over a faded watermark and a gold diagonal stripe */
 .site-header { position: relative; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;
-               min-height: 96px; padding: 18px 20px 18px 170px; margin: 26px 0 22px; border-radius: 8px;
+               min-height: 96px; padding: 18px 20px 18px 170px; margin: 26px 0 14px; border-radius: var(--radius);
                background: linear-gradient(120deg, var(--brown) 0%, var(--brown-dark) 60%, #120e0b 100%);
                border-bottom: 3px solid var(--gold); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55); }
 .site-header-art { position: absolute; inset: 0; overflow: hidden; border-radius: inherit; pointer-events: none; }
@@ -13,7 +13,7 @@
 .site-header-logo { position: absolute; left: 6px; top: 50%; height: 150px; transform: translateY(-50%) rotate(-6deg); z-index: 1;
                     filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.7)) drop-shadow(0 0 1px var(--gold)); }
 .site-header-text, .generator { position: relative; z-index: 1; }
-.site-title { margin: 0; color: #fff; font-size: 34px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; line-height: 1.05;
+.site-title { margin: 0; color: #fff; font-family: var(--font-display); font-size: 40px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; line-height: 1.05;
               text-shadow: 0 2px 0 rgba(0, 0, 0, 0.6), 0 0 18px rgba(203, 157, 6, 0.25); }
 .site-year { color: var(--gold); font-weight: 300; letter-spacing: 4px; margin-left: 6px; }
 .site-subtitle { margin: 6px 0 0 0; color: #b9aa98; font-size: 13px; }
@@ -22,7 +22,8 @@
     .site-header { padding-left: 110px; }
     .site-header-logo { height: 110px; left: 0; }
     .site-header-art::before { left: 78px; }
-    .site-title { font-size: 24px; }
+    .site-title { font-size: 22px; letter-spacing: 1.5px; }
+    .site-year { display: block; margin-left: 0; }
 }
 
 .generator { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
@@ -30,11 +31,25 @@
 .generator button { width: auto; padding: 10px 16px; }
 .generator .status-text { width: 100%; text-align: right; }
 
-.tabs { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; border-bottom: 2px solid var(--brown); }
-.tab { width: auto; background-color: transparent; color: #aaa; border-radius: 6px 6px 0 0; padding: 12px 20px; font-size: 13px; letter-spacing: 0.5px; }
-.tab:hover { background-color: var(--panel); color: #fff; }
-.tab[aria-selected="true"] { background-color: var(--gold); color: var(--bg); }
+/* Main navigation: a frosted bar pinned to the top, text-only tabs with a gold underline on the active one */
+.tabs { position: sticky; top: 0; z-index: 20; display: flex; align-items: stretch; gap: 2px; overflow-x: auto; margin: 0 0 0; padding: 0 12px;
+        background: rgba(14, 14, 17, 0.82); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+        border: 1px solid var(--border-soft); border-radius: var(--radius) var(--radius) 0 0; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tabs-mark { display: flex; align-items: center; gap: 8px; padding: 0 16px 0 4px; margin-right: 6px; border-right: 1px solid var(--border-soft);
+             font-family: var(--font-display); font-weight: 700; letter-spacing: 2px; color: var(--gold); white-space: nowrap; }
+.tabs-mark img { width: 26px; height: 26px; object-fit: contain; }
+.tab { position: relative; width: auto; flex-shrink: 0; padding: 17px 14px 15px; border-radius: 0; background: transparent; color: var(--text-dim);
+       font-size: 13px; font-weight: 500; letter-spacing: 1.4px; }
+.tab::after { content: ""; position: absolute; left: 14px; right: 14px; bottom: 0; height: 3px; border-radius: 3px 3px 0 0; background: var(--gold);
+              transform: scaleX(0); transition: transform 0.2s ease; }
+.tab:hover { background: transparent; color: #fff; }
+.tab:hover::after { transform: scaleX(0.4); }
+.tab[aria-selected="true"] { background: transparent; color: #fff; }
+.tab[aria-selected="true"]::after { transform: scaleX(1); }
 .tab-panel { display: none; }
-.tab-panel.active { display: block; }
+.tab-panel.active { display: block; min-width: 0; animation: panel-in 0.25s ease; }
+@keyframes panel-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .tab-panel.active { animation: none; } .tab::after { transition: none; } }
 
 .generator-progress { width: 100%; height: 6px; accent-color: var(--gold); }

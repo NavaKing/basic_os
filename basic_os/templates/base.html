@@ -4,7 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}BASIC OS - {{ us.name if us else 'Dynasty' }} Dynasty Hub{% endblock %}</title>
-    {% for sheet in ['base', 'header', 'gameday', 'feed', 'story', 'depth-chart', 'storylines', 'recap', 'team', 'recruiting', 'season', 'coaches', 'podcast'] %}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Oswald:wght@400;500;600;700&display=swap">
+    {% for sheet in ['base', 'header', 'gameday', 'feed', 'story', 'depth-chart', 'storylines', 'recap', 'team', 'recruiting', 'season', 'coaches', 'podcast', 'ticker'] %}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/' ~ sheet ~ '.css') }}">
     {% endfor %}
 </head>

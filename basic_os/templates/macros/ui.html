@@ -1,0 +1,37 @@
+{# Shared pieces of the page design #}
+
+{# Section heading: a small coloured kicker over a condensed title, with an optional note on the right #}
+{% macro section_head(kicker, title, aside=None, tone='gold') -%}
+<div class="sec-head sec-head--{{ tone }}">
+    <div>
+        <div class="sec-kicker">{{ kicker }}</div>
+        <h3 class="sec-title">{{ title }}</h3>
+    </div>
+    {% if aside %}<div class="sec-aside">{{ aside }}</div>{% endif %}
+</div>
+{%- endmacro %}
+
+{# Line-drawn weather icon for a save weather condition (Clear, Sunny, PartlyCloudy, Cloudy, Overcast, Rain, Snow) #}
+{% macro weather_icon(condition, size=40) -%}
+<svg class="wx wx--{{ (condition or 'clear')|lower }}" width="{{ size }}" height="{{ size }}" viewBox="0 0 48 48" fill="none" stroke="currentColor"
+     stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="{{ condition or 'Forecast pending' }}">
+    {% if condition in ('Clear', 'Sunny') %}
+        <circle class="wx-sun" cx="24" cy="24" r="8"/>
+        <path class="wx-sun" d="M24 6v5M24 37v5M6 24h5M37 24h5M11.3 11.3l3.5 3.5M33.2 33.2l3.5 3.5M11.3 36.7l3.5-3.5M33.2 14.8l3.5-3.5"/>
+    {% elif condition == 'PartlyCloudy' %}
+        <circle class="wx-sun" cx="18" cy="17" r="6"/>
+        <path class="wx-sun" d="M18 5v3M6 17h3M9.5 8.5l2 2M26.5 8.5l-2 2"/>
+        <path class="wx-cloud" d="M15 36h20a7 7 0 0 0 0-14 9 9 0 0 0-17 2 6 6 0 0 0-3 12z"/>
+    {% elif condition == 'Rain' %}
+        <path class="wx-cloud" d="M13 29h22a7 7 0 0 0 0-14 10 10 0 0 0-19 2 6 6 0 0 0-3 12z"/>
+        <path class="wx-rain" d="M17 34l-2 5M25 34l-2 5M33 34l-2 5"/>
+    {% elif condition == 'Snow' %}
+        <path class="wx-cloud" d="M13 28h22a7 7 0 0 0 0-14 10 10 0 0 0-19 2 6 6 0 0 0-3 12z"/>
+        <path class="wx-snow" d="M17 34v6M14.5 37h5M27 34v6M24.5 37h5"/>
+    {% elif condition %}
+        <path class="wx-cloud" d="M12 33h24a8 8 0 0 0 0-16 11 11 0 0 0-21 2 7 7 0 0 0-3 14z"/>
+    {% else %}
+        <circle class="wx-cloud" cx="24" cy="24" r="10" stroke-dasharray="3 4"/>
+    {% endif %}
+</svg>
+{%- endmacro %}

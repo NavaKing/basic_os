@@ -17,5 +17,5 @@
 .history-thumb { width: 96px; height: 54px; object-fit: cover; border-radius: 4px; flex-shrink: 0; }
 
 @media (max-width: 1200px) {
-    .story-layout { grid-template-columns: 1fr; }
+    .story-layout { grid-template-columns: minmax(0, 1fr); }
 }

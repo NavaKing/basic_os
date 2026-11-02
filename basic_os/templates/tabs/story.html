@@ -1,4 +1,5 @@
 {# Story Column: contents are rendered by static/js/stories.js #}
+{% from "macros/ui.html" import section_head %}
 <section class="tab-panel" id="tab-story" role="tabpanel">
     <div class="hero">
         <img class="hero-image" id="hero_image" alt="This week's game-day banner" hidden>
@@ -10,11 +11,11 @@
     </div>
     <div class="story-layout">
         <div class="panel">
-            <h3>📰 The Dispatch</h3>
+            {{ section_head("This week", "The Dispatch") }}
             <div class="lead-story" id="lead_story"></div>
         </div>
         <div class="panel">
-            <h3>📜 Previous Stories</h3>
+            {{ section_head("Archive", "Previous Stories") }}
             <div class="table-wrapper" id="history_feed_list"></div>
         </div>
     </div>

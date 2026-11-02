@@ -1,10 +1,11 @@
+{% from "macros/ui.html" import section_head %}
 {% set injury_classes = {'Out': 'out', 'Doubtful': 'out', 'Questionable': 'questionable'} %}
 
 <section class="tab-panel" id="tab-depth" role="tabpanel">
     <div class="depth-layout">
         {# Roster table (rows rendered by static/js/depth-chart.js) #}
         <div class="panel">
-            <h3>📋 Depth Chart &middot; Full Roster</h3>
+            {{ section_head("Full roster", "Depth Chart") }}
             <div class="depth-toolbar">
                 <select id="position_select" aria-label="Position">
                     <option value="ALL">All positions ({{ depth_chart|length }} players)</option>
@@ -27,7 +28,7 @@
         <div class="depth-side">
         {# Injury report #}
         <div class="panel">
-            <h3>🏥 {{ us.name }} Injury Report</h3>
+            {{ section_head("Availability", "Injury Report", tone="red") }}
             {% for player in injuries %}
                 {% set level = injury_classes.get(player.health_status, 'probable') %}
                 <div class="injury-card injury-{{ level }}">
@@ -46,7 +47,7 @@
 
         {# Season stat leaders #}
         <div class="panel">
-            <h3>🏆 {{ us.name }} Season Leaders</h3>
+            {{ section_head("By the numbers", "Season Leaders") }}
             <div class="leader-boards">
                 {% for board in leaders %}
                 <div class="leader-board">

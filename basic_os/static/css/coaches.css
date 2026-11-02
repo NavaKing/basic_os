@@ -1,6 +1,7 @@
 /* Coaches tab: game plan and coaches news column */
 
-.plan-shell { margin-bottom: 18px; }
+.plan-shell { margin-bottom: 18px; min-width: 0; max-width: 100%; }
+#coach_plan { min-width: 0; }
 .plan-weeks { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 10px; }
 .plan-week { width: auto; flex-shrink: 0; padding: 6px 10px; font-size: 11px; background-color: var(--panel); color: #aaa; border: 1px solid var(--border-soft); }
 .plan-week span { color: #777; font-weight: normal; }
@@ -153,7 +154,7 @@
 
 @media (max-width: 1200px) {
     .plan-row--3 { grid-template-columns: 1fr 1fr; }
-    .plan-banner { grid-template-columns: 1fr; }
+    .plan-banner { grid-template-columns: minmax(0, 1fr); }
     .plan-side--right { flex-direction: row; text-align: left; }
     .plan-side--right .plan-coach { flex-direction: row; text-align: left; }
 }
@@ -163,4 +164,22 @@
     .plan-matchup { grid-template-columns: minmax(0, 1fr); }
     .plan-side-name { font-size: 24px; }
     .plan-side-logo, .plan-side > .team-chip { width: 72px; height: 72px; }
+}
+/* Bullet markers: a small gold diamond in place of the old emoji icons */
+.plan-bullet-icon:empty::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-top: 6px; background: var(--gold); transform: rotate(45deg); }
+
+@media (max-width: 700px) {
+    .plan-banner { padding: 16px; gap: 14px; }
+    .plan-side { gap: 10px; }
+    .plan-side-logo, .plan-side > .team-chip { width: 56px; height: 56px; }
+    .plan-coach { padding: 6px 8px; }
+    .plan-coach .headshot { --headshot-size: 44px; }
+    .plan-center { min-width: 0; }
+}
+@media (max-width: 700px) {
+    .plan-odds-label { letter-spacing: 1px; }
+}
+@media (max-width: 700px) {
+    .plan-odds-us, .plan-odds-them { font-size: 17px; }
+    .plan-odds-label { letter-spacing: 0.5px; font-size: 8px; }
 }
