@@ -19,6 +19,7 @@ import coaches
 import events
 import podcast
 import backups
+import awards
 import os
 from urllib.parse import urlsplit
 from flask import Flask, render_template, request, jsonify, send_from_directory, abort, url_for
@@ -128,6 +129,7 @@ def home():
     return render_template(
         'index.html',
         backup_auto_keep=backups.AUTO_KEEP,
+        awards_page=awards.build_awards(),
         game=describe_game(active_game),
         last_game=describe_game(last_game),
         record=f"{wins}-{losses}",
@@ -324,6 +326,13 @@ def resolve_storyline(storyline_id):
     except Exception as e:
         return jsonify({"error": str(e), "storylines": storylines.query_storylines()})
     return jsonify({"storylines": storylines.query_storylines()})
+
+@app.route('/awards/heisman/generate', methods=['POST'])
+def generate_heisman_column():
+    try:
+        return jsonify({"column": awards.generate_heisman_column(request.json.get('model', 'gemma3:12b'))})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
 
 # ---------- Backups ----------
 

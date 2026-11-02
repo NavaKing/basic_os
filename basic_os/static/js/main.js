@@ -11,6 +11,7 @@ import { initTeamPages } from './team.js';
 import { initCoaches } from './coaches.js';
 import { initPodcast } from './podcast.js';
 import { initBackups } from './backups.js';
+import { initAwards } from './awards.js';
 import { applyTeamColors } from './utils.js';
 
 const page = JSON.parse(document.getElementById('page_data').textContent);
@@ -34,6 +35,7 @@ start('depth chart', () => initDepthChart(page.depth_chart));
 start('locker room', () => initStorylines(page.storylines));
 start('weekly recap', () => initRecap(page.recap_weeks, page.recap));
 start('coaches', () => initCoaches(page.coach_plan, page.plan_weeks, page.coach_news));
+start('awards', () => initAwards(page.awards));
 start('podcast', () => initPodcast(page.podcast_episodes, page.event_uploads, page.event_draft));
 start('hub generator', () => initGenerator(data => {
     renderTweets(data.tweets);

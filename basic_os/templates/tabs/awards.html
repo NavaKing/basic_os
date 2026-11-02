@@ -1,0 +1,48 @@
+{# Awards: All-America and All-Conference teams, the Heisman race and column, and bowl season.
+   Data from awards.py; rendered by static/js/awards.js #}
+{% from "macros/ui.html" import section_head %}
+<section class="tab-panel" id="tab-awards" role="tabpanel">
+    <div class="panel">
+        {{ section_head(season_year ~ " season", "All-America Teams", aside="Picked by the game") }}
+        <div class="aa-controls">
+            <label class="aa-pick">
+                <span class="section-label">Team</span>
+                <select id="aa_group" aria-label="All-America or a conference"></select>
+            </label>
+            <div class="aa-sides" role="tablist">
+                <button type="button" class="aa-side" data-side="first">First Team</button>
+                <button type="button" class="aa-side" data-side="second">Second Team</button>
+            </div>
+        </div>
+        <p class="muted aa-stage" id="aa_stage"></p>
+        <div class="aa-grid" id="aa_grid"></div>
+    </div>
+
+    <div class="awards-row">
+        <div class="panel">
+            {{ section_head("Season stats", "The Heisman Race") }}
+            <ol class="aw-heisman" id="aw_heisman"></ol>
+        </div>
+        <article class="mag-issue aw-column">
+            <div class="mag-folio"><span>The Heisman Desk</span><span id="aw_column_week"></span></div>
+            <h2 class="mag-slab aw-column-title" id="aw_column_title"></h2>
+            <div class="mag-body" id="aw_column_body"></div>
+            <div class="aw-column-actions">
+                <button type="button" id="aw_column_generate"></button>
+                <div class="status-text" id="aw_column_status"></div>
+            </div>
+        </article>
+    </div>
+
+    <div class="panel">
+        {{ section_head("Bowl season", "College Football Playoff", aside="12 teams") }}
+        <p class="muted aw-note" id="cfp_note"></p>
+        <div class="cfp-bracket" id="cfp_bracket"></div>
+    </div>
+
+    <div class="panel">
+        {{ section_head("Bowl season", "The Bowl Schedule") }}
+        <p class="muted aw-note" id="bowls_note"></p>
+        <div class="bowl-days" id="bowl_days"></div>
+    </div>
+</section>
