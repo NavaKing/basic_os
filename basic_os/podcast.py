@@ -383,8 +383,18 @@ def cover_subject(plays, ours, players):
         return None, None
     return players.get(best[1]['player']), f"{best[1]['player']} after his {best[1]['yards']}-yard touchdown {'catch' if best[1]['kind'] == 'pass' else best[1]['kind']}"
 
+def cover_teams(ours, theirs):
+    """The team the cover features (ours when we played, otherwise the winner) and its opponent, with their colours."""
+    if ours.get('team_id') != team.user_team()['id'] and (theirs.get('final') or 0) > (ours.get('final') or 0):
+        ours, theirs = theirs, ours
+    def details(t):
+        row = league.query_team(t['team_id']) if t.get('team_id') is not None else None
+        return {**(team.team_details(row) if row else {"name": t['name'], "full_name": t['name'], "colors": "team"}), **t}
+    return details(ours), details(theirs)
+
 def render_cover(selected_model, ours, theirs, plays, episode_dir):
     import ai_engine, image_engine
+    ours, theirs = cover_teams(ours, theirs)
     players = {}
     for name, p in events.roster_names([ours.get('team_id')]).items():
         file_name = media.player_portrait_file(p.get('assetName'), p.get('headAsset'))
@@ -395,11 +405,16 @@ def render_cover(selected_model, ours, theirs, plays, episode_dir):
         return None
     ai_engine.unload_ollama_model(selected_model)
     try:
-        us = team.user_team()
+        no_text = "No text, letters or captions anywhere in the image."
         if player:
-            prompt = ai_engine.player_photo_prompt(f"{scene}, dramatic stadium lighting. No text, letters or captions anywhere in the image.", {"position": player['position'], "jersey_num": player['jersey']}, us)
+            prompt = ai_engine.player_photo_prompt(f"{scene}, dramatic stadium lighting. {no_text}", {"position": player['position'], "jersey_num": player['jersey']}, ours)
         else:
-            prompt = ai_engine.PHOTO_STYLE.format(photo=f"The {us['full_name']} celebrating a win over the {theirs['name']}. No text, letters or captions anywhere in the image.", team=us['full_name'], colors=us['colors'])
+            won = (ours.get('final') or 0) >= (theirs.get('final') or 0)
+            moment = "celebrating a win over" if won else "walking off the field after a tough loss to"
+            prompt = ai_engine.PHOTO_STYLE.format(
+                photo=f"The {ours['full_name']} in {ours['colors']} uniforms {moment} the {theirs['full_name']}, "
+                      f"whose players wear {theirs['colors']} in the background. {no_text}",
+                team=ours['full_name'], colors=ours['colors'])
         path = image_engine.generate_image(prompt, f"podcast_cover_{int(time.time())}", *COVER_SIZE, face_path=(player or {}).get('portrait_path'))
         return path
     except Exception:
