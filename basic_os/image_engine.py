@@ -14,6 +14,19 @@ RENDER_TIMEOUT = 180   # seconds per image (the first one includes loading the m
 
 STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
 GENERATED_SUBDIR = "generated"
+WEBP_QUALITY = 85   # ComfyUI hands back PNGs of about 1.2 MB; WebP at this quality looks the same at about a tenth of the size
+
+def save_photo(data, path_without_extension):
+    """Saves image bytes as WebP (or as the original PNG if Pillow isn't installed). Returns the extension used."""
+    try:
+        from PIL import Image
+    except ImportError:
+        with open(path_without_extension + ".png", "wb") as f:
+            f.write(data)
+        return ".png"
+    import io
+    Image.open(io.BytesIO(data)).convert("RGB").save(path_without_extension + ".webp", "WEBP", quality=WEBP_QUALITY, method=6)
+    return ".webp"
 
 def is_running():
     try:
@@ -127,10 +140,8 @@ def generate_image(prompt, name, width=1024, height=576, face_path=None):
         "filename": image['filename'], "subfolder": image.get('subfolder', ''), "type": image.get('type', 'output')
     }, timeout=30).content
     os.makedirs(os.path.join(STATIC_DIR, GENERATED_SUBDIR), exist_ok=True)
-    relative_path = f"{GENERATED_SUBDIR}/{name}.png"
-    with open(os.path.join(STATIC_DIR, relative_path), "wb") as f:
-        f.write(data)
-    return relative_path
+    extension = save_photo(data, os.path.join(STATIC_DIR, GENERATED_SUBDIR, name))
+    return f"{GENERATED_SUBDIR}/{name}{extension}"
 
 def free_memory():
     """Unloads FLUX from the GPU so Ollama has room for the next text generation."""

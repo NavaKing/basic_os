@@ -471,5 +471,8 @@ def backup_restore(file_name):
     return jsonify({"restored": file_name, "safety": safety, "backups": backups.list_backups()})
 
 if __name__ == '__main__':
+    import housekeeping
+    for step, count in housekeeping.run().items():
+        print(f"Housekeeping: {count} {step}")
     # Debug mode (auto-reload and Werkzeug's in-browser debugger) is for development only: set BASIC_OS_DEBUG=1
     app.run(host="127.0.0.1", port=5000, debug=os.environ.get("BASIC_OS_DEBUG") == "1")
