@@ -32,10 +32,26 @@ def shrink_logos():
     import media
     return sum(media.shrink_logo(path) for path in glob.glob(os.path.join(media.LOGO_DIR, "*.png")))
 
+def compact_scoring():
+    """Rewrites scoring summaries stored before compaction (and fills in their two teams). Returns how many."""
+    import json
+    import league
+    conn = database.get_db_connection()
+    rows = conn.execute("""SELECT s.game_id, s.plays_json, g.home_id, g.away_id FROM game_scoring s
+                           LEFT JOIN league_games g ON g.game_id = s.game_id
+                           WHERE s.home_id IS NULL OR s.plays_json LIKE '%"catches"%'""").fetchall()
+    for r in rows:
+        conn.execute("UPDATE game_scoring SET plays_json = ?, home_id = COALESCE(home_id, ?), away_id = COALESCE(away_id, ?) WHERE game_id = ?",
+                     (json.dumps(league.compact_plays(json.loads(r['plays_json']))), r['home_id'], r['away_id'], r['game_id']))
+    conn.commit()
+    conn.close()
+    return len(rows)
+
 def run():
     """All upkeep steps; returns {step: count} for the ones that did something."""
     import podcast  # also makes sure every table the steps update exists
     import backups
     done = {"photos converted to WebP": convert_photos(), "backups compressed": backups.compress_old_backups(),
-            "duplicate podcast MP3s removed": podcast.drop_joined_copies(), "logos shrunk": shrink_logos()}
+            "duplicate podcast MP3s removed": podcast.drop_joined_copies(), "logos shrunk": shrink_logos(),
+            "scoring summaries compacted": compact_scoring()}
     return {step: count for step, count in done.items() if count}
