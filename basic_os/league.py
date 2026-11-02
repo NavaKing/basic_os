@@ -271,8 +271,13 @@ def query_team_by_name(name):
 def query_players():
     return {p['player_id']: p for p in query_rows("SELECT * FROM league_players")}
 
-def query_player_games(week=None, through_week=None):
+def query_player_games(week=None, through_week=None, player_ids=None):
+    """Stat lines, optionally only some players' (the whole season is tens of thousands of rows; ask for less when you can)."""
     sql, params = "SELECT * FROM league_player_games WHERE 1 = 1", []
+    if player_ids is not None:
+        player_ids = list(player_ids)
+        sql += f" AND player_id IN ({','.join('?' * len(player_ids))})" if player_ids else " AND 0"
+        params.extend(player_ids)
     if week is not None:
         sql += " AND week = ?"; params.append(week)
     if through_week is not None:
