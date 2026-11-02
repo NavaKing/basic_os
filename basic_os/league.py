@@ -95,12 +95,49 @@ def initialize_league_tables():
         captured TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     """)
+    # The game's All-America / All-Conference teams and other season awards (conference is None for national teams)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS league_season_awards (
+        award_type TEXT NOT NULL,
+        position TEXT,
+        conference TEXT,
+        team_id INTEGER,
+        player_id TEXT,
+        name TEXT,
+        jersey INTEGER,
+        class_year TEXT,
+        overall INTEGER,
+        portrait_file TEXT,
+        score INTEGER
+    )
+    """)
+    # Bowls and the playoff (teams are NULL until the game sets them)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS league_bowls (
+        game_id INTEGER PRIMARY KEY,
+        week INTEGER,
+        week_type TEXT,
+        name TEXT,
+        home_id INTEGER,
+        away_id INTEGER,
+        played INTEGER,
+        home_score INTEGER,
+        away_score INTEGER,
+        game_date TEXT
+    )
+    """)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS league_conferences (
+        name TEXT PRIMARY KEY,
+        champ_game TEXT
+    )
+    """)
     # Portrait columns added after the first release
     for table, column, col_type in (("league_teams", "coach_portrait", "TEXT"), ("league_teams", "staff_json", "TEXT"),
                                     ("league_teams", "color2", "TEXT"), ("league_teams", "is_user", "INTEGER DEFAULT 0"),
                                     ("league_teams", "off_scheme", "TEXT"), ("league_teams", "def_scheme", "TEXT"),
                                     ("league_teams", "off_rank", "INTEGER"), ("league_teams", "def_rank", "INTEGER"),
-                                    ("league_teams", "ratings_json", "TEXT"),
+                                    ("league_teams", "ratings_json", "TEXT"), ("league_teams", "conference", "TEXT"),
                                     ("league_players", "portrait_file", "TEXT")):
         if column not in [c[1] for c in cursor.execute(f"PRAGMA table_info({table})").fetchall()]:
             cursor.execute(f"ALTER TABLE {table} ADD COLUMN {column} {col_type}")
@@ -120,16 +157,30 @@ def sync_league(league, current_week):
     """Replaces the league snapshot with the save's data and records this week's AP poll."""
     conn = database.get_db_connection()
     cursor = conn.cursor()
-    for table in ("league_teams", "league_games", "league_players", "league_player_games", "league_awards", "league_heisman"):
+    for table in ("league_teams", "league_games", "league_players", "league_player_games", "league_awards", "league_heisman",
+                  "league_season_awards", "league_bowls", "league_conferences"):
         cursor.execute(f"DELETE FROM {table}")
+    conferences = [c for c in league.get('conferences') or [] if c['name'] and c['teamIds']]
+    conference_of = {team_id: c['name'] for c in conferences for team_id in c['teamIds']}
 
     cursor.executemany("""INSERT INTO league_teams (team_id, name, nickname, short_name, color, color2, is_user, coach_portrait, staff_json,
-                                                    off_scheme, def_scheme, off_rank, def_rank, ratings_json)
-                          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                                                    off_scheme, def_scheme, off_rank, def_rank, ratings_json, conference)
+                          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                        [(t['id'], t['name'], t['nickname'], t['short'], t['color'], t.get('color2'), int(t['id'] == league.get('userTeamId')),
                          media.coach_portrait_file(*staff_portrait(t, 'hc')), json.dumps(staff_view(t)),
-                         t.get('offScheme'), t.get('defScheme'), t.get('offRank'), t.get('defRank'), json.dumps(t.get('ratings') or {}))
+                         t.get('offScheme'), t.get('defScheme'), t.get('offRank'), t.get('defRank'), json.dumps(t.get('ratings') or {}),
+                         conference_of.get(t['id']))
                         for t in league['teams']])
+    cursor.executemany("INSERT INTO league_conferences (name, champ_game) VALUES (?, ?)", [(c['name'], c['champGame']) for c in conferences])
+    cursor.executemany("""INSERT INTO league_season_awards (award_type, position, conference, team_id, player_id, name, jersey, class_year, overall,
+                                                            portrait_file, score) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                       [(a['type'], a['position'], a['conference'], a['teamId'], a['playerId'], a['name'], a['jersey'], a['classYear'],
+                         a['overall'], media.player_portrait_file(a.get('assetName'), a.get('headAsset')), a['score'])
+                        for a in league.get('seasonAwards') or []])
+    cursor.executemany("""INSERT INTO league_bowls (game_id, week, week_type, name, home_id, away_id, played, home_score, away_score, game_date)
+                          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                       [(b['id'], b['week'], b['weekType'], b['name'], b['homeId'], b['awayId'], int(b['played']), b['homeScore'],
+                         b['awayScore'], b['date']) for b in league.get('bowlGames') or []])
     cursor.executemany("""
         INSERT INTO league_games (game_id, week, week_type, home_id, away_id, played, home_score, away_score, home_quarters, away_quarters, home_yards, away_yards)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -286,6 +337,15 @@ def query_player_games(week=None, through_week=None, player_ids=None):
     for r in rows:
         r['stats'] = json.loads(r.pop('stats_json'))
     return rows
+
+def query_season_awards():
+    return query_rows("SELECT * FROM league_season_awards")
+
+def query_bowls():
+    return query_rows("SELECT * FROM league_bowls ORDER BY week, game_date, game_id")
+
+def query_conferences():
+    return query_rows("SELECT * FROM league_conferences ORDER BY name")
 
 def query_awards(week):
     return query_rows("SELECT * FROM league_awards WHERE week = ?", (week,))

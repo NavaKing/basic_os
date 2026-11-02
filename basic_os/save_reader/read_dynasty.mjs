@@ -393,6 +393,64 @@ try {
     playerId: playerIdOf(row), teamId: teamIdOf(row)
   }));
 
+  // ---------- Conferences, season awards and the bowl schedule ----------
+  // Conference: Name plus TeamSlots, a list pointing at the member teams (directly, or through a slot record)
+  const conferences = [];
+  const conferenceTable = await largest('Conference');
+  for (const conf of conferenceTable ? conferenceTable.records.filter(live) : []) {
+    const slots = await recordFromAny(ref(conf, 'TeamSlots'));
+    const teamIds = [];
+    for (const key of slots ? refFields(slots) : []) {
+      const data = ref(slots, key);
+      let team = recordFrom(teamTable, data);
+      if (!team) {
+        const slot = await recordFromAny(data);
+        team = slot && recordFrom(teamTable, ref(slot, 'Team'));
+      }
+      if (team) teamIds.push(team.index);
+    }
+    conferences.push({ id: conf.index, name: clean(conf.Name), champGame: clean(conf.ConfChampGameName), teamIds });
+  }
+  const conferenceName = new Map();
+  if (conferenceTable) for (const conf of conferences) conferenceName.set(conf.id, conf.name);
+
+  // PlayerAward holds the game's All-America and All-Conference teams (preseason now, final ones at season end)
+  // and the weekly player awards. Players are exported in full: linemen often have no stat lines.
+  const playerAwardTable = await largest('PlayerAward');
+  const seasonAwards = [];
+  for (const row of playerAwardTable ? playerAwardTable.records.filter(live) : []) {
+    if (row.Period !== 'Season') continue;
+    const player = recordFrom(playerTable, ref(row, 'Player'));
+    if (!player) continue;
+    const confRef = ref(row, 'Conference');
+    seasonAwards.push({
+      type: clean(row.AwardType), position: clean(row.Position), score: row.AwardScore ?? null,
+      conference: confRef && conferenceTable && confRef.tableId === conferenceTable.header.tableId ? conferenceName.get(confRef.rowNumber) || null : null,
+      teamId: teamIdOf(row), playerId: playerId(player),
+      name: `${player.FirstName || ''} ${player.LastName || ''}`.trim(), jersey: player.JerseyNum ?? null,
+      classYear: clean(player.SchoolYear), overall: player.OverallRating ?? null,
+      assetName: clean(player.PLYR_ASSETNAME), headAsset: clean(player.GenericHeadAssetName)
+    });
+  }
+
+  // Bowls and the playoff: scheduled from the start of the season with the teams left empty until they're set
+  const bowlInfoName = async (game) => clean((await recordFromAny(ref(game, 'BowlGame')))?.Name);
+  const bowlGames = [];
+  for (const game of gameTable.records.filter(live)) {
+    if (game.SeasonYear !== seasonInfo.CurrentYear || !game.SeasonWeekType || game.SeasonWeekType === 'RegularSeason') continue;
+    const home = recordFrom(teamTable, ref(game, 'HomeTeam'));
+    const away = recordFrom(teamTable, ref(game, 'AwayTeam'));
+    const played = /Won|Tie/.test(game.GameStatus || '');
+    bowlGames.push({
+      id: game.index, week: game.SeasonWeek, weekType: game.SeasonWeekType, name: await bowlInfoName(game),
+      homeId: home ? home.index : null, awayId: away ? away.index : null, played,
+      homeScore: played ? game.HomeScore : null, awayScore: played ? game.AwayScore : null,
+      date: game.GameDateMonth > 0 && game.GameDateDay > 0
+        ? `${(seasonInfo.BaseCalendarYear ?? 2026) + (game.SeasonYear ?? 0) + (game.GameDateMonth < 7 ? 1 : 0)}-${String(game.GameDateMonth).padStart(2, '0')}-${String(game.GameDateDay).padStart(2, '0')}`
+        : null
+    });
+  }
+
   // ---------- Game plan rosters: us and every opponent on our schedule ----------
   const RATING_FIELDS = {
     SPD: 'SpeedRating', ACC: 'AccelerationRating', AGI: 'AgilityRating', STR: 'StrengthRating', AWR: 'AwarenessRating',
@@ -530,7 +588,8 @@ try {
     schedule,
     roster,
     depthChart,
-    league: { userTeamId: userTeam.index, teams: leagueTeams, games: leagueGames, players: leaguePlayers, weeklyAwards, heisman },
+    league: { userTeamId: userTeam.index, teams: leagueTeams, games: leagueGames, players: leaguePlayers, weeklyAwards, heisman,
+              conferences, seasonAwards, bowlGames },
     scoringSummaries,
     recruiting: { board: recruitingBoard, commits, topProspects },
     planRosters

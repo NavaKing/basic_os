@@ -1,0 +1,73 @@
+/* Awards tab: All-America cards, the Heisman race and column, the playoff bracket and the bowl schedule */
+
+#tab-awards > * + * { margin-top: 20px; }
+.aw-note, .aa-stage { margin: -4px 0 14px; font-size: 12px; }
+
+/* ---------- All-America ---------- */
+.aa-controls { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 14px; margin-bottom: 10px; }
+.aa-pick { display: flex; flex-direction: column; min-width: 220px; }
+.aa-pick select { margin-bottom: 0; }
+.aa-sides { display: flex; gap: 6px; }
+.aa-side { width: auto; padding: 9px 14px; font-size: 11px; background: transparent; color: var(--text-dim); border: 1px solid var(--border); }
+.aa-side:hover { background: transparent; color: #fff; }
+.aa-side[aria-selected="true"] { background: var(--gold); color: #141414; border-color: var(--gold); }
+
+.aa-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; }
+.aa-card { position: relative; display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid var(--border-soft);
+           border-radius: 8px; background: var(--panel-inset); min-width: 0; }
+.aa-card--ours { border-color: var(--gold); box-shadow: inset 0 0 0 1px var(--gold-soft); }
+.aa-pos { position: absolute; top: 6px; right: 8px; font-family: var(--font-display); font-size: 11px; letter-spacing: 1px; color: var(--gold); }
+.aa-id { min-width: 0; padding-right: 30px; }
+.aa-name { font-weight: 700; color: #fff; overflow-wrap: anywhere; }
+.aa-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-top: 3px; font-size: 11px; color: #999; }
+.aa-meta .team-logo { width: 18px; height: 18px; }
+.aa-meta .team-chip { min-width: 30px; height: 16px; font-size: 9px; }
+
+/* ---------- Heisman ---------- */
+.awards-row { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.aw-heisman { list-style: none; margin: 0; padding: 0; }
+.aw-heisman-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border-soft); }
+.aw-heisman-rank { width: 26px; font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--gold); text-align: center; flex-shrink: 0; }
+.aw-heisman-id { flex: 1; min-width: 0; }
+.aw-heisman .stat-boxes--inline { min-width: 0; width: 260px; flex-shrink: 0; }
+.aw-column { margin: 0; }
+.aw-column-title { font-size: clamp(28px, 3.4vw, 46px); }
+.aw-column-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 14px; }
+.aw-column-actions button { width: auto; }
+
+/* ---------- Playoff bracket ---------- */
+.cfp-bracket { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.cfp-round { display: flex; flex-direction: column; justify-content: space-around; gap: 12px; min-width: 0; }
+.cfp-round-name { font-family: var(--font-display); font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--gold);
+                  padding-bottom: 6px; border-bottom: 1px solid var(--border-soft); }
+.cfp-game { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--panel-inset); }
+.cfp-slot { display: flex; align-items: center; gap: 8px; min-height: 38px; padding: 6px 10px; font-size: 13px; color: #fff; min-width: 0; }
+.cfp-slot + .cfp-slot { border-top: 1px solid var(--border-soft); }
+.cfp-slot--open { color: var(--text-muted); font-style: italic; }
+.cfp-slot.is-winner { font-weight: 700; }
+.cfp-seed { width: 18px; font-family: var(--font-display); font-size: 12px; color: var(--gold); text-align: right; flex-shrink: 0; font-style: normal; }
+.cfp-team { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cfp-score, .cfp-record { font-family: var(--font-display); font-size: 12px; color: var(--text-dim); flex-shrink: 0; }
+.cfp-slot.is-winner .cfp-score { color: #fff; }
+.cfp-date { padding: 4px 10px; font-size: 10px; letter-spacing: 0.6px; text-transform: uppercase; color: var(--text-muted);
+            background: rgba(255, 255, 255, 0.02); border-top: 1px solid var(--border-soft); }
+
+/* ---------- Bowl schedule ---------- */
+.bowl-days { columns: 4 260px; column-gap: 24px; }
+.bowl-day { break-inside: avoid; margin-bottom: 18px; }
+.bowl-day-date { font-family: var(--font-display); font-size: 12px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--gold); margin-bottom: 8px; }
+.bowl-game { padding: 8px 0; border-bottom: 1px solid var(--border-soft); }
+.bowl-name { font-weight: 700; color: #fff; }
+.bowl-tbd { font-size: 12px; color: var(--text-muted); font-style: italic; }
+.bowl-matchup { margin-top: 6px; border: 1px solid var(--border-soft); border-radius: 6px; overflow: hidden; }
+
+@media (max-width: 1100px) {
+    .awards-row { grid-template-columns: minmax(0, 1fr); }
+    .cfp-bracket { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+    .cfp-bracket { grid-template-columns: minmax(0, 1fr); }
+    .aw-heisman-row { flex-wrap: wrap; }
+    .aw-heisman .stat-boxes--inline { width: 100%; }
+    .aa-pick { min-width: 0; width: 100%; }
+}
