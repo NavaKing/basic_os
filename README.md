@@ -16,16 +16,17 @@ download and the podcast voices.
 
 | Tab | What it does |
 |---|---|
-| **Header** | Team banner with the logo, team name and season year; the **hub generator** writes the week's dispatch, social posts, storyline chapters and photos with live step-by-step progress. |
-| **🏟️ Game Day** | Game of the week with both teams' logos and coaching staffs (HC, OC, DC with portraits), kickoff, venue and forecast; an opponent **scouting card** with an AI preview; the season schedule with results; the campus social feed with photos. |
-| **📰 Story Column** | The week's dispatch with a FLUX hero banner, plus the archive of earlier weeks. |
-| **📋 Depth Chart** | The full roster by position with headshots, ratings, size and last-game stat lines; the injury report; season stat leaders. |
-| **🔒 Locker Room** | Multi-week **player storylines** (position battles, players under pressure, comebacks, recruit commitments) that advance every week and end when you change the depth chart or press a button. |
-| **📊 Weekly Recap** | League-wide awards (Offensive / Defensive / Freshman Player of the Week, Bummer of the Week), Game of the Week, biggest comeback, blowout, upset, Top 25 matchups, CFP picture, poll risers and fallers, biggest swings, longest streaks and the Heisman race. |
-| **🎯 Recruiting** | Your recruiting board with star ratings, ranks, influence trend and each prospect's top schools; commitments; the national top 50. A 3★+ commit starts a "feeling the heat" storyline for the starter at his position. |
-| **🗓️ Season** | A timeline of the season: every game, player of the game, dispatch, photos and storyline beats. |
-| **🧢 Coaches** | A **game plan** for any opponent: player-vs-player matchups scored from the save's ratings (where we win, where they can hurt us, what comes down to the call), keys to the game, scheme tendencies, both quarterbacks, personnel advice and the tale of the tape. Plus **What the Coaches Are Saying**: top 10 and hot seat for head coaches, OCs and DCs, with AI-written quotes. |
-| **🎙️ Weekly Podcast** | Upload post-game Scoring Summary screenshots; a vision model reads them, you check the result, and two hosts (Microsoft neural voices) break the game down by the numbers with a transcript-synced player and MP3 download. |
+| **Header** | Team banner with the logo bleeding off the edge, team name, season year and the current week; the **hub generator** writes the week's dispatch, social posts, storyline chapters and photos with live step-by-step progress. |
+| **Scores ticker** | The latest week's finals around the league, with ranks and logos; your game is highlighted. |
+| **Game Day** | Game of the week with both teams' logos and coaching staffs (HC, OC, DC with portraits), kickoff, venue and forecast; an opponent **scouting card** with an AI preview; the season schedule with results; the campus social feed with photos. |
+| **Story Column** | The week's dispatch as a magazine page with a FLUX hero photo, plus the archive of earlier weeks. |
+| **Depth Chart** | The full roster by position with headshots, ratings, size and last-game stat lines; the injury report; season stat leaders. |
+| **Locker Room** | Multi-week **player storylines** (position battles, players under pressure, comebacks, recruit commitments) that advance every week and end when you change the depth chart or press a button. |
+| **Weekly Recap** | League-wide awards (Offensive / Defensive / Freshman Player of the Week, Bummer of the Week), Game of the Week, biggest comeback, blowout, upset, Top 25 matchups, CFP picture, poll risers and fallers, biggest swings, longest streaks and the Heisman race. |
+| **Recruiting** | Your recruiting board with star ratings, ranks, influence trend and each prospect's top schools; commitments; the national top 50. A 3-star-plus commit starts a "feeling the heat" storyline for the starter at his position. |
+| **Season** | One printed-magazine page per week: the result badge, dispatch with drop cap, player of the game, game file, photos, campus posts and that week's storyline beats. |
+| **Coaches** | A **game plan** for any opponent: player-vs-player matchups scored from the save's ratings (where we win, where they can hurt us, what comes down to the call), keys to the game, scheme tendencies, both quarterbacks, personnel advice and the tale of the tape. Plus **What the Coaches Are Saying**, a magazine news page with the top 10 and hot seat for head coaches, OCs and DCs and AI-written quotes, each coach in his own voice. |
+| **Weekly Podcast** | Pick a game straight from the save (its scoring plays are copied at every sync) or upload post-game Scoring Summary screenshots for a vision model to read. You check the plays, then two hosts (Microsoft neural voices) break the game down by the numbers: strengths, concerns, past and next games. Includes a transcript-synced player, MP3 download, **Retry recording** if the voice service drops out, and a **Back Catalog** of the last five episodes (the oldest rotates out). Uploaded screenshots are erased once used. |
 | **Team pages** | Click any team logo for that team's record, staff, schedule, top players and AP poll history. |
 
 ---
@@ -45,7 +46,8 @@ save_reader/read_dynasty.mjs  ──JSON──▶  Flask app (app.py)  ◀──
 
 * **Save sync** (`save_sync.py`, `save_reader/`): every page load checks the save's timestamp. When it changes, the Node
   reader parses a temporary copy of the save (it is never modified) and the app stores the schedule, roster, depth chart,
-  league-wide games and stats, polls, awards, Heisman race, coaching staffs, recruiting and full opponent rosters with ratings.
+  league-wide games and stats, polls, awards, Heisman race, coaching staffs, recruiting, full opponent rosters with ratings,
+  and the scoring summaries of recent games (the save only keeps about 60 at a time, so the app keeps its own copy).
 * **Text** (`ai_engine.py` and the feature modules): prompts are built from save facts that are worked out in code first
   (scores, running scores, strengths and concerns), so the model writes about the numbers instead of inventing them.
 * **Images** (`image_engine.py`): FLUX.1 schnell through ComfyUI's API. When a post or story is about one of your players,
@@ -114,6 +116,7 @@ python app.py
 | `COMFYUI_DIR` | `~\ComfyUI_windows_portable` | Portable ComfyUI folder (started on demand). |
 | `COMFYUI_URL` | `http://127.0.0.1:8188` | ComfyUI API address. |
 | `CFB_PORTRAIT_DIR` | `C:\Program Files (x86)\Steam\steamapps\common\SMG CFB27` | Folder holding the portrait packs. |
+| `BASIC_OS_DEBUG` | off | Set to `1` for Flask debug mode (auto-reload). Without it, restart the app after changing code. |
 
 Per-team flavour for the AI (the program's identity line and hashtag) lives in `TEAM_FLAVOR` in `basic_os/team.py`.
 
@@ -159,7 +162,14 @@ Created at runtime and kept out of git: `dynasty_data.db`, `static/generated/` (
 * **Estimates** are labelled in the app: playoff odds, poll swings, win probability and betting lines are calculated by the app,
   since the save has none of them.
 * The save format is reverse-engineered (madden-franchise schema `C27_468_2`); a game update can change it. Coach records have no
-  schema yet, so a few coach fields are read by position (see the comments in `read_dynasty.mjs`).
+  schema yet, so a few coach fields are read by position, and scoring plays name a scorer only when he is one of a team's featured
+  passer, rusher or receiver (see the comments in `read_dynasty.mjs`).
+* **Local only.** The app listens on `127.0.0.1` and is meant for your own machine. It still refuses requests with a foreign
+  `Host` or `Origin` header (DNS rebinding and cross-site posts), sends a Content-Security-Policy, and caps uploads at 40 MB.
+
+## Branches
+
+Work for each month happens on a branch named after it (currently `november-2026`) and is merged into `main` at the end of the month.
 
 ## License and notices
 
