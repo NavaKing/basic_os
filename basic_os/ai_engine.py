@@ -235,8 +235,8 @@ def generate_dynasty_content(selected_model, storyline_context="", player_lines=
         progress.step("Writing the dispatch")
         story_text = call_ollama(selected_model, article_prompt)
     except Exception as e:
-        # Don't save anything, so the existing story for this week is kept
-        return f"Ollama processing connection dropped: {str(e)}"
+        # Nothing is saved, so the existing story for this week is kept
+        raise RuntimeError(f"Ollama didn't answer while writing the dispatch ({e}). Is it running?") from e
 
     # Drop sentences with scores or stats the facts don't contain (kept whole if nothing would survive)
     story_text = fact_check.drop_invented(story_text, fact_check.spoken_numbers(article_prompt)) or story_text

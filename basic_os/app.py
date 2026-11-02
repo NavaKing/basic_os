@@ -248,6 +248,9 @@ def generate_lore():
         story_text = ai_engine.generate_dynasty_content(selected_model, storylines.build_storyline_context(),
                                                         storylines.build_player_impact_lines(), storylines.build_storyline_titles(),
                                                         scouting.scouting_context(scouting_card))
+    except Exception as e:
+        # A failure reads as one (the status line and the finish notice), with nothing half-saved shown as new
+        return jsonify({"error": str(e)}), 500
     finally:
         progress.finish()
     return jsonify({
