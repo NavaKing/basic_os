@@ -1,0 +1,37 @@
+/* History tab: the record book with progress bars, year by year, and dynasty bests */
+
+#tab-history > * + * { margin-top: 20px; }
+.hist-note { margin: -4px 0 12px; font-size: 12px; line-height: 1.5; }
+
+.hist-scroll { overflow-x: auto; }
+.hist-records { width: 100%; border-collapse: collapse; font-size: 13px; }
+.hist-records th, .hist-records td { padding: 10px 10px; border-bottom: 1px solid var(--border-soft); text-align: left; vertical-align: top; }
+.hist-records thead th { font-family: var(--font-display); font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--gold); }
+.hist-records tbody th { width: 150px; color: #fff; font-weight: 700; }
+.hist-record strong { font-family: var(--font-display); font-size: 18px; color: #fff; margin-right: 4px; }
+.hist-chase { margin-top: 6px; }
+.hist-bar { display: block; width: 100%; height: 6px; border: 1px solid var(--border-soft); border-radius: 3px; background: var(--panel-inset);
+            appearance: none; -webkit-appearance: none; overflow: hidden; }
+.hist-bar::-webkit-progress-bar { background: var(--panel-inset); }
+.hist-bar::-webkit-progress-value { background: var(--gold); }
+.hist-bar::-moz-progress-bar { background: var(--gold); }
+.hist-chase--broken .hist-bar::-webkit-progress-value { background: var(--win); }
+.hist-chase--broken .hist-bar::-moz-progress-bar { background: var(--win); }
+.hist-chase-text { margin-top: 3px; font-size: 12px; color: var(--text-dim); }
+.hist-on-pace { color: var(--win); font-weight: 600; }
+
+.hist-seasons { width: 100%; border-collapse: collapse; font-size: 13px; }
+.hist-seasons th, .hist-seasons td { padding: 8px 8px; border-bottom: 1px solid var(--border-soft); text-align: left; }
+.hist-seasons thead th { font-family: var(--font-display); font-size: 11px; letter-spacing: 1.2px; text-transform: uppercase; color: var(--gold); }
+
+.hist-bests { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.hist-best { padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel-inset); }
+.hist-best-label { font-family: var(--font-display); font-size: 11px; letter-spacing: 1.4px; text-transform: uppercase; color: var(--gold); }
+.hist-best-value { margin: 2px 0; font-size: 16px; font-weight: 700; color: #fff; }
+
+@media (max-width: 760px) {
+    .hist-records thead { display: none; }
+    .hist-records tr { display: block; border-bottom: 2px solid var(--border); }
+    .hist-records th, .hist-records td { display: block; border: none; padding: 6px 4px; }
+    .hist-bests { grid-template-columns: minmax(0, 1fr); }
+}

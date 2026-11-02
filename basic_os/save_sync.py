@@ -5,6 +5,7 @@ import shutil
 import subprocess
 import threading
 import backups
+import history
 import database
 import league
 import roster
@@ -75,6 +76,7 @@ def _sync_if_changed():
         league.sync_plan_rosters(dynasty.get('planRosters'))
         league.sync_scoring(dynasty.get('scoringSummaries'))
         league.sync_rivalries(dynasty.get('rivalries'))
+        history.sync(dynasty)
         recruiting.sync_recruiting(dynasty.get('recruiting'), dynasty['league']['userTeamId'], dynasty['currentWeek'])
     except Exception as e:
         # The version isn't stored, so the next page load tries again (e.g. if the game was mid-write)

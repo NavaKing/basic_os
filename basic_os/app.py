@@ -24,6 +24,7 @@ import offseason
 import players
 import rivals
 import presser
+import history
 import os
 from urllib.parse import urlsplit
 from flask import Flask, render_template, request, jsonify, send_from_directory, abort, url_for
@@ -137,6 +138,7 @@ def home():
         offseason_page=offseason.build_offseason(),
         rival_page=rivals.build_page(),
         presser_page=presser.build_page(),
+        history_page=history.build_page(),
         game=describe_game(active_game),
         last_game=describe_game(last_game),
         record=f"{wins}-{losses}",
