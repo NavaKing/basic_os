@@ -11,6 +11,7 @@ import team
 # the player of the game, storyline beats and where the team stood in the AP poll.
 
 TWEET_PHOTOS = 3
+FEED_POSTS = 4
 
 def player_of_the_game(week):
     """Our best performer in that week's game by impact score, with his stat line."""
@@ -86,6 +87,7 @@ def build_timeline():
             "story": {"paragraphs": paragraphs(story['generated_text']), "image": story.get('image_path')} if story else None,
             "photos": [t['image_path'] for t in tweets if t.get('image_path')][:TWEET_PHOTOS],
             "top_post": {"text": top_post['tweet_text'], "by": top_post.get('display_name') or top_post.get('user_handle')} if top_post else None,
+            "posts": [{"handle": t.get('user_handle') or "", "text": t['tweet_text']} for t in tweets if t.get('tweet_text')][:FEED_POSTS],
             "beats": beats.get(week, []),
         })
     return entries

@@ -41,10 +41,12 @@ function leadStory(lead, teamName) {
         return '<p class="mag-empty">No dispatch yet. Click Execute Hub Generator to write this week\'s story.</p>';
     }
     const words = (lead.generated_text || '').split(/\s+/).length;
-    return '<header class="mag-masthead"><span class="mag-edition">Week ' + esc(lead.week_num) + ' Edition</span>' +
-            '<span>The ' + esc(teamName) + ' Dispatch</span><span class="mag-masthead-end">' + Math.max(1, Math.round(words / 220)) + ' min read</span></header>' +
-        '<h2 class="mag-headline">' + esc(headline(lead, teamName)) + '</h2>' +
-        '<p class="mag-byline">By <b>The ' + esc(teamName) + ' Dispatch</b> &middot; Game week preview</p>' +
+    return '<div class="mag-folio"><span>The ' + esc(teamName) + ' Dispatch</span><span>Week ' + esc(lead.week_num) + ' Edition &middot; ' +
+            Math.max(1, Math.round(words / 220)) + ' min read</span></div>' +
+        '<div class="mag-top mag-top--flush"><div class="mag-top-text"><h3 class="mag-kicker-headline">Game week preview</h3>' +
+            '<p class="mag-byline">By The ' + esc(teamName) + ' Dispatch</p></div></div>' +
+        '<h2 class="mag-slab">' + esc(headline(lead, teamName)) + '</h2>' +
+        '<div class="mag-strap">Cover story &middot; Week ' + esc(lead.week_num) + '</div>' +
         '<div class="mag-body' + (words > 140 ? ' mag-body--columns' : '') + '">' + body(lead.generated_text, true) + '</div>';
 }
 

@@ -11,7 +11,7 @@
 .hero-note { color: #aaa; font-size: 12px; margin-top: 8px; }
 
 .story-layout { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 18px; align-items: start; }
-.story-archive { padding-top: 22px; }
+.story-archive .mag-feature-title { border-top: 14px solid var(--rule); padding-top: 12px; }
 
 @media (max-width: 1200px) {
     .story-layout { grid-template-columns: minmax(0, 1fr); }
