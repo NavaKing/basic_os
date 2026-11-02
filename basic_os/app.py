@@ -71,7 +71,24 @@ def security_headers(response):
     response.headers.setdefault("X-Content-Type-Options", "nosniff")
     response.headers.setdefault("Referrer-Policy", "no-referrer")
     response.headers.setdefault("Cross-Origin-Resource-Policy", "same-origin")
+    if response.status_code == 200 and request.path.startswith("/static/"):
+        if request.args.get("v"):
+            response.headers["Cache-Control"] = "public, max-age=31536000, immutable"  # the address changes with the file
+        elif request.path.startswith(UNIQUE_NAMES):
+            response.headers["Cache-Control"] = "public, max-age=604800"
     return response
+
+# Browser caching for static files: stylesheets and the main script carry ?v=<last changed> in their address, so they
+# can be kept until they change. Generated photos and podcast audio never reuse a name, so they keep for a week.
+# (Scripts imported by main.js keep revalidating: their import addresses can't carry a version.)
+UNIQUE_NAMES = ("/static/generated/", "/static/podcasts/")
+
+@app.url_defaults
+def static_version(endpoint, values):
+    if endpoint == "static" and "filename" in values and "v" not in values:
+        path = os.path.join(app.static_folder, values["filename"])
+        if os.path.exists(path):
+            values["v"] = int(os.path.getmtime(path))
 
 def spaced(value):
     """'LightBreeze' -> 'Light breeze'"""
