@@ -61,6 +61,7 @@ def build_timeline():
     beats = storyline_beats()
     polls = dict(league.query_team_polls(us['id'])) if us.get('id') is not None else {}
     active = database.query_active_week()
+    rivalries = {r['opponent_id']: r['name'] or "Rivalry game" for r in league.query_rivalries()}
     entries = []
     for game in database.query_full_schedule():
         week = game['week_id']
@@ -80,7 +81,8 @@ def build_timeline():
             "date_text": datetime.date.fromisoformat(game['game_date']).strftime("%A, %B %d").replace(" 0", " ") if game.get('game_date') else "",
             "week": week, "played": bool(game['is_played']), "date": game.get('game_date'),
             "venue": "vs" if game.get('site') in ("Home", "Neutral") else "at",
-            "opponent": game['opponent_name'], "opponent_id": opponent['id'] if opponent else None, "opponent_logo": opponent['logo'] if opponent else None,
+            "opponent": game['opponent_name'], "opponent_id": opponent['id'] if opponent else None,
+            "rivalry": rivalries.get(opponent['id']) if opponent else None, "opponent_logo": opponent['logo'] if opponent else None,
             "result": result,
             "rank_after": rank if rank and rank <= 25 else None,
             "player": player_of_the_game(week) if game['is_played'] else None,

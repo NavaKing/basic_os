@@ -1,0 +1,56 @@
+{# Rival watch (Game Day): our rivals' series, streak and season, and the rivalry-week issue. Data from rivals.py #}
+{% from "macros/ui.html" import section_head %}
+{% set rw = rival_page %}
+{% if rw.rivals %}
+<div class="panel rival-watch">
+    {{ section_head("Rival watch", "Know Your Enemies", aside=("Rivalry week" if rw.rivalry_week else None), tone="red") }}
+    <div class="rival-grid">
+        {% for r in rw.rivals %}
+        <article class="rival-card{{ ' rival-card--next' if r.meeting and r.meeting.next else '' }}" data-color="{{ r.team.color or '' }}">
+            <div class="rival-head">
+                {% if r.team.logo %}<img class="rival-logo" src="{{ r.team.logo }}" alt="" data-team-id="{{ r.team.id }}">{% endif %}
+                <div>
+                    <div class="rival-name">{{ r.name }}</div>
+                    <div class="rival-team"><span class="team-link" data-team-id="{{ r.team.id }}">{% if r.season.rank %}<span class="team-rank">#{{ r.season.rank }}</span> {% endif %}{{ r.team.name }}</span> &middot; {{ r.season.record }}</div>
+                </div>
+                {% if r.rival_rank %}<span class="rival-rank">Rival {{ r.rival_rank }}</span>{% endif %}
+            </div>
+            <ul class="rival-facts">
+                {% if r.series %}<li>{{ r.series }}</li>{% endif %}
+                {% if r.streak %}<li>{{ r.streak }}</li>{% endif %}
+                {% if r.last %}<li>{{ r.last }}</li>{% endif %}
+                {% if not (r.series or r.streak or r.last) %}<li class="muted">The save keeps no series history for this rival.</li>{% endif %}
+            </ul>
+            <div class="rival-season">
+                {% if r.season.last %}<div><span class="muted">Last:</span> <span class="score {{ 'score-win' if r.season.last.outcome == 'W' else 'score-loss' if r.season.last.outcome == 'L' else '' }}">{{ r.season.last.outcome }} {{ r.season.last.score }}</span> {{ r.season.last.venue }} {{ r.season.last.opponent.short if r.season.last.opponent else '' }}</div>{% endif %}
+                {% if r.season.next %}<div><span class="muted">Next:</span> Week {{ r.season.next.week }} {{ r.season.next.venue }} {{ r.season.next.opponent.short if r.season.next.opponent else '' }}</div>{% endif %}
+            </div>
+            <div class="rival-meeting">
+                {% if not r.meeting %}Not on our schedule this year
+                {% elif r.meeting.result %}Week {{ r.meeting.week }}: <span class="score {{ 'score-win' if r.meeting.result.outcome == 'W' else 'score-loss' }}">{{ r.meeting.result.outcome }} {{ r.meeting.result.score }}</span>
+                {% elif r.meeting.next %}<strong>This week</strong>, {{ r.meeting.venue }} {{ r.team.name }}
+                {% else %}Week {{ r.meeting.week }}, {{ r.meeting.venue }} {{ r.team.name }}{% endif %}
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+
+    {% if rw.upcoming %}
+    <article class="mag-issue aw-column rival-issue">
+        <div class="mag-folio"><span>The Rivalry Issue</span><span>Week {{ rw.upcoming.meeting.week }} &middot; {{ rw.upcoming.name }}</span></div>
+        <h2 class="mag-slab aw-column-title" id="rivalry_title">{{ rw.column.title if rw.column else rw.upcoming.name }}</h2>
+        <div class="mag-body" id="rivalry_body">
+            {% if rw.column %}
+                {% for p in rw.column.paragraphs %}<p{% if loop.first %} class="mag-dropcap"{% endif %}>{{ p }}</p>{% endfor %}
+            {% else %}
+                <p class="mag-empty">Write the build-up to {{ rw.upcoming.team.name }}: the history, where both teams stand, and the players who could decide it.</p>
+            {% endif %}
+        </div>
+        <div class="aw-column-actions">
+            <button type="button" id="rivalry_generate">{{ 'Rewrite' if rw.column else 'Write' }} the rivalry issue</button>
+            <div class="status-text" id="rivalry_status"></div>
+        </div>
+    </article>
+    {% endif %}
+</div>
+{% endif %}

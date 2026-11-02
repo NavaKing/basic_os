@@ -18,7 +18,7 @@
             <article class="mag-issue">
                 <div class="mag-folio">
                     <span>The {{ us.name }} Dispatch &middot; {{ e.date_text or 'Date TBD' }}</span>
-                    <span>Week {{ e.week }} Edition</span>
+                    <span>Week {{ e.week }} {% if e.rivalry %}Rivalry Edition &middot; {{ e.rivalry }}{% else %}Edition{% endif %}</span>
                 </div>
 
                 <div class="mag-top">
