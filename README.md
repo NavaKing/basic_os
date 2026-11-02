@@ -167,6 +167,18 @@ Created at runtime and kept out of git: `dynasty_data.db`, `static/generated/` (
 * **Local only.** The app listens on `127.0.0.1` and is meant for your own machine. It still refuses requests with a foreign
   `Host` or `Origin` header (DNS rebinding and cross-site posts), sends a Content-Security-Policy, and caps uploads at 40 MB.
 
+## Testing
+
+```powershell
+python -m unittest        # from the repository folder; add -v to list every test
+```
+
+The tests use only Python's standard library and run against a throwaway database (`BASIC_OS_DB` points the app at it),
+so they never touch `dynasty_data.db`, your generated media or the AI services. They cover scoring plays (screenshot and
+save formats, extra points landing in the next row, scorer names), podcast and quote cleanup, name casing, recap math and
+the local-only security checks. If you have a synced `dynasty_data.db`, one more test reads a copy of it and checks that
+every captured scoring summary adds up to its game's final, which is the first thing to run after a game update.
+
 ## Branches
 
 ```
