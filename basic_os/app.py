@@ -345,6 +345,15 @@ def generate_weekly_podcast():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/podcast/<int:episode_id>/episode.mp3')
+def podcast_episode_audio(episode_id):
+    import io
+    from flask import send_file
+    audio = podcast.episode_audio(episode_id)
+    if audio is None:
+        abort(404)
+    return send_file(io.BytesIO(audio), mimetype="audio/mpeg", download_name=f"between-the-numbers-{episode_id}.mp3", conditional=True)
+
 @app.route('/podcast/<int:episode_id>/record', methods=['POST'])
 def retry_podcast_recording(episode_id):
     try:

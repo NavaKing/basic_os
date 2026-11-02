@@ -376,16 +376,35 @@ def voice_lines(episode_dir, lines, hosts):
     recorded = sum(1 for i in range(len(lines)) if os.path.exists(line_path(episode_dir, i)))
     return recorded, (errors[-1] if errors else "")
 
-def join_episode(episode_dir, count):
-    """MP3 frames from the same voice service share one format, so the line files join end to end."""
-    with open(os.path.join(episode_dir, "episode.mp3"), "wb") as out:
-        for index in range(count):
-            with open(line_path(episode_dir, index), "rb") as part:
-                out.write(part.read())
+def episode_audio(episode_id):
+    """The whole episode as one MP3, joined from its line files on request (keeping a joined copy would store
+    every episode twice). MP3 frames from the same voice service share one format, so the files join end to end.
+    None until every line is recorded."""
+    conn = database.get_db_connection()
+    row = conn.execute("SELECT script_json, audio_file FROM podcast_episodes WHERE episode_id = ?", (episode_id,)).fetchone()
+    conn.close()
+    if not row or not row['audio_file']:
+        return None
+    episode_dir = os.path.join(PODCAST_DIR, str(int(episode_id)))
+    parts = []
+    for index in range(len(json.loads(row['script_json']))):
+        with open(line_path(episode_dir, index), "rb") as part:
+            parts.append(part.read())
+    return b"".join(parts)
+
+def drop_joined_copies():
+    """Removes the joined episode.mp3 files older versions stored next to the line files (housekeeping)."""
+    import glob
+    count = 0
+    for path in glob.glob(os.path.join(PODCAST_DIR, "*", "episode.mp3")):
+        if os.path.exists(line_path(os.path.dirname(path), 0)):
+            os.remove(path)
+            count += 1
+    return count
 
 def record_episode(episode_id):
-    """Records an episode's missing lines; once every line exists, joins them into the downloadable MP3.
-    Returns (recorded, total, error text)."""
+    """Records an episode's missing lines; once every line exists, the episode is marked complete (its MP3 is
+    joined on request by episode_audio). Returns (recorded, total, error text)."""
     conn = database.get_db_connection()
     row = conn.execute("SELECT hosts_json, script_json FROM podcast_episodes WHERE episode_id = ?", (episode_id,)).fetchone()
     conn.close()
@@ -399,10 +418,7 @@ def record_episode(episode_id):
             line['audio'] = f"podcasts/{episode_id}/line_{index:03d}.mp3"
         else:
             line.pop('audio', None)
-    audio_file = None
-    if recorded == len(lines):
-        join_episode(episode_dir, len(lines))
-        audio_file = f"podcasts/{episode_id}/episode.mp3"
+    audio_file = f"podcasts/{episode_id}/episode.mp3" if recorded == len(lines) else None  # marks the episode complete
     conn = database.get_db_connection()
     conn.execute("UPDATE podcast_episodes SET script_json = ?, audio_file = ? WHERE episode_id = ?", (json.dumps(lines), audio_file, episode_id))
     conn.commit()
@@ -685,6 +701,7 @@ def query_episodes():
         r['script'] = json.loads(r.pop('script_json'))
         r['game'] = json.loads(r.pop('game_json'))
         r['game'].pop('facts', None)
+        r['audio_url'] = f"/podcast/{r['episode_id']}/episode.mp3" if r['audio_file'] else None
         for t in r['game']['teams']:
             row = teams.get(t.get('team_id'))
             t['logo'] = media.logo_url(row['short_name']) if row else None

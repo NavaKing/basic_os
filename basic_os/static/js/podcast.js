@@ -232,7 +232,7 @@ function playerControls(ep) {
     return recorded === ep.script.length
         ? '<div class="pod-controls"><button type="button" class="pod-play">▶ Play episode</button>' +
           '<div class="pod-progress"><progress class="pod-bar" max="' + ep.script.length + '" value="0"></progress><span class="pod-now">Ready</span></div>' +
-          (ep.audio_file ? '<a class="pod-download" href="' + esc(staticUrl(ep.audio_file)) + '" download>Download MP3</a>' : '') + '</div>'
+          (ep.audio_url ? '<a class="pod-download" href="' + esc(ep.audio_url) + '" download>Download MP3</a>' : '') + '</div>'
         : '<p class="mag-small">' + recorded + ' of ' + ep.script.length + ' lines are recorded; Microsoft\'s voice service dropped the rest. The script is here.</p>' +
           '<button type="button" class="pod-retry" data-id="' + esc(ep.episode_id) + '">Retry recording</button><div class="status-text pod-retry-status"></div>';
 }
@@ -308,11 +308,11 @@ function archiveItem(ep) {
             '<div class="mag-numbered-kicker">' + kicker + '</div>' +
             '<h3 class="mag-card-title">' + esc(ep.title) + '</h3>' +
             (ep.summary ? '<p class="mag-card-text">' + esc(ep.summary) + '</p>' : '') +
-            (ep.audio_file ? '<audio class="pod-archive-audio" controls preload="none" src="' + esc(staticUrl(ep.audio_file)) + '"></audio>'
+            (ep.audio_url ? '<audio class="pod-archive-audio" controls preload="none" src="' + esc(ep.audio_url) + '"></audio>'
                 : '<p class="mag-small">' + recorded + ' of ' + ep.script.length + ' lines recorded.</p>' +
                   '<button type="button" class="pod-retry" data-id="' + esc(ep.episode_id) + '">Retry recording</button><div class="status-text pod-retry-status"></div>') +
             '<details class="pod-archive-writeup"><summary>Read the write-up</summary>' + transcript + '</details>' +
-            '<div class="pod-archive-actions">' + (ep.audio_file ? '<a class="pod-download" href="' + esc(staticUrl(ep.audio_file)) + '" download>Download MP3</a>' : '') +
+            '<div class="pod-archive-actions">' + (ep.audio_url ? '<a class="pod-download" href="' + esc(ep.audio_url) + '" download>Download MP3</a>' : '') +
             '<button type="button" class="btn-secondary pod-delete" data-id="' + esc(ep.episode_id) + '">Delete</button></div>' +
         '</div></li>';
 }
