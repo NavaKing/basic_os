@@ -1,5 +1,4 @@
-{# Story Column: contents are rendered by static/js/stories.js #}
-{% from "macros/ui.html" import section_head %}
+{# Story Column: the week's cover story and the archive, laid out as a magazine (static/js/stories.js, static/css/magazine.css) #}
 <section class="tab-panel" id="tab-story" role="tabpanel">
     <div class="hero">
         <img class="hero-image" id="hero_image" alt="This week's game-day banner" hidden>
@@ -10,13 +9,10 @@
         </div>
     </div>
     <div class="story-layout">
-        <div class="panel">
-            {{ section_head("This week", "The Dispatch") }}
-            <div class="lead-story" id="lead_story"></div>
-        </div>
-        <div class="panel">
-            {{ section_head("Archive", "Previous Stories") }}
-            <div class="table-wrapper" id="history_feed_list"></div>
-        </div>
+        <article class="mag-issue" id="lead_story"></article>
+        <aside class="mag-issue story-archive">
+            <h3 class="mag-section-title">Back Issues</h3>
+            <ul class="mag-index" id="history_feed_list"></ul>
+        </aside>
     </div>
 </section>

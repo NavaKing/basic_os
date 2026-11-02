@@ -1,3 +1,5 @@
+import datetime
+import re
 import database
 import league
 import media
@@ -35,6 +37,23 @@ def storyline_beats():
                 beats.setdefault(s['end_week'], []).append({"kind": "resolved", "title": s['title'], "text": s.get('finale_text') or s.get('resolution') or ""})
     return beats
 
+def headline(us, game, result):
+    """'Wyoming beats FCS Midwest Thunderbirds, 35-21' style headline for a week."""
+    opponent = game['opponent_name']
+    if not result:
+        return f"Up next: {'at ' if game.get('site') == 'Away' else ''}{opponent}"
+    verb = {"W": "beats", "L": "falls to", "T": "ties"}[result['outcome']]
+    return f"{us['name']} {verb} {opponent}, {result['score']}"
+
+def paragraphs(text):
+    """Splits generated text into paragraphs (blank lines, or every few sentences for one long block)."""
+    blocks = [b.strip() for b in re.split(r"\n\s*\n", text or "") if b.strip()]
+    if len(blocks) == 1:
+        sentences = re.split(r"(?<=[.!?])\s+", blocks[0])
+        if len(sentences) > 4:
+            blocks = [" ".join(sentences[i:i + 3]) for i in range(0, len(sentences), 3)]
+    return blocks
+
 def build_timeline():
     us = team.user_team()
     stories = {s['week_num']: s for s in database.query_archived_stories()}
@@ -54,16 +73,19 @@ def build_timeline():
             mine, theirs = game['wyo_score'], game['opp_score']
             result = {"outcome": "W" if mine > theirs else ("L" if mine < theirs else "T"), "score": f"{mine}-{theirs}"}
         rank = polls.get(week)
+        top_post = next((t for t in tweets if t.get('tweet_text')), None)
         entries.append({
+            "headline": headline(us, game, result),
+            "date_text": datetime.date.fromisoformat(game['game_date']).strftime("%A, %B %d").replace(" 0", " ") if game.get('game_date') else "",
             "week": week, "played": bool(game['is_played']), "date": game.get('game_date'),
             "venue": "vs" if game.get('site') in ("Home", "Neutral") else "at",
             "opponent": game['opponent_name'], "opponent_id": opponent['id'] if opponent else None, "opponent_logo": opponent['logo'] if opponent else None,
             "result": result,
             "rank_after": rank if rank and rank <= 25 else None,
             "player": player_of_the_game(week) if game['is_played'] else None,
-            "story": {"text": story['generated_text'], "image": story.get('image_path')} if story else None,
+            "story": {"paragraphs": paragraphs(story['generated_text']), "image": story.get('image_path')} if story else None,
             "photos": [t['image_path'] for t in tweets if t.get('image_path')][:TWEET_PHOTOS],
-            "top_post": next((t['tweet_text'] for t in tweets), None),
+            "top_post": {"text": top_post['tweet_text'], "by": top_post.get('display_name') or top_post.get('user_handle')} if top_post else None,
             "beats": beats.get(week, []),
         })
     return entries

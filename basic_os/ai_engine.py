@@ -54,17 +54,24 @@ def proper_names():
     # Whole school names and nicknames only: single words like "Air" (Force) or "Green" (Wave) are everyday words
     for t in league.query_teams().values():
         names.update(phrase for phrase in (t['name'], t['nickname']) if phrase and phrase[0].isupper())
+    # Opponents' players by full name only (their single first or last names could be everyday words)
+    names.update(p['name'] for p in league.query_players().values() if " " in (p['name'] or ""))
+    for team_id in league.query_teams():
+        roster_data = league.query_plan_roster(team_id)
+        names.update(p['name'] for p in (roster_data or {}).get('players', []) if " " in (p['name'] or ""))
     return names
 
 def fix_casing(text):
-    """cfb-gemma often writes in all lowercase. Restore sentence capitals and proper names when that happens."""
+    """cfb-gemma often writes names, and sometimes whole stories, in lowercase. Known names (our players, every team)
+    are always restored; sentence capitals and "I" only when the text is almost entirely lowercase."""
     letters = [c for c in text if c.isalpha()]
-    if not letters or sum(c.isupper() for c in letters) / len(letters) > 0.02:
-        return text  # already has normal capitals
-    text = re.sub(r"(^|[.!?]\s+|\n\s*)([a-z])", lambda m: m.group(1) + m.group(2).upper(), text)
-    text = re.sub(r"\bi\b", "I", text)
+    if letters and sum(c.isupper() for c in letters) / len(letters) <= 0.02:
+        text = re.sub(r"(^|[.!?]\s+|\n\s*)([a-z])", lambda m: m.group(1) + m.group(2).upper(), text)
+        text = re.sub(r"(?<![\w'’])i(?![\w'’])", "I", text)  # not the i in "hawai'i"
     for name in sorted(proper_names(), key=len, reverse=True):
-        text = re.sub(r"b" + re.escape(name.lower()) + r"b", name, text)
+        text = re.sub(r"(?<![\w'’])" + re.escape(name.lower()) + r"(?![\w'’])", name, text)
+    # An older version capitalized the i after an apostrophe ("hawai'I"); undo that
+    text = re.sub(r"(?<=[a-z]['’])I\b", "i", text)
     return text
 
 def clean_text(text):

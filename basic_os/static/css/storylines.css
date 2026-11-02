@@ -42,3 +42,9 @@
 .storyline-actions button { padding: 8px; font-size: 11px; }
 .storyline-concluded { margin-top: 14px; }
 .storyline-concluded summary { cursor: pointer; color: #888; font-size: 11px; margin-bottom: 10px; text-transform: uppercase; }
+
+/* Magazine type (fonts from static/css/magazine.css): headlines and chapters read like a running feature */
+.storyline-title { font-family: var(--font-headline); font-weight: 700; font-size: 22px; line-height: 1.2; color: #fff; letter-spacing: 0; text-transform: none; }
+.storyline-chapter { font-family: var(--font-serif); font-size: 15px; line-height: 1.65; color: var(--ink); }
+.storyline-chapter-week { font-family: var(--font-display); letter-spacing: 1.5px; text-transform: uppercase; }
+.storyline-chapter.final { font-style: italic; }

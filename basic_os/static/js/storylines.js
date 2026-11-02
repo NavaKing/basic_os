@@ -2,7 +2,7 @@
 
 import { esc, postJSON, setStatus } from './utils.js';
 
-const TYPE_LABELS = { battle: 'Position Battle', pressure: 'Under Pressure', hype: 'Hype', comeback: 'Comeback' };
+const TYPE_LABELS = { battle: 'Position Battle', pressure: 'Under Pressure', hype: 'Hype', comeback: 'Comeback', recruit: 'Recruit Pressure' };
 
 function castRow(member) {
     const injured = member.health_status && member.health_status !== 'Healthy';

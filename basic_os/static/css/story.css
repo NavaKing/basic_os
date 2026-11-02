@@ -1,20 +1,17 @@
-/* Story Column tab: hero banner, lead dispatch, archive */
+/* Story Column tab: the cover banner over the cover story and back issues (both use static/css/magazine.css) */
 
-.hero { position: relative; border-radius: 8px; overflow: hidden; min-height: 300px; aspect-ratio: 12 / 5; max-height: 520px; width: 100%;
-        background: linear-gradient(135deg, var(--brown), var(--brown-dark)); margin-bottom: 16px; }
+.hero { position: relative; border-radius: var(--radius); overflow: hidden; min-height: 300px; aspect-ratio: 12 / 5; max-height: 520px; width: 100%;
+        background: linear-gradient(135deg, var(--brown), var(--brown-dark)); margin-bottom: 18px; }
 .hero-image { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.hero-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.1) 60%);
-                display: flex; flex-direction: column; justify-content: flex-end; padding: 28px; }
-.hero-kicker { color: var(--gold); font-size: 12px; font-weight: bold; letter-spacing: 1px; text-transform: uppercase; }
-.hero-title { color: #fff; font-size: 32px; font-weight: bold; margin-top: 6px; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6); }
-.hero-note { color: #aaa; font-size: 12px; margin-top: 6px; }
+.hero-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0, 0, 0, 0.88), rgba(0, 0, 0, 0.05) 60%);
+                display: flex; flex-direction: column; justify-content: flex-end; padding: 32px 36px; }
+.hero-kicker { font-family: var(--font-display); color: var(--gold); font-size: 13px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase; }
+.hero-title { font-family: var(--font-headline); color: #fff; font-size: clamp(30px, 4vw, 54px); font-weight: 900; line-height: 1.05; margin-top: 8px;
+              text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6); }
+.hero-note { color: #aaa; font-size: 12px; margin-top: 8px; }
 
-.story-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; align-items: start; }
-.lead-story { font-size: 17px; line-height: 1.75; color: #eee; }
-.lead-story p { margin-top: 0; }
-
-.history-box { display: flex; gap: 10px; background-color: var(--panel-inset); padding: 12px; border-radius: 4px; margin-bottom: 12px; border-left: 3px solid var(--text-muted); font-size: 13px; line-height: 1.5; }
-.history-thumb { width: 96px; height: 54px; object-fit: cover; border-radius: 4px; flex-shrink: 0; }
+.story-layout { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+.story-archive { padding-top: 22px; }
 
 @media (max-width: 1200px) {
     .story-layout { grid-template-columns: minmax(0, 1fr); }
