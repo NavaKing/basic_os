@@ -1,6 +1,6 @@
 // Tab bar. The active tab lives in the URL hash so a refresh keeps it.
 
-const TABS = ['gameday', 'story', 'depth', 'locker', 'recap', 'recruiting', 'season', 'awards', 'offseason', 'coaches', 'podcast'];
+const TABS = ['gameday', 'story', 'depth', 'locker', 'recap', 'recruiting', 'season', 'history', 'awards', 'offseason', 'coaches', 'podcast'];
 
 function showTab(name) {
     if (!TABS.includes(name)) name = TABS[0];

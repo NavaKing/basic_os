@@ -490,6 +490,34 @@ try {
     if (!rivalries.some((r) => r.opponentId === teamId)) rivalries.push({ name: '', opponentId: teamId, rank });
   }
 
+  // ---------- Program history ----------
+  // The school record book (game, season and career records in nine stats, with the real record holders; the game
+  // updates them when a record falls) and the year-by-year history the game keeps for the program (one entry per
+  // season played in the dynasty).
+  const programRecords = [];
+  for (const [scope, key] of [['game', 'GameStatRecords'], ['season', 'SeasonStatRecords'], ['career', 'CareerStatRecords']]) {
+    const list = await recordFromAny(ref(userTeam, key));
+    for (const field of list ? refFields(list) : []) {
+      const row = await recordFromAny(ref(list, field));
+      if (!row || !row.statType) continue;
+      programRecords.push({ scope, stat: clean(row.statType), value: row.statValue ?? null, year: row.calendarYear ?? null,
+                            name: `${row.firstName || ''} ${row.lastName || ''}`.trim(), position: clean(row.position) });
+    }
+  }
+  const programHistory = [];
+  const seasons = await recordFromAny(ref(userTeam, 'TeamSeriesHistory'));
+  for (const field of seasons ? refFields(seasons) : []) {
+    const row = await recordFromAny(ref(seasons, field));
+    if (!row || !row.Year) continue;
+    programHistory.push({
+      year: row.Year, wins: row.Wins ?? 0, losses: row.Losses ?? 0, ties: row.Ties ?? 0,
+      confWins: row.ConferenceWins ?? 0, confLosses: row.ConferenceLosses ?? 0, conference: clean(row.ConferenceName),
+      confStanding: row.FinalConferenceStanding ?? null, finalRank: row.FinalMediaRank ?? null, coach: clean(row.CoachName),
+      bowls: ['FirstRoundCFPBowlGameResult', 'QuarterFinalsBowlGameResult', 'SemiFinalsBowlGameResult', 'NationalBowlGameResult']
+        .map((k) => clean(row[k])).filter(Boolean)
+    });
+  }
+
   // ---------- Game plan rosters: us and every opponent on our schedule ----------
   const RATING_FIELDS = {
     SPD: 'SpeedRating', ACC: 'AccelerationRating', AGI: 'AgilityRating', STR: 'StrengthRating', AWR: 'AwarenessRating',
@@ -660,6 +688,8 @@ try {
     scoringSummaries,
     recruiting: { board: recruitingBoard, commits, topProspects },
     rivalries,
+    programRecords,
+    programHistory,
     planRosters
   }));
 } finally {

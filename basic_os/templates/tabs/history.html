@@ -1,0 +1,87 @@
+{# History: the school record book with our players chasing it, the program year by year, dynasty bests and this week
+   in dynasty history. Data from history.py (the save's record book plus the app's own archive of every season) #}
+{% from "macros/ui.html" import section_head %}
+{% set h = history_page %}
+{% set scope_titles = {'game': 'Single game', 'season': 'Season', 'career': 'Career'} %}
+<section class="tab-panel" id="tab-history" role="tabpanel">
+    <div class="panel">
+        {{ section_head("The school record book", h.team ~ " Records", aside="Record holders from the save") }}
+        <p class="muted hist-note">Each record with the current {{ h.team }} player closest to it. Career marks count only what's been played in this dynasty,
+            and a record broken in-game shows up here after the next sync.</p>
+        <div class="hist-scroll">
+            <table class="hist-records">
+                <thead><tr><th>Category</th>{% for s in ['game', 'season', 'career'] %}<th>{{ scope_titles[s] }}</th>{% endfor %}</tr></thead>
+                <tbody>
+                {% for row in h.records %}
+                <tr>
+                    <th scope="row">{{ row.label }}</th>
+                    {% for c in row.cells %}
+                    <td>
+                        {% if c.record %}
+                        <div class="hist-record"><strong>{{ c.record.value }}</strong> {{ c.record.name }} <span class="muted">{{ c.record.position }}, {{ c.record.year }}</span></div>
+                        {% else %}<div class="muted">No record kept</div>{% endif %}
+                        {% if c.ours %}
+                        <div class="hist-chase{{ ' hist-chase--broken' if c.ours.broken else '' }}">
+                            <progress class="hist-bar" max="100" value="{{ c.ours.pct or 0 }}" aria-label="Share of the record"></progress>
+                            <div class="hist-chase-text">{{ c.ours.name }} {{ c.ours.value }}{% if c.ours.pct is defined %} &middot; {{ 'Record broken!' if c.ours.broken else c.ours.pct ~ '%' }}{% endif %}
+                                {% if c.ours.pace %}<span class="{{ 'hist-on-pace' if c.ours.on_pace else 'muted' }}">&middot; on pace for {{ c.ours.pace }}</span>{% endif %}</div>
+                        </div>
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="awards-row">
+        <div class="panel">
+            {{ section_head("Program history", "Year by Year") }}
+            {% if h.seasons %}
+            <table class="hist-seasons">
+                <thead><tr><th>Year</th><th>Record</th><th>Conference</th><th>Final AP</th><th>Coach</th><th>Postseason</th></tr></thead>
+                <tbody>
+                {% for s in h.seasons %}
+                <tr><td><strong>{{ s.year }}</strong></td><td>{{ s.record }}</td><td>{{ s.conf }}{% if s.standing %} <span class="muted">({{ s.standing }}{{ 'st' if s.standing == 1 else 'nd' if s.standing == 2 else 'rd' if s.standing == 3 else 'th' }})</span>{% endif %}</td>
+                    <td>{{ ('No. ' ~ s.rank) if s.rank else '—' }}</td><td>{{ s.coach }}</td><td>{{ s.bowls|join(', ') if s.bowls else '—' }}</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            <p class="muted hist-note">The game keeps one line per dynasty season; the current season updates as you play.</p>
+            {% else %}<p class="empty-note">Program history appears after the next sync.</p>{% endif %}
+
+            <h4 class="off-col-title off-col-title--spaced">This week in dynasty history</h4>
+            {% if h.this_week.games %}
+            <ul class="off-moves">
+                {% for g in h.this_week.games %}
+                <li class="off-move"><span class="score {{ 'score-win' if g.result == 'W' else 'score-loss' if g.result == 'L' else '' }}">{{ g.result }} {{ g.score }}</span>
+                    <div><div class="off-player-name">{{ g.year }}, Week {{ h.this_week.week }}</div><div class="off-player-meta">{{ 'at' if g.site == 'Away' else 'vs' }} {{ g.opponent }}</div></div></li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="muted hist-note">This is the dynasty's first season{% if h.this_week.week %} with a Week {{ h.this_week.week }}{% endif %}. From next season, the games played this week in earlier seasons show up here.</p>
+            {% endif %}
+        </div>
+
+        <div class="panel">
+            {{ section_head("Since the dynasty began", "Dynasty Bests") }}
+            {% if h.bests %}
+            <div class="hist-bests">
+                {% for b in h.bests.team %}
+                <div class="hist-best"><div class="hist-best-label">{{ b.label }}</div><div class="hist-best-value">{{ b.text }}</div><div class="muted">{{ b.when }}</div></div>
+                {% endfor %}
+            </div>
+            <h4 class="off-col-title off-col-title--spaced">Best single games</h4>
+            <table class="hist-seasons">
+                <tbody>
+                {% for p in h.bests.performances %}
+                <tr><td>{{ p.label }}</td><td><strong>{{ p.value }}</strong></td><td>{{ p.position }} {{ p.name }}</td><td class="muted">{{ p.when }}</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            {% else %}<p class="empty-note">Dynasty bests start with the first game played.</p>{% endif %}
+        </div>
+    </div>
+</section>

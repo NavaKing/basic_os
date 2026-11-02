@@ -5,7 +5,7 @@
         <span>{{ us.short or us.name }}</span>
     </span>
     {% for id, label in [('gameday', 'Game Day'), ('story', 'Story Column'), ('depth', 'Depth Chart'), ('locker', 'Locker Room'),
-                         ('recap', 'Weekly Recap'), ('recruiting', 'Recruiting'), ('season', 'Season'), ('awards', 'Awards'), ('offseason', 'Offseason'), ('coaches', 'Coaches'), ('podcast', 'Podcast')] %}
+                         ('recap', 'Weekly Recap'), ('recruiting', 'Recruiting'), ('season', 'Season'), ('history', 'History'), ('awards', 'Awards'), ('offseason', 'Offseason'), ('coaches', 'Coaches'), ('podcast', 'Podcast')] %}
     <button class="tab" type="button" role="tab" data-tab="{{ id }}">{{ label }}</button>
     {% endfor %}
     <button class="tabs-tool" type="button" id="backups_open" aria-haspopup="dialog">Backups</button>
