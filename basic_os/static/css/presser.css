@@ -1,0 +1,38 @@
+/* Press room on the Coaches tab: speaker picker, question box and the week's transcript, on magazine paper */
+
+.press-room { margin-top: 20px; }
+.press-head { margin-bottom: 12px; }
+.press-title { font-size: clamp(30px, 3.6vw, 52px); }
+
+.press-speakers { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+.press-speaker { display: flex; align-items: center; gap: 10px; padding: 6px 12px 6px 6px; border: 1px solid rgba(0, 0, 0, 0.2); border-radius: 999px;
+                 cursor: pointer; background: rgba(255, 255, 255, 0.5); }
+.press-speaker input { position: absolute; opacity: 0; pointer-events: none; }
+.press-speaker .headshot { --headshot-size: 40px; }
+.press-speaker strong { display: block; font-size: 14px; color: #1a1a1a; }
+.press-speaker small { display: block; font-size: 11px; color: #555; }
+.press-speaker:has(input:checked) { border-color: #1a1a1a; background: #1a1a1a; }
+.press-speaker:has(input:checked) strong { color: #fff; }
+.press-speaker:has(input:checked) small { color: #ccc; }
+.press-speaker:has(input:focus-visible) { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+.press-ask textarea { width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid rgba(0, 0, 0, 0.3); border-radius: 6px;
+                      background: #fffdf7; color: #1a1a1a; font: 15px/1.5 var(--font-body, inherit); resize: vertical; }
+.press-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
+.press-actions button { width: auto; }
+.press-room .btn-secondary { color: #1a1a1a; border-color: rgba(0, 0, 0, 0.4); }
+.press-room .btn-secondary:hover { background: rgba(0, 0, 0, 0.06); color: #000; }
+.press-suggestions { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+.press-chip { width: auto; padding: 6px 10px; border: 1px dashed rgba(0, 0, 0, 0.4); border-radius: 6px; background: transparent; color: #1a1a1a;
+              font: 13px/1.4 var(--font-body, inherit); text-transform: none; letter-spacing: 0; text-align: left; }
+.press-chip:hover { background: rgba(0, 0, 0, 0.06); }
+
+.press-transcript { list-style: none; margin: 16px 0 0; padding: 0; }
+.press-qa { padding: 14px 0; border-top: 1px solid rgba(0, 0, 0, 0.15); }
+.press-q { display: flex; gap: 10px; margin: 0 0 8px; font-weight: 700; color: #1a1a1a; }
+.press-q span { font-family: var(--font-display); color: #8a1c1c; }
+.press-a { display: flex; gap: 12px; }
+.press-a .headshot { --headshot-size: 44px; }
+.press-who { font-weight: 700; color: #1a1a1a; }
+.press-who small { font-weight: 400; color: #666; }
+.press-a p { margin: 4px 0 0; font-family: 'Source Serif 4', Georgia, serif; font-size: 16px; line-height: 1.6; color: #222; }

@@ -5,7 +5,7 @@ import { esc, postJSON, setStatus, applyTeamColors } from './utils.js';
 
 const GRADE_BARS = { decisive: 3, clear: 2, slight: 1 };
 const SECTIONS = [['keys', 'Keys'], ['staff', 'Their staff'], ['availability', 'Availability'], ['qbs', 'Quarterbacks'],
-                  ['attack', 'Attack'], ['stop', 'Stop'], ['tape', 'Tale of the tape']];
+                  ['attack', 'Attack'], ['stop', 'Stop'], ['tape', 'Tale of the tape'], ['press', 'Press room']];
 
 // ---------- Small pieces ----------
 
@@ -170,7 +170,7 @@ function render(root, p) {
         tape(p);
     applyTeamColors(root);
     root.querySelectorAll('.plan-nav button').forEach(button => button.addEventListener('click', () =>
-        document.getElementById('plan-' + button.dataset.section).scrollIntoView({ behavior: 'smooth', block: 'start' })));
+        document.getElementById('plan-' + button.dataset.section)?.scrollIntoView({ behavior: 'smooth', block: 'start' })));
 }
 
 // ---------- News column ----------

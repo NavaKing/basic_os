@@ -1,0 +1,32 @@
+{# Press room (Coaches tab): ask our coaches questions; answers are quoted by the hub generator. Data from presser.py, driven by static/js/presser.js #}
+{% set pr = presser_page %}
+{% if pr.speakers %}
+<article class="mag-issue press-room" id="plan-press">
+    <div class="mag-folio"><span>The Press Room</span><span>Week {{ pr.week }} Press Conference</span></div>
+    <div class="press-head">
+        <h2 class="mag-slab press-title">At the Podium</h2>
+        <p class="mag-byline">You ask the questions. Answers are AI-written in character from this week's facts and are quoted in the hub generator's dispatch and posts.</p>
+    </div>
+    <div class="press-speakers" role="radiogroup" aria-label="Who answers">
+        {% for s in pr.speakers %}
+        <label class="press-speaker">
+            <input type="radio" name="press_role" value="{{ s.role }}"{{ ' checked' if loop.first else '' }}>
+            <span class="headshot">{% if s.portrait %}<img src="{{ s.portrait }}" alt="">{% endif %}</span>
+            <span><strong>{{ s.name }}</strong><small>{{ s.title }}</small></span>
+        </label>
+        {% endfor %}
+    </div>
+    <form class="press-ask" id="press_form">
+        <textarea id="press_question" maxlength="300" rows="2" placeholder="Coach, what did you see from the offensive line on Saturday?" aria-label="Your question"></textarea>
+        <div class="press-actions">
+            <button type="submit" id="press_submit">Ask</button>
+            <button type="button" class="btn-secondary" id="press_suggest">Suggest questions</button>
+            <button type="button" class="btn-secondary" id="press_clear">Clear this week</button>
+        </div>
+        <div class="press-suggestions" id="press_suggestions"></div>
+        <div class="status-text" id="press_status"></div>
+    </form>
+    <ol class="press-transcript" id="press_transcript"></ol>
+    <script type="application/json" id="press_data">{{ pr.transcript|tojson }}</script>
+</article>
+{% endif %}

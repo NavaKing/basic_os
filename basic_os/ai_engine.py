@@ -218,11 +218,12 @@ def generate_dynasty_content(selected_model, storyline_context="", player_lines=
     headline = f"CURRENT WEEK FOCUS: Preparing for Week {active_stats['week_id']} against {active_stats['opponent_name']}."
     us = team.user_team()
     scouting = f" Scouting report on the opponent (use only these facts about them): {scouting_context}" if scouting_context else ""
-    import rivals
+    import rivals, presser
     rivalry = rivals.prompt_context()
+    presser_quotes = presser.dispatch_context()
 
     # Generate main article
-    article_prompt = f"IMPORTANT: every player is a man on a men's college football team, so always use he/him/his for players, whatever their first name. Write an immersive 3-sentence game dispatch layout entry. Sentence 1 must summarize the dramatic outcome from the PREVIOUS game: {prev_context}. Sentences 2 and 3 must pivot directly into the game preparation strategy for the UPCOMING matchup: {headline} using {us['identity']}.{scouting}{rivalry} Do not output raw code strings or brackets."
+    article_prompt = f"IMPORTANT: every player is a man on a men's college football team, so always use he/him/his for players, whatever their first name. Write an immersive 3-sentence game dispatch layout entry. Sentence 1 must summarize the dramatic outcome from the PREVIOUS game: {prev_context}. Sentences 2 and 3 must pivot directly into the game preparation strategy for the UPCOMING matchup: {headline} using {us['identity']}.{scouting}{rivalry}{presser_quotes} Do not output raw code strings or brackets."
     if storyline_context:
         article_prompt += f" Ongoing player storylines on the team: {storyline_context} Work a brief nod to one of these storylines into sentence 3, referring to players by name and position."
 
@@ -243,6 +244,8 @@ def generate_dynasty_content(selected_model, storyline_context="", player_lines=
         plan.append(f"Post {number}: about {line} in the last game; quote those numbers and say how he impacted the result.")
     if storyline_titles:
         plan.append(f"Post {len(player_lines) + 1}: reacts to one of these ongoing player storylines: {storyline_titles}.")
+    if presser_quotes:
+        plan.append("One of the remaining posts reacts to a quote from the press conference, quoting it exactly." + presser_quotes)
     if rivalry:
         plan.append("At least two of the remaining posts are rivalry trash talk aimed at the other side's fans, built on the rivalry facts." + rivalry)
     plan.append(f"The remaining posts hype the upcoming Week {active_stats['week_id']} game vs {active_stats['opponent_name']}.")
