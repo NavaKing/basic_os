@@ -144,9 +144,10 @@ PLAY_PATTERN = re.compile(
     r"^(?P<player>.+?),?\s+(?P<yards>\d+)\s+Yd\s+(?P<kind>pass|run|interception return|fumble return|punt return|kickoff return|field goal|fg|blocked [a-z]+ return)"
     r"(?:\s+from\s+(?P<passer>[^(]+?))?\s*(?:\((?P<extra>[^)]*)\))?\s*,?\s*$", re.IGNORECASE)
 
-# Plays built from the save have no yardage: "Jackson Holman touchdown catch from Tyler Hughes (kick)", "Field goal", "Safety"
-SAVE_PLAY_PATTERN = re.compile(r"^(?:(?P<player>.+?)\s+)?touchdown(?:\s+(?P<kind>run|catch|pass))?(?:\s+from\s+(?P<passer>[^(]+?))?\s*(?:\((?P<extra>[^)]*)\))?$",
-                               re.IGNORECASE)
+# Plays built from the save have no yardage: "Jackson Holman touchdown catch from Tyler Hughes (kick)", "Field goal", "Safety",
+# "Jo Smith interception return touchdown (kick)"
+SAVE_PLAY_PATTERN = re.compile(r"^(?:(?P<player>.+?)\s+)?(?:(?P<ret>interception|fumble|kickoff|punt) return\s+)?touchdown(?:\s+(?P<kind>run|catch|pass))?"
+                               r"(?:\s+from\s+(?P<passer>[^(]+?))?\s*(?:\((?P<extra>[^)]*)\))?$", re.IGNORECASE)
 
 def conversion_points(extra):
     extra = (extra or "").lower()
@@ -166,7 +167,8 @@ def parse_play(text):
             return {"player": None, "yards": None, "kind": "field goal", "passer": None, "points": 3}
         save = SAVE_PLAY_PATTERN.match(text)
         if save:
-            kind = {"catch": "pass", "pass": "pass", "run": "run"}.get((save.group('kind') or "").lower(), "touchdown")
+            kind = (f"{save.group('ret').lower()} return" if save.group('ret') else
+                    {"catch": "pass", "pass": "pass", "run": "run"}.get((save.group('kind') or "").lower(), "touchdown"))
             return {"player": (save.group('player') or "").strip() or None, "yards": None, "kind": kind,
                     "passer": (save.group('passer') or "").strip() or None, "points": 6 + conversion_points(save.group('extra'))}
         safety = "safety" in text.lower()
@@ -317,6 +319,62 @@ def scorer_text(row, previous, side, points, next_other=None):
         return f"Touchdown pass from {passer['name']}{extra}"
     return f"Touchdown{extra}"
 
+# A player's whole-game touchdowns by kind, from his stat line
+TOUCHDOWN_STATS = {"RUSHTDS": "run", "RECEIVETDS": "catch", "DSECINTTDS": "interception return", "DLINEFUMBLETDS": "fumble return",
+                   "KRETTDS": "kickoff return", "PRETTDS": "punt return"}
+
+def game_touchdowns(game_id, team_id):
+    """{(player name, kind): count} for one team in one game. The save writes a week's stat lines when the week
+    advances, so this is empty for the newest week's games until then."""
+    players = league.query_players()
+    counts = {}
+    for row in league.query_rows("SELECT player_id, stats_json FROM league_player_games WHERE game_id = ?", (game_id,)):
+        player = players.get(row['player_id'])
+        if not player or player['team_id'] != team_id:
+            continue
+        stats = json.loads(row['stats_json'] or "{}")
+        for stat, kind in TOUCHDOWN_STATS.items():
+            if stats.get(stat):
+                counts[(player['name'], kind)] = counts.get((player['name'], kind), 0) + stats[stat]
+    return counts
+
+def scored_kind(parsed):
+    return {"pass": "catch", "run": "run"}.get(parsed['kind'], parsed['kind'])
+
+def name_remaining_scorers(plays, touchdowns):
+    """Names the touchdowns the snapshots couldn't, from the game's stat lines. The scores already named are taken out
+    first; a play is then named only when exactly one player is left who could have scored it (never a guess)."""
+    left = dict(touchdowns)
+    unnamed = []
+    for p in plays:
+        parsed = parse_play(p['text'])
+        if parsed['points'] < 6:
+            continue
+        if not parsed['player']:
+            unnamed.append((p, parsed))
+            continue
+        # A named scorer uses up one of his touchdowns (of the named kind if he has one, otherwise any)
+        mine = [key for key in left if key[0] == parsed['player'] and left[key] > 0]
+        key = next((k for k in mine if k[1] == scored_kind(parsed)), mine[0] if mine else None)
+        if key:
+            left[key] -= 1
+    for p, parsed in unnamed:
+        # "Touchdown pass from X" was a catch; a plain "Touchdown" could be anything
+        candidates = [key for key, count in left.items() if count > 0 and (not parsed['passer'] or key[1] == "catch")]
+        if len(candidates) != 1:
+            continue
+        name, kind = candidates[0]
+        left[(name, kind)] -= 1
+        extra = re.search(r"\s*\([^)]*\)$", p['text'])
+        extra = extra.group(0) if extra else ""
+        if kind == "catch":
+            p['text'] = f"{name} touchdown catch" + (f" from {parsed['passer']}" if parsed['passer'] else "") + extra
+        elif kind == "run":
+            p['text'] = f"{name} touchdown run{extra}"
+        else:
+            p['text'] = f"{name} {kind} touchdown{extra}"
+    return plays
+
 def draft_from_save(game_id):
     """A review draft (same shape as the screenshot reading) built from a scoring summary captured from the save."""
     plays = league.query_game_scoring(game_id)
@@ -341,6 +399,8 @@ def draft_from_save(game_id):
         out.append({"quarter": min(row['quarter'], 5), "team": abbr[team_id], "text": scorer_text(row, previous[side], side, points, next_other),
                     "clock": clock_text(row['secondsLeft'])})
         previous[side] = row
+    for team_id in (game['home_id'], game['away_id']):
+        name_remaining_scorers([p for p in out if p['team'] == abbr[team_id]], game_touchdowns(game_id, team_id))
     draft_teams = [{"abbr": abbr[t['team_id']], "name": t['name'], "team_id": t['team_id']} for t in (away, home)]
     draft = build_draft(draft_teams, out, {abbr[game['away_id']].upper(): game['away_score'], abbr[game['home_id']].upper(): game['home_score']})
     save_draft(draft)

@@ -103,6 +103,47 @@ class ScorerText(unittest.TestCase):
         self.assertEqual(events.scorer_text({}, None, "home", 2), "Safety")
 
 
+class NameRemainingScorers(unittest.TestCase):
+    """Unnamed touchdowns are filled from the game's stat lines only when one player is left who could have scored."""
+
+    def plays(self, *texts):
+        return [{"team": "WYO", "text": text} for text in texts]
+
+    def test_single_candidate_is_named(self):
+        plays = self.plays("KJ Duff touchdown catch from AJ Surace (kick)", "Touchdown (kick)", "Field goal")
+        events.name_remaining_scorers(plays, {("KJ Duff", "catch"): 1, ("Tyler Cross", "run"): 1})
+        self.assertEqual(plays[1]['text'], "Tyler Cross touchdown run (kick)")
+        self.assertEqual(events.parse_play(plays[1]['text'])['points'], 7)
+
+    def test_same_player_twice(self):
+        plays = self.plays("Touchdown (kick)", "Touchdown (kick failed)")
+        events.name_remaining_scorers(plays, {("Tyler Cross", "run"): 2})
+        self.assertEqual([p['text'] for p in plays], ["Tyler Cross touchdown run (kick)", "Tyler Cross touchdown run (kick failed)"])
+
+    def test_two_candidates_stay_unnamed(self):
+        plays = self.plays("Touchdown (kick)", "Touchdown (kick)")
+        events.name_remaining_scorers(plays, {("Tyler Cross", "run"): 1, ("KJ Duff", "catch"): 1})
+        self.assertEqual([p['text'] for p in plays], ["Touchdown (kick)", "Touchdown (kick)"])
+
+    def test_pass_from_only_matches_receivers(self):
+        plays = self.plays("Touchdown pass from AJ Surace (kick)", "Touchdown (kick)")
+        events.name_remaining_scorers(plays, {("Tyler Cross", "run"): 1, ("KJ Duff", "catch"): 1})
+        self.assertEqual(plays[0]['text'], "KJ Duff touchdown catch from AJ Surace (kick)")
+        self.assertEqual(plays[1]['text'], "Tyler Cross touchdown run (kick)")
+
+    def test_return_touchdown(self):
+        plays = self.plays("Touchdown (kick)")
+        events.name_remaining_scorers(plays, {("Jo Smith", "interception return"): 1})
+        self.assertEqual(plays[0]['text'], "Jo Smith interception return touchdown (kick)")
+        parsed = events.parse_play(plays[0]['text'])
+        self.assertEqual((parsed['player'], parsed['kind'], parsed['points']), ("Jo Smith", "interception return", 7))
+
+    def test_no_stat_lines_changes_nothing(self):
+        plays = self.plays("Touchdown (kick)")
+        events.name_remaining_scorers(plays, {})
+        self.assertEqual(plays[0]['text'], "Touchdown (kick)")
+
+
 def save_row(quarter, seconds_left, home_before, away_before, home_after, away_after):
     return {"quarter": quarter, "secondsLeft": seconds_left, "homeBefore": home_before, "awayBefore": away_before,
             "homeAfter": home_after, "awayAfter": away_after, "home": [], "away": []}
@@ -116,6 +157,8 @@ class DraftFromSave(unittest.TestCase):
         conn.execute("DELETE FROM league_teams")
         conn.execute("DELETE FROM league_games")
         conn.execute("DELETE FROM game_scoring")
+        conn.execute("DELETE FROM league_players")
+        conn.execute("DELETE FROM league_player_games")
         conn.executemany("INSERT INTO league_teams (team_id, name, nickname, short_name) VALUES (?, ?, ?, ?)",
                          [(1, "Indiana", "Hoosiers", "IU"), (2, "Rutgers", "Scarlet Knights", "RU")])
         # Rutgers (home) 14, Indiana (away) 9
@@ -137,6 +180,19 @@ class DraftFromSave(unittest.TestCase):
         totals = {t['abbr']: t['total'] for t in draft['teams']}
         self.assertEqual(totals, {"IU": 9, "RU": 14})
         self.assertEqual(draft['warnings'], [])
+
+    def test_stat_lines_name_the_scorer(self):
+        conn = database.get_db_connection()
+        conn.execute("INSERT INTO league_players (player_id, name, position, team_id) VALUES ('p1', 'Tyler Cross', 'HB', 1)")
+        conn.execute("INSERT INTO league_player_games (player_id, game_id, week, stats_json) VALUES ('p1', 77, 3, ?)", (json.dumps({"RUSHTDS": 1}),))
+        conn.commit()
+        conn.close()
+        league.sync_scoring([{"homeId": 2, "awayId": 1, "homeScore": 14, "awayScore": 9,
+                              "plays": [save_row(1, 629, 0, 0, 0, 3), save_row(1, 582, 0, 3, 6, 3),
+                                        save_row(4, 120, 7, 3, 7, 9), save_row(4, 30, 7, 9, 13, 9)]}])
+        draft = events.draft_from_save(77)
+        self.assertEqual(draft['plays'][2]['text'], "Tyler Cross touchdown run (kick failed)")
+        self.assertEqual(draft['plays'][1]['text'], "Touchdown (kick)")  # Rutgers has no stat lines: left alone
 
 
 @unittest.skipUnless(os.path.exists(REAL_DB), "needs a synced dynasty_data.db")
