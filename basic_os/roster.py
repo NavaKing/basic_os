@@ -67,7 +67,8 @@ def initialize_roster_table():
     if "save_id" not in existing_cols:
         cursor.execute("ALTER TABLE team_roster ADD COLUMN save_id TEXT")
     # Player details shown on the depth chart tab
-    for col, col_type in (("overall", "INTEGER"), ("class_year", "TEXT"), ("height_in", "INTEGER"), ("weight_lb", "INTEGER"), ("portrait_file", "TEXT")):
+    for col, col_type in (("overall", "INTEGER"), ("class_year", "TEXT"), ("height_in", "INTEGER"), ("weight_lb", "INTEGER"), ("portrait_file", "TEXT"),
+                         ("redshirt", "TEXT"), ("transfer_chance", "INTEGER"), ("go_pro_chance", "INTEGER")):
         if col not in existing_cols:
             cursor.execute(f"ALTER TABLE team_roster ADD COLUMN {col} {col_type}")
     cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_team_roster_save_id ON team_roster(save_id)")

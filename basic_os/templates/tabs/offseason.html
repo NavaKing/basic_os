@@ -1,0 +1,106 @@
+{# Offseason: where the dynasty is in its year, who's leaving, the coaching carousel and Signing Day. Data from offseason.py #}
+{% from "macros/ui.html" import section_head %}
+{% set off = offseason_page %}
+{% set source_text = {'game': "The game's own list.", 'odds': "The game's own odds.",
+                      'estimate': "App estimate until the game works out its own odds at season's end."} %}
+
+{% macro player_rows(players, empty) %}
+{% if players %}
+<ul class="off-players">
+    {% for p in players %}
+    <li class="off-player">
+        <span class="headshot">{% if p.portrait %}<img src="{{ p.portrait }}" alt="" loading="lazy">{% endif %}</span>
+        <div class="off-player-id">
+            <div class="off-player-name">{{ p.name }}{% if p.starter %} <span class="off-tag">Starter</span>{% endif %}</div>
+            <div class="off-player-meta">{{ p.position }} &middot; #{{ p.jersey }} &middot; {{ p.class }} &middot; {{ p.overall }} OVR</div>
+            {% if p.note and p.note != 'Starter' %}<div class="off-player-note">{{ p.note }}</div>{% endif %}
+        </div>
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<p class="empty-note empty-note--compact">{{ empty }}</p>
+{% endif %}
+{% endmacro %}
+
+<section class="tab-panel" id="tab-offseason" role="tabpanel">
+    <div class="panel off-phase">
+        <div>
+            <div class="section-label">{{ off.phase.season_year or season_year }} dynasty year</div>
+            <h2 class="off-phase-title">{{ off.phase.label }}</h2>
+        </div>
+        <div class="off-windows">
+            {% for w in off.phase.windows %}<span class="off-window">{{ w }} open</span>{% else %}<span class="muted">No offseason windows open yet. This page fills in as the year turns over.</span>{% endfor %}
+        </div>
+    </div>
+
+    <div class="panel">
+        {{ section_head("Roster outlook", "Who's Leaving", aside=off.outlook.returning_starters ~ " of " ~ off.outlook.starters ~ " starters return") }}
+        <div class="off-grid">
+            <div>
+                <h4 class="off-col-title">Graduating seniors <span class="muted">{{ off.outlook.seniors|length }}</span></h4>
+                {{ player_rows(off.outlook.seniors, "No seniors on the roster.") }}
+            </div>
+            <div>
+                <h4 class="off-col-title">Draft watch <span class="muted">{{ off.outlook.draft|length }}</span></h4>
+                <p class="off-source">{{ source_text[off.outlook.draft_source] }}</p>
+                {{ player_rows(off.outlook.draft, "No junior is rated 80 or higher." if off.outlook.draft_source == 'estimate' else "Nobody is leaving early.") }}
+            </div>
+            <div>
+                <h4 class="off-col-title">Transfer watch <span class="muted">{{ off.outlook.transfer|length }}</span></h4>
+                <p class="off-source">{{ source_text[off.outlook.transfer_source] }}{% if off.outlook.transfer_source == 'estimate' %} First backups within 3 points of the starter ahead of them.{% endif %}</p>
+                {{ player_rows(off.outlook.transfer, "No backup looks blocked." if off.outlook.transfer_source == 'estimate' else "Nobody is transferring.") }}
+            </div>
+        </div>
+    </div>
+
+    <div class="awards-row">
+        <div class="panel">
+            {{ section_head("Around the league", "Coaching Carousel") }}
+            {% if off.carousel %}
+            <ul class="off-moves">
+                {% for m in off.carousel %}
+                <li class="off-move">
+                    {% if m.team.logo %}<img class="team-logo" src="{{ m.team.logo }}" alt="" data-team-id="{{ m.team.id }}">{% endif %}
+                    <div>
+                        <div class="off-player-name">{{ m.team.name }} &middot; {{ m.role }}</div>
+                        <div class="off-player-meta">
+                            {% if m.old and m.new %}{{ m.new }} replaces {{ m.old }}{% elif m.new %}{{ m.new }} hired{% else %}{{ m.old }} out, job open{% endif %}
+                            {% if m.from %} &middot; comes from {{ m.from.name }}{% endif %}
+                        </div>
+                    </div>
+                    <span class="off-when">{{ m.when }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="muted off-source">No coaching changes yet. The app compares every team's head coach and coordinators each time it syncs, so firings and hires show up here as the game makes them.</p>
+            {% endif %}
+            <h4 class="off-col-title off-col-title--spaced">On the hot seat</h4>
+            <ul class="off-moves">
+                {% for c in off.hot_seat %}
+                <li class="off-move">
+                    {% if c.logo %}<img class="team-logo" src="{{ c.logo }}" alt="" data-team-id="{{ c.team_id }}">{% endif %}
+                    <div><div class="off-player-name">{{ c.name }}</div><div class="off-player-meta">{{ c.team }} &middot; {{ c.record }}</div></div>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <article class="mag-issue aw-column">
+            <div class="mag-folio"><span>The Recruiting Desk</span><span>Class of {{ off.class_year or '' }}</span></div>
+            <h2 class="mag-slab aw-column-title" id="sd_title">{{ off.column.title if off.column else ('Signing Day' if off.signing else 'The Class of ' ~ (off.class_year or '')) }}</h2>
+            <div class="mag-body" id="sd_body">
+                {% if off.column %}
+                    {% for p in off.column.paragraphs %}<p{% if loop.first %} class="mag-dropcap"{% endif %}>{{ p }}</p>{% endfor %}
+                {% else %}
+                    <p class="mag-empty">{{ 'Write the Signing Day story from your class.' if off.signing else "Write a report on the class so far: commitments, the board and what Signing Day could bring." }}</p>
+                {% endif %}
+            </div>
+            <div class="aw-column-actions">
+                <button type="button" id="sd_generate">{{ ('Rewrite' if off.column else 'Write') ~ (' the Signing Day story' if off.signing else ' the class report') }}</button>
+                <div class="status-text" id="sd_status"></div>
+            </div>
+        </article>
+    </div>
+</section>
