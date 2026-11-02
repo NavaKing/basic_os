@@ -20,3 +20,9 @@
     .timeline::before { left: 23px; }
     .timeline-week { grid-template-columns: 50px minmax(0, 1fr); gap: 8px; }
 }
+
+/* Print and PDF links (printable issue) */
+.season-print { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.season-print .btn-secondary { text-decoration: none; font-family: var(--font-display); letter-spacing: 1px; text-transform: uppercase; border-radius: 6px; }
+.timeline-pdf { margin-top: 6px; font-family: var(--font-display); font-size: 10px; letter-spacing: 1px; color: var(--text-muted); text-decoration: none; }
+.timeline-pdf:hover { color: var(--gold); }

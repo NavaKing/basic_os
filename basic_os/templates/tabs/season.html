@@ -1,10 +1,14 @@
 {# Season: one printed magazine page per week, oldest first (data from timeline.py, layout in static/css/magazine.css) #}
-{% set beat_labels = {'started': 'Storyline begins', 'chapter': 'Storyline continues', 'resolved': 'Storyline ends'} %}
+{% from "macros/magazine.html" import issue %}
 
 <section class="tab-panel" id="tab-season" role="tabpanel">
     <div class="panel season-head">
         <h2 class="recap-title">{{ us.full_name }} &middot; {{ season_year }} Season</h2>
         <div class="recap-subtitle">{{ record }} &middot; every game, dispatch and storyline, one page per week</div>
+        <div class="season-print">
+            <a class="btn-secondary" href="/print.pdf" download>Download the season as a PDF</a>
+            <a class="btn-secondary" href="/print" target="_blank" rel="noopener">Print view</a>
+        </div>
     </div>
 
     <ol class="timeline">
@@ -13,123 +17,10 @@
             <div class="timeline-marker">
                 <span class="timeline-week-label">WK {{ e.week }}</span>
                 {% if e.result %}<span class="timeline-result timeline-result--{{ e.result.outcome|lower }}">{{ e.result.outcome }}</span>{% else %}<span class="timeline-result">NEXT</span>{% endif %}
+                <a class="timeline-pdf" href="/print.pdf?week={{ e.week }}" download title="Download Week {{ e.week }} as a PDF">PDF</a>
             </div>
 
-            <article class="mag-issue">
-                <div class="mag-folio">
-                    <span>The {{ us.name }} Dispatch &middot; {{ e.date_text or 'Date TBD' }}</span>
-                    <span>Week {{ e.week }} {% if e.rivalry %}Rivalry Edition &middot; {{ e.rivalry }}{% else %}Edition{% endif %}</span>
-                </div>
-
-                <div class="mag-top">
-                    <div class="mag-top-text">
-                        <h3 class="mag-kicker-headline">{{ us.name }} {{ e.venue }} <span class="team-link"{% if e.opponent_id %} data-team-id="{{ e.opponent_id }}"{% endif %}>{{ e.opponent }}</span>{% if e.player %}, featuring {{ e.player.name }}{% endif %}</h3>
-                        <p class="mag-byline">By The {{ us.name }} Dispatch</p>
-                    </div>
-                    <div class="mag-badge{{ ' mag-badge--' ~ e.result.outcome|lower if e.result else '' }}">
-                        <span class="mag-badge-top">{{ 'Final' if e.result else 'Up next' }}</span>
-                        <span class="mag-badge-main">{{ e.result.outcome ~ ' ' ~ e.result.score if e.result else 'WK ' ~ e.week }}</span>
-                        <span class="mag-badge-bottom">{{ 'AP No. ' ~ e.rank_after if e.rank_after else ('Home' if e.venue == 'vs' else 'Road') }}</span>
-                    </div>
-                </div>
-
-                <div class="mag-grid">
-                    {# Left: numbered storyline items and the campus feed bubble #}
-                    <div class="mag-col mag-col--left">
-                        <h4 class="mag-feature-title">The Week in the Locker Room</h4>
-                        {% if e.beats %}
-                        <ol class="mag-numbered">
-                            {% for b in e.beats[:3] %}
-                            <li>
-                                <div class="mag-numbered-kicker">{{ beat_labels[b.kind] }}</div>
-                                <div class="mag-numbered-title">{{ b.title }}</div>
-                                <p>{{ b.text|truncate(170) }}</p>
-                            </li>
-                            {% endfor %}
-                        </ol>
-                        {% else %}
-                        <p class="mag-small">Quiet week in the locker room.</p>
-                        {% endif %}
-                        {% if e.posts %}
-                        <div class="mag-bubble">
-                            {% for post in e.posts %}<div class="mag-post"><b>{{ post.handle }}</b>{{ post.text }}</div>{% endfor %}
-                        </div>
-                        {% endif %}
-                    </div>
-
-                    {# Center: the slab headline and the dispatch #}
-                    <div class="mag-col mag-col--center">
-                        <h2 class="mag-slab">{{ e.headline }}</h2>
-                        <div class="mag-strap">{{ 'Game week dispatch' if e.story else 'From the press box' }} &middot; {{ e.date_text or 'Date TBD' }}</div>
-                        {% if e.story and e.story.image %}
-                        <figure class="mag-figure">
-                            <img src="{{ url_for('static', filename=e.story.image) }}" alt="" loading="lazy">
-                            <figcaption>{{ us.full_name }} {{ 'take the field' if e.venue == 'vs' else 'on the road' }}, Week {{ e.week }}</figcaption>
-                        </figure>
-                        {% endif %}
-                        {% if e.story %}
-                        <div class="mag-body{{ ' mag-body--columns' if e.story.paragraphs|length > 1 or (e.story.paragraphs[0]|length) > 500 else '' }}">
-                            {% for p in e.story.paragraphs %}<p{% if loop.first %} class="mag-dropcap"{% endif %}>{{ p }}</p>{% endfor %}
-                        </div>
-                        {% elif e.played %}
-                        <p class="mag-empty">No dispatch was written for this week.</p>
-                        {% else %}
-                        <p class="mag-empty">The preview appears here after the next hub generation.</p>
-                        {% endif %}
-
-                        {% if e.photos|length > 1 %}
-                        <div class="mag-photo-pair">
-                            {% for photo in e.photos[:2] %}<img src="{{ url_for('static', filename=photo) }}" alt="" loading="lazy">{% endfor %}
-                        </div>
-                        {% endif %}
-
-                        {% if e.player %}
-                        <div class="mag-player">
-                            <span class="headshot">{% if e.player.portrait %}<img src="{{ e.player.portrait }}" alt="" loading="lazy">{% endif %}</span>
-                            <div>
-                                <h4 class="mag-feature-title mag-feature-title--slab">Player of the Game</h4>
-                                <div class="mag-player-name">{{ e.player.name }}</div>
-                                <div class="mag-player-line">{{ e.player.position }} &middot; {{ e.player.line }}</div>
-                            </div>
-                        </div>
-                        {% endif %}
-                    </div>
-
-                    {# Right: game file and the photo stack #}
-                    <div class="mag-col mag-col--right">
-                        <h4 class="mag-feature-title">The Game File</h4>
-                        <div class="mag-facts">
-                            <div><b>Opponent</b>{{ e.opponent }}</div>
-                            <div><b>Date</b>{{ e.date_text or 'TBD' }}</div>
-                            <div><b>Site</b>{{ 'Home' if e.venue == 'vs' else 'Away' }}</div>
-                            <div><b>Result</b>{% if e.result %}{{ e.result.outcome }} {{ e.result.score }}{% else %}Not played yet{% endif %}</div>
-                            {% if e.rank_after %}<div><b>AP poll</b>No. {{ e.rank_after }} after this week</div>{% endif %}
-                        </div>
-                        {% if e.top_post %}<p class="mag-small"><i>&ldquo;{{ e.top_post.text }}&rdquo;</i> &mdash; {{ e.top_post.by }}</p>{% endif %}
-                        {% set stack = e.photos[2:] if e.photos|length > 1 else e.photos %}
-                        {% if stack %}
-                        <div class="mag-photo-stack">
-                            {% for photo in stack %}<img src="{{ url_for('static', filename=photo) }}" alt="" loading="lazy">{% endfor %}
-                        </div>
-                        {% endif %}
-                    </div>
-                </div>
-
-                {% if e.beats|length > 3 %}
-                <section class="mag-section">
-                    <h3 class="mag-section-title">More From the Locker Room</h3>
-                    <div class="mag-cards">
-                        {% for b in e.beats[3:] %}
-                        <article class="mag-card mag-card--{{ b.kind }}">
-                            <div class="mag-card-kicker">{{ beat_labels[b.kind] }}</div>
-                            <h4 class="mag-card-title">{{ b.title }}</h4>
-                            <p class="mag-card-text">{{ b.text }}</p>
-                        </article>
-                        {% endfor %}
-                    </div>
-                </section>
-                {% endif %}
-            </article>
+            {{ issue(e, us) }}
         </li>
         {% else %}
         <li class="empty-note">The timeline fills in as the season is played.</li>

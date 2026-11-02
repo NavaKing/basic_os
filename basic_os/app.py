@@ -25,9 +25,10 @@ import players
 import rivals
 import presser
 import history
+import printing
 import os
 from urllib.parse import urlsplit
-from flask import Flask, render_template, request, jsonify, send_from_directory, abort, url_for
+from flask import Flask, Response, render_template, request, jsonify, send_from_directory, abort, url_for
 
 app = Flask(__name__)
 # Screenshots for the podcast arrive as base64 images; nothing legitimate comes close to this
@@ -183,6 +184,28 @@ def team_detail(team_id):
 def player_profile(player_id):
     profile = players.build_profile(player_id)
     return jsonify(profile) if profile else (jsonify({"error": "No player with that id."}), 404)
+
+# ---------- Printable issue ----------
+
+@app.route('/print')
+def print_issue():
+    week = request.args.get('week', type=int)  # one week, or the whole season without it
+    entries = [e for e in timeline.build_timeline() if week is None or e['week'] == week]
+    wins, losses = database.query_season_record()
+    return render_template('print.html', us=user_team_view(), entries=entries, week=week, record=f"{wins}-{losses}",
+                           season_year=season_year(database.query_full_schedule()))
+
+@app.route('/print.pdf')
+def print_pdf():
+    week = request.args.get('week', type=int)
+    us = team.user_team()
+    year = season_year(database.query_full_schedule())
+    try:
+        pdf = printing.render_pdf(url_for('print_issue', week=week, _external=True))
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    name = re.sub(r"[^A-Za-z0-9]+", "-", f"{us['name']} {year} {'Week ' + str(week) if week is not None else 'Season'}").strip("-")
+    return Response(pdf, mimetype="application/pdf", headers={"Content-Disposition": f'attachment; filename="{name}.pdf"'})
 
 @app.route('/recap/<int:week>')
 def weekly_recap(week):
