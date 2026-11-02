@@ -42,8 +42,10 @@ function playerCard(title, player) {
         '<div class="player-hero" data-color="' + esc(player.team.color || '') + '">' +
             avatar(player.portrait, player.first_name.charAt(0) + player.last_name.charAt(0), 'player-avatar') +
             '<div class="player-id">' +
-                '<div class="player-first">' + esc(player.first_name) + '</div>' +
-                '<div class="player-last">' + esc(player.last_name) + '</div>' +
+                '<div class="player-name-link" data-player-id="' + esc(player.id) + '">' +
+                    '<div class="player-first">' + esc(player.first_name) + '</div>' +
+                    '<div class="player-last">' + esc(player.last_name) + '</div>' +
+                '</div>' +
                 '<div class="player-meta">' + esc(player.position) + ' | ' + esc(player.team.name) + ' &middot; ' + esc(player.class) + '</div>' +
                 '<div class="player-result">' +
                     '<span class="result-' + (result.outcome === 'W' ? 'win' : 'loss') + '">' + esc(result.outcome) + ' ' + esc(result.score) + '</span> ' +
@@ -125,7 +127,7 @@ function heismanCard(rows) {
     const movement = m => m > 0 ? '<span class="swing-up">&#9650;' + m + '</span>' : (m < 0 ? '<span class="swing-down">&#9660;' + (-m) + '</span>' : '<span class="muted">&mdash;</span>');
     const body = rows.length ? '<ol class="heisman-list">' + rows.map(h =>
         '<li><span class="list-seed">' + esc(h.rank) + '</span>' +
-        '<div class="list-main">' + avatar(h.portrait, '', 'heisman-avatar') + teamChip(h.team) + '<div><div class="heisman-name">' + esc(h.name) + '</div><div class="list-sub">' + esc(h.position) + ' | ' + esc(h.team.name) + '</div></div></div>' +
+        '<div class="list-main">' + avatar(h.portrait, '', 'heisman-avatar') + teamChip(h.team) + '<div><div class="heisman-name" data-player-id="' + esc(h.id) + '">' + esc(h.name) + '</div><div class="list-sub">' + esc(h.position) + ' | ' + esc(h.team.name) + '</div></div></div>' +
         '<div class="stat-boxes stat-boxes--inline">' + h.boxes.map(b =>
             '<div class="stat-box"><div class="stat-box-value">' + esc(b.value) + '</div><div class="stat-box-label">' + esc(b.label) + '</div></div>').join('') + '</div>' +
         '<span class="heisman-move">' + movement(h.movement) + '</span></li>'

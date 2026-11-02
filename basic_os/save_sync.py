@@ -160,7 +160,8 @@ def sync_roster(dynasty):
             rows.append((p['id'], p['name'], position, p.get('jersey'), health_status, injury_type, duration, f"{position}{rank}",
                          p.get('overall'), p.get('classYear'), p.get('heightInches'), p.get('weightPounds'),
                          media.player_portrait_file(p.get('assetName'), p.get('headAsset')),
-                         p.get('redshirt'), p.get('transferChance'), p.get('goProChance')))
+                         p.get('redshirt'), p.get('transferChance'), p.get('goProChance'),
+                         p.get('hometown'), p.get('homeState'), p.get('stars'), p.get('devTrait'), p.get('nil'), int(bool(p.get('captain')))))
 
     conn = roster.get_connection()
     # Drop placeholder players and anyone who has left the team in the save
@@ -168,15 +169,18 @@ def sync_roster(dynasty):
     conn.execute(f"DELETE FROM team_roster WHERE save_id IS NULL OR save_id NOT IN ({','.join('?' * len(synced_ids))})", synced_ids)
     conn.executemany("""
         INSERT INTO team_roster (save_id, player_name, position, jersey_num, health_status, injury_type, duration_weeks, depth_slot,
-                                 overall, class_year, height_in, weight_lb, portrait_file, redshirt, transfer_chance, go_pro_chance)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                 overall, class_year, height_in, weight_lb, portrait_file, redshirt, transfer_chance, go_pro_chance,
+                                 hometown, home_state, stars, dev_trait, nil_value, captain)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(save_id) DO UPDATE SET
             player_name = excluded.player_name, position = excluded.position, jersey_num = excluded.jersey_num,
             health_status = excluded.health_status, injury_type = excluded.injury_type,
             duration_weeks = excluded.duration_weeks, depth_slot = excluded.depth_slot,
             overall = excluded.overall, class_year = excluded.class_year, height_in = excluded.height_in, weight_lb = excluded.weight_lb,
             portrait_file = excluded.portrait_file, redshirt = excluded.redshirt,
-            transfer_chance = excluded.transfer_chance, go_pro_chance = excluded.go_pro_chance
+            transfer_chance = excluded.transfer_chance, go_pro_chance = excluded.go_pro_chance,
+            hometown = excluded.hometown, home_state = excluded.home_state, stars = excluded.stars,
+            dev_trait = excluded.dev_trait, nil_value = excluded.nil_value, captain = excluded.captain
     """, rows)
     
     # Replace this season's stat lines; a player can have several records per game (e.g. offense + returns)

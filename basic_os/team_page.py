@@ -42,7 +42,7 @@ def top_players(team_id):
     players = league.query_players()
     totals = season_totals(league.query_team_player_games(team_id))
     ranked = sorted(totals.items(), key=lambda item: recap.production_score(item[1]), reverse=True)[:TOP_PLAYERS]
-    return [{"name": players[pid]['name'], "position": players[pid]['position'], "class": recap.class_label(players[pid]),
+    return [{"id": pid, "name": players[pid]['name'], "position": players[pid]['position'], "class": recap.class_label(players[pid]),
              "jersey": players[pid]['jersey'], "portrait": media.portrait_url("player", players[pid].get('portrait_file')),
              "line": roster.format_stat_line(stats),
              "boxes": [{"label": label, "value": value} for label, value in recap.stat_boxes(stats)]}

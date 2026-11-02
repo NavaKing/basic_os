@@ -57,6 +57,11 @@ try {
   if (!userTeam) throw new Error('Could not find the user-controlled team in this save');
 
   const playerId = (player) => `${playerTable.header.tableId}:${player.index}`;
+  // Where a player is from and how he was recruited (player profiles)
+  const STARS = { ONE_STAR: 1, TWO_STAR: 2, THREE_STAR: 3, FOUR_STAR: 4, FIVE_STAR: 5 };
+  const background = (player) => ({
+    hometown: player.PLYR_HOME_TOWN || '', homeState: player.PLYR_HOME_STATE || '', stars: STARS[player.ProspectStarRating] ?? null
+  });
   const clean = (value) => value === 'Invalid_' ? '' : (value || '');
 
   // Stat records point at tables we haven't read yet (GameOffensiveStats, GameDefensiveStats, ...)
@@ -113,6 +118,8 @@ try {
       minInjuryDuration: player.MinInjuryDuration ?? null,
       maxInjuryDuration: player.MaxInjuryDuration ?? null,
       redshirt: clean(player.RedshirtStatus),
+      ...background(player),
+      devTrait: clean(player.TraitDevelopment), nil: player.CurrentNILCompensation ?? null, captain: Boolean(player.PLYR_ISCAPTAIN),
       // The game's own odds (0-100) that he transfers or turns pro after the season
       transferChance: player.AbsoluteTransferChance ?? null,
       goProChance: player.AbsoluteGoProChance ?? null,
@@ -299,6 +306,7 @@ try {
         jersey: player.JerseyNum ?? null,
         assetName: clean(player.PLYR_ASSETNAME),
         headAsset: clean(player.GenericHeadAssetName),
+        ...background(player),
         teamId: team.index,
         games
       });
@@ -511,7 +519,6 @@ try {
   // ---------- Recruiting: our board, our commits and the top national prospects ----------
   // Recruiting refers to teams by the team's TeamIndex field, not its row, so translate back to our team ids
   const teamIdByIndex = new Map(teamTable.records.filter(live).map((team) => [team.TeamIndex, team.index]));
-  const STARS = { ONE_STAR: 1, TWO_STAR: 2, THREE_STAR: 3, FOUR_STAR: 4, FIVE_STAR: 5 };
   const recordsOf = async (owner, key) => {
     const list = owner && await recordFromAny(ref(owner, key));
     const rows = [];

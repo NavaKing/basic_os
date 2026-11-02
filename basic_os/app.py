@@ -21,6 +21,7 @@ import podcast
 import backups
 import awards
 import offseason
+import players
 import os
 from urllib.parse import urlsplit
 from flask import Flask, render_template, request, jsonify, send_from_directory, abort, url_for
@@ -171,6 +172,11 @@ def portrait(kind, file_name):
 def team_detail(team_id):
     page = team_page.build_team_page(team_id)
     return jsonify(page) if page else (jsonify({"error": "Unknown team"}), 404)
+
+@app.route('/player/<player_id>')
+def player_profile(player_id):
+    profile = players.build_profile(player_id)
+    return jsonify(profile) if profile else (jsonify({"error": "No player with that id."}), 404)
 
 @app.route('/recap/<int:week>')
 def weekly_recap(week):

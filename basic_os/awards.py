@@ -9,6 +9,11 @@ import recap
 # (a projected 12-team playoff bracket until the game sets the real one, plus every bowl on the schedule).
 
 ALL_AMERICA = re.compile(r"^ALL_AM_(1ST|2ND)(_PRE)?(_CONF)?$")
+# Display names where the save's short name would mislead ("All-American" reads as the national honor)
+CONFERENCE_NAMES = {"American": "American Athletic"}
+
+def conference_label(name):
+    return CONFERENCE_NAMES.get(name, name)
 POSITION_ORDER = ["QB", "HB", "FB", "WR", "TE", "LT", "LG", "C", "RG", "RT", "LEDG", "LE", "DT", "RE", "REDG",
                   "SAM", "LOLB", "MIKE", "MLB", "WILL", "ROLB", "CB", "FS", "SS", "K", "P", "KR", "PR", "ATH"]
 
@@ -43,7 +48,7 @@ def position_key(position):
 
 def player_view(row, teams, user_id):
     team = teams.get(row['team_id'])
-    return {"name": row['name'], "position": row['position'], "jersey": row['jersey'], "overall": row['overall'],
+    return {"id": row['player_id'], "name": row['name'], "position": row['position'], "jersey": row['jersey'], "overall": row['overall'],
             "class": recap.class_label(row), "portrait": media.portrait_url("player", row['portrait_file']),
             "team": recap.team_view(team) if team else None, "ours": row['team_id'] == user_id}
 
@@ -62,7 +67,7 @@ def all_america(rows, teams, user_id, user_conference):
         for side in group.values():
             side.sort(key=lambda p: position_key(p['position']))
     national = groups.pop(None, None)
-    conferences = [{"name": name, **group} for name, group in groups.items() if name]
+    conferences = [{"name": name, "label": conference_label(name), **group} for name, group in groups.items() if name]
     conferences.sort(key=lambda c: (c['name'] != user_conference, c['name']))
     return {"stage": "Final" if final else "Preseason", "national": national, "conferences": conferences,
             "ours": sum(p['ours'] for g in [national or {}] + conferences for side in ("first", "second") for p in g.get(side, []))}
