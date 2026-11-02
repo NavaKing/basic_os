@@ -1,6 +1,6 @@
-# BASIC_OS: a College Football 27 Dynasty Companion
+# BASIC_OS: a CFB27 Dynasty Companion
 
-BASIC_OS is a local web app that turns your **EA SPORTS College Football 27** dynasty into a living sports-media world.
+BASIC_OS is a local web app that turns your **CFB27** dynasty into a living sports-media world.
 It reads your dynasty save file directly, then uses local AI to write articles, social posts, storylines, game plans,
 coach quotes and a two-host podcast about your team, illustrated with AI photos that use your players' real faces.
 
@@ -61,7 +61,7 @@ save_reader/read_dynasty.mjs  ──JSON──▶  Flask app (app.py)  ◀──
 | Windows 10/11 | Paths and the launcher assume Windows. |
 | Python 3.13 | `pip install -r requirements.txt` (Flask, requests, edge-tts). |
 | Node.js 20+ | For the save reader (`npm install` in `basic_os/save_reader`). |
-| EA SPORTS College Football 27 | A dynasty save in `Documents\EA SPORTS College Football 27\saves`. |
+| CFB27 (the game) | A dynasty save in `Documents\EA SPORTS College Football 27\saves`. |
 | [Ollama](https://ollama.com) | A text model (tested with `gemma3:12b`) and a **vision** model for the podcast screenshots (tested with `cfb-gemma`, a Gemma 3 build with vision). |
 | [ComfyUI](https://github.com/comfyanonymous/ComfyUI) portable + FLUX.1 schnell | `flux1-schnell-fp8.safetensors` in `ComfyUI\models\checkpoints`. Optional: without it, posts and stories have no photos. |
 | ReActor (optional) | Face swap for player photos; install with `install_face_swap.ps1`. |
@@ -150,7 +150,8 @@ Created at runtime and kept out of git: `dynasty_data.db`, `static/generated/` (
 
 ## Notes and limits
 
-* **Unofficial.** BASIC_OS is a fan project and is not affiliated with or endorsed by Electronic Arts, the NCAA, ESPN or any school.
+* **Unofficial.** BASIC_OS is a free fan project and is not affiliated with or endorsed by Electronic Arts, the NCAA, ESPN or any school.
+  "CFB27" refers to EA SPORTS College Football 27, a trademark of Electronic Arts, named only to say which game this works with.
   Team logos are trademarks of their schools and are downloaded locally for personal use only; they are not distributed here.
 * **AI output is fiction.** Articles, social posts, coach quotes and podcasts are written by a local model for your dynasty and
   are not real statements. The prompts are grounded in save data, but small models still make occasional mistakes.
@@ -159,6 +160,19 @@ Created at runtime and kept out of git: `dynasty_data.db`, `static/generated/` (
   since the save has none of them.
 * The save format is reverse-engineered (madden-franchise schema `C27_468_2`); a game update can change it. Coach records have no
   schema yet, so a few coach fields are read by position (see the comments in `read_dynasty.mjs`).
+
+## License and notices
+
+The BASIC_OS code is released under the [MIT License](LICENSE). That covers this repository's code only:
+
+* **No game content is included.** No EA files, save data, logos, portraits, generated images or audio are in this repository.
+  You need your own copy of the game and your own save.
+* **Generated content is for personal use.** The app can produce photos with real college athletes' faces and invented quotes
+  attributed to real coaches. Keep that output private; don't publish, sell or present it as real.
+* **The face-swap model is non-commercial.** `install_face_swap.ps1` downloads `inswapper_128.onnx` from InsightFace, whose license
+  allows non-commercial research use only. Face-swapped photos must not be used commercially.
+* **Third-party services** (Ollama models, ComfyUI, FLUX.1 schnell, Microsoft's voices through edge-tts, ESPN's public team data)
+  come with their own terms. Follow them; this project doesn't grant any rights to them.
 
 ## Credits
 
