@@ -169,7 +169,17 @@ Created at runtime and kept out of git: `dynasty_data.db`, `static/generated/` (
 
 ## Branches
 
-Work for each month happens on a branch named after it (currently `november-2026`) and is merged into `main` at the end of the month.
+```
+main
+ └─ november-2026                      the current month's branch (never edited directly)
+     ├─ feature/<short-description>    new features
+     └─ DE/<short-description>         defect fixes
+```
+
+1. Every change starts on its own branch made from the current month's branch: `feature/...` for new work, `DE/...` for defects.
+2. When it's finished, it is merged back into the month branch with a merge commit (`git merge --no-ff`), so each change shows in the history.
+3. When a new month starts, the previous month's branch is merged into `main`, and the next month's branch (e.g. `december-2026`) is made from `main`.
+4. No branches are deleted. Month, feature and DE branches all stay, locally and on GitHub, as a record of what changed and why.
 
 ## License and notices
 
