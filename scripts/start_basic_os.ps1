@@ -5,7 +5,7 @@
 param([switch]$NoBrowser)
 
 $ErrorActionPreference = 'Stop'
-$AppDir     = Join-Path $PSScriptRoot 'basic_os'
+$AppDir     = Join-Path (Split-Path $PSScriptRoot -Parent) 'basic_os'
 $ComfyDir   = if ($env:COMFYUI_DIR) { $env:COMFYUI_DIR } else { Join-Path $HOME 'ComfyUI_windows_portable' }
 $OllamaApp  = Join-Path $env:LOCALAPPDATA 'Programs\Ollama\ollama app.exe'
 $AppUrl     = 'http://127.0.0.1:5000'

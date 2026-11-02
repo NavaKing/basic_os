@@ -64,7 +64,7 @@ save_reader/read_dynasty.mjs  ──JSON──▶  Flask app (app.py)  ◀──
 | CFB27 (the game) | A dynasty save in `Documents\EA SPORTS College Football 27\saves`. |
 | [Ollama](https://ollama.com) | A text model (tested with `gemma3:12b`) and a **vision** model for the podcast screenshots (tested with `cfb-gemma`, a Gemma 3 build with vision). |
 | [ComfyUI](https://github.com/comfyanonymous/ComfyUI) portable + FLUX.1 schnell | `flux1-schnell-fp8.safetensors` in `ComfyUI\models\checkpoints`. Optional: without it, posts and stories have no photos. |
-| ReActor (optional) | Face swap for player photos; install with `install_face_swap.ps1`. |
+| ReActor (optional) | Face swap for player photos; install with `scripts\install_face_swap.ps1`. |
 | Player & coach portrait packs (optional) | The SMG CFB27 portrait packs (`Player Portraits`, `coachportraits`). Without them, avatars fall back to initials. |
 | GPU | An NVIDIA GPU with plenty of VRAM is recommended (developed on an RTX 5090); the app unloads the text model before rendering images. |
 
@@ -93,13 +93,13 @@ Pull the Ollama models you want to use, for example `ollama pull gemma3:12b`.
 Optional face swap (close ComfyUI first):
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File ..\install_face_swap.ps1
+powershell -ExecutionPolicy Bypass -File ..\scripts\install_face_swap.ps1
 ```
 
 ## Running
 
 Double-click **`Start BASIC_OS.bat`**. It starts Ollama, ComfyUI and the app (skipping anything already running) and opens
-<http://127.0.0.1:5000>. Or run it by hand:
+<http://127.0.0.1:5000>. Double-click **`Stop BASIC_OS.bat`** to shut down the app and its background ComfyUI (Ollama keeps running for other apps). Or run it by hand:
 
 ```powershell
 cd basic_os
@@ -122,8 +122,8 @@ Per-team flavour for the AI (the program's identity line and hashtag) lives in `
 ## Project layout
 
 ```
-Start BASIC_OS.bat / start_basic_os.ps1   one-click launcher
-install_face_swap.ps1                      ReActor installer for ComfyUI
+Start BASIC_OS.bat / Stop BASIC_OS.bat    double-click to start or stop everything
+scripts/                                   the launchers' PowerShell scripts and the ReActor installer
 requirements.txt
 basic_os/
   app.py                 Flask routes
@@ -170,7 +170,7 @@ That covers this repository's code only:
   You need your own copy of the game and your own save.
 * **Generated content is for personal use.** The app can produce photos with real college athletes' faces and invented quotes
   attributed to real coaches. Keep that output private; don't publish, sell or present it as real.
-* **The face-swap model is non-commercial.** `install_face_swap.ps1` downloads `inswapper_128.onnx` from InsightFace, whose license
+* **The face-swap model is non-commercial.** `scripts\install_face_swap.ps1` downloads `inswapper_128.onnx` from InsightFace, whose license
   allows non-commercial research use only. Face-swapped photos must not be used commercially.
 * **Third-party services** (Ollama models, ComfyUI, FLUX.1 schnell, Microsoft's voices through edge-tts, ESPN's public team data)
   come with their own terms. Follow them; this project doesn't grant any rights to them.
