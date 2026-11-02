@@ -294,6 +294,13 @@ def generate_podcast():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/podcast/weekly/generate', methods=['POST'])
+def generate_weekly_podcast():
+    try:
+        return jsonify(podcast.generate_weekly_episode(request.json.get('model', 'gemma3:12b'), request.json.get('week'), request.json.get('hosts')))
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @app.route('/podcast/<int:episode_id>/record', methods=['POST'])
 def retry_podcast_recording(episode_id):
     try:

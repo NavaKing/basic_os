@@ -215,7 +215,8 @@ def spoken_names(text):
 
 SPOKEN_RULES = ("This is read aloud by a text-to-speech voice, so write only spoken words: no stage directions, sound effects, asterisks, emoji or brackets. "
                 "Say scores as 'thirty-five to twenty-one' style numbers or '35 to 21', never '35-21'. Write 'yards', never 'Yd'. "
-                "Every player is a man; use he/him. Use only the facts given: never invent stats, injuries, quotes or plays.")
+                "Every player is a man; use he/him. Use only the facts given: never invent stats, scores, injuries, quotes, plays or places. "
+                "No sponsor reads or ad breaks.")
 
 SHOW_NAME = "Between the Numbers"
 
@@ -245,29 +246,61 @@ def segments(ours, theirs):
 
 MAX_LINE_SENTENCES = 3
 
+# Numbers check: small models drift into made-up scores ("forty-five to twenty") even with the facts in front of them.
+# A line that states a number the facts don't contain is dropped. Small numbers (0-4) are everyday words ("one of the best").
+NUMBER_WORDS = {w: i for i, w in enumerate("zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen "
+                                            "fifteen sixteen seventeen eighteen nineteen".split())}
+TENS = {"twenty": 20, "thirty": 30, "forty": 40, "fifty": 50, "sixty": 60, "seventy": 70, "eighty": 80, "ninety": 90}
+CHECKED_FROM = 5
+
+def spoken_numbers(text):
+    """Every number in the text, written as digits ('227', '1,200') or words ('forty-five', 'eighteen')."""
+    found = {int(n.replace(",", "")) for n in re.findall(r"\d[\d,]*", text)}
+    compound = re.compile(r"\b(" + "|".join(TENS) + r")(?:[- ](one|two|three|four|five|six|seven|eight|nine))?\b")
+    for tens, ones in compound.findall(text.lower()):
+        found.add(TENS[tens] + (NUMBER_WORDS[ones] if ones else 0))
+    rest = compound.sub(" ", text.lower())  # so the "five" in "forty-five" isn't counted again
+    for word in re.findall(r"\b(" + "|".join(NUMBER_WORDS) + r")\b", rest):
+        found.add(NUMBER_WORDS[word])
+    return found
+
+def invented_numbers(text, allowed):
+    return sorted(n for n in spoken_numbers(text) if n >= CHECKED_FROM and n not in allowed)
+
 def is_repeat(text, lines):
     """True when a line says (nearly) the same thing as one already in the script."""
     import difflib
     key = re.sub(r"[^a-z0-9 ]", "", text.lower())
     return any(difflib.SequenceMatcher(None, key, re.sub(r"[^a-z0-9 ]", "", l['text'].lower())).ratio() > 0.8 for l in lines)
 
-def write_script(selected_model, hosts, ours, theirs, week, facts):
-    """Writes the show one segment at a time (small models write short, repetitive scripts when asked for it all at once)."""
-    import ai_engine
+def show_setup(hosts, about, welcome):
+    """The part of every segment prompt that describes the show and its hosts."""
     a, b = hosts
-    us_name, them_name = spoken_names(ours['name']), spoken_names(theirs['name'])
-    welcome = welcome_line(hosts, ours, theirs)
-    show = (f"You write {SHOW_NAME}, a two-host college football podcast, this episode about {us_name}'s Week {week} game against {them_name} "
-            f"(final: {us_name} {ours['final']}, {them_name} {theirs['final']}). "
+    return (f"You write {about}. "
             f"Host 0 is {a['name']}, the {a['role']}. Host 1 is {b['name']}, the {b['role']}. They are friends: they banter, "
             "disagree a little, ask each other questions and build on each other's points. Lines are short and conversational, "
             f"and the show is family friendly. Host 0 has already opened the show with: \"{welcome}\" "
             f"Nobody welcomes the listeners or introduces the hosts again. {SPOKEN_RULES}")
+
+def write_script(selected_model, hosts, ours, theirs, week, facts):
+    """A game episode: one game, both teams' numbers."""
+    us_name, them_name = spoken_names(ours['name']), spoken_names(theirs['name'])
+    welcome = welcome_line(hosts, ours, theirs)
+    about = (f"{SHOW_NAME}, a two-host college football podcast, this episode about {us_name}'s Week {week} game against {them_name} "
+             f"(final: {us_name} {ours['final']}, {them_name} {theirs['final']})")
+    return write_show(selected_model, hosts, show_setup(hosts, about, welcome), welcome, segments(us_name, them_name), facts,
+                      f"Week {week}: {us_name} vs {them_name}")
+
+def write_show(selected_model, hosts, show, welcome, running_order, facts, fallback_title):
+    """Writes the show one segment at a time (small models write short, repetitive scripts when asked for it all at once)."""
+    import ai_engine
+    a, b = hosts
     lines, title, summary = [{"host": 0, "text": welcome}], None, None
-    for index, (topic, fact_topics, count) in enumerate(segments(us_name, them_name)):
+    allowed = spoken_numbers(" ".join(text for _, text in facts) + " " + show)
+    for index, (topic, fact_topics, count) in enumerate(running_order):
         segment_facts = " ".join(text for t, text in facts if t in fact_topics) or "No extra facts: keep it general and don't invent any."
         first_host = (index + 1) % 2  # host 0 said the welcome, so host 1 answers it
-        covered = "; ".join(seg[0] for seg in segments(us_name, them_name)[:index]) or "nothing yet (this opens the show)"
+        covered = "; ".join(seg[0] for seg in running_order[:index]) or "nothing yet (this opens the show)"
         prompt = (f"{show} Facts for this segment (the only facts you may use): {segment_facts} "
                   f"Write the next segment: {topic}. Exactly {count} lines that alternate between the hosts, starting with host {first_host}. "
                   f"Each line is one or two sentences of dialogue only (no speaker names). Segments already done: {covered}. "
@@ -287,7 +320,7 @@ def write_script(selected_model, hosts, ours, theirs, week, facts):
                     text = re.sub(rf"^(?:({re.escape(a['name'])}|{re.escape(b['name'])})\s*:\s*)+", "", text)  # "Ava: Ava: ..." prefixes
                     text = " ".join(re.split(r"(?<=[.!?])\s+", text)[:MAX_LINE_SENTENCES])
                     text = re.sub(r"\.{2,}$", ".", text)
-                    if text and not is_repeat(text, lines + new_lines):
+                    if text and not is_repeat(text, lines + new_lines) and not invented_numbers(text, allowed):
                         new_lines.append({"host": 1 if line.get('host') in (1, "1", b['name']) else 0, "text": text})
             if new_lines:
                 lines.extend(new_lines)
@@ -297,7 +330,7 @@ def write_script(selected_model, hosts, ours, theirs, week, facts):
                 break
     if len(lines) < 10:
         raise RuntimeError("The model didn't return a usable podcast script. Try again.")
-    return title or f"Week {week}: {us_name} vs {them_name}", summary or "", lines
+    return title or fallback_title, summary or "", lines
 
 def speakable(text):
     """Cleans a line for text-to-speech: no stage directions, scores read as 'X to Y', abbreviations spelled out."""
@@ -483,6 +516,161 @@ def generate_episode(selected_model, draft, request_hosts=None):
         progress.finish()
     events.clear_uploads()
     events.clear_draft()
+    prune_episodes()
+    return {"episodes": query_episodes(), "warning": None if recorded == total else recording_warning(recorded, total, error)}
+
+# ---------- Between the Numbers Weekly: around the league from the Weekly Recap ----------
+
+WEEKLY_NAME = f"{SHOW_NAME} Weekly"
+WEEKLY_AWARDS = (("offense", "Offensive Player of the Week"), ("defense", "Defensive Player of the Week"),
+                 ("freshman", "Freshman of the Week"), ("bummer", "Bummer of the Week (the week's worst game by a big name)"))
+
+def weekly_segments(us_name):
+    return [
+        ("the co-host's reply to the welcome, then a quick cold open teasing the week's wildest result", ("games",), 3),
+        ("the game of the week, the upset and the biggest comeback: how each one swung", ("games",), 6),
+        ("the Top 25 matchups and the biggest blowout", ("top25", "games"), 4),
+        ("the players of the week, the top freshman and the bummer of the week", ("players",), 6),
+        ("the polls: who rose, who fell, and the playoff picture", ("polls", "cfp"), 5),
+        ("the Heisman race", ("heisman",), 4),
+        (f"a quick hit on {us_name}'s week", ("ours",), 3),
+        ("the hottest and coldest streaks, then a short sign-off", ("streaks",), 3),
+    ]
+
+def ranked_name(team):
+    return (f"No. {team['rank']} " if team.get('rank') else "") + team['name']
+
+def result_line(card):
+    """A recap game card -> 'No. 3 Notre Dame beat North Carolina 42 to 31 (2 lead changes, decided by 11)'."""
+    away, home = card['rows']
+    winner, loser = (home, away) if home['total'] > away['total'] else (away, home)
+    return (f"{ranked_name(winner['team'])} beat {ranked_name(loser['team'])} {winner['total']} to {loser['total']}"
+            + (f" ({card['detail']})" if card.get('detail') else ""))
+
+def weekly_facts(page, us_name, our_line):
+    """([(topic, text)], headlines) from one week's recap, with stats spelled out for the voices."""
+    import awards
+    facts, headlines = [], []
+    games = page['games']
+    for key, label in (("game_of_the_week", "Game of the week"), ("upset", "Upset of the week"), ("comeback", "Comeback of the week"),
+                       ("blowout", "Blowout of the week")):
+        if games.get(key):
+            text = f"{label}: {result_line(games[key])}."
+            facts.append(("games", text))
+            headlines.append(text)
+    if page['top25']:
+        facts.append(("top25", "Top 25 matchups: " + "; ".join(result_line(g) for g in page['top25']) + "."))
+    offense = page['players'].get('offense')
+    for key, label in WEEKLY_AWARDS:
+        card = page['players'].get(key)
+        if not card:
+            continue
+        if key == 'freshman' and offense and card.get('id') == offense.get('id'):
+            facts.append(("players", f"{label}: also {card['first_name']} {card['last_name']}, a freshman, so he won both awards."))
+            headlines.append(f"{label}: {card['first_name']} {card['last_name']} again")
+            continue
+        stats = ", ".join(f"{b['value']} {awards.STAT_WORDS.get(b['label'], b['label'])}" for b in card['boxes'])
+        result = card['result']
+        facts.append(("players", f"{label}: {card['position']} {card['first_name']} {card['last_name']} of {card['team']['name']}, {stats}; "
+                                 f"his team {'won' if result['outcome'] == 'W' else 'lost'} {result['score'].replace('-', ' to ')} "
+                                 f"{'against' if result['venue'] == 'vs' else 'at'} {result['opponent']['name']}."))
+        headlines.append(f"{label.split(' (')[0]}: {card['first_name']} {card['last_name']}, {card['team']['name']}")
+    for key, label in (("risers", "Biggest poll risers"), ("fallers", "Biggest poll fallers")):
+        if page.get(key):
+            moves = "; ".join(f"{m['team']['name']} from {m['before'] or 'unranked'} to {m['after'] or 'unranked'} after {m['line']}" for m in page[key][:3])
+            facts.append(("polls", f"{label}: {moves}."))
+    if page['cfp']:
+        seeds = lambda rows: "; ".join(f"{c['seed']}. {c['team']['name']} ({c['record']})" for c in rows)
+        bubble = page['cfp'][10:12]
+        facts.append(("cfp", f"The app's playoff projection, top four: {seeds(page['cfp'][:4])}" + (f". On the bubble: {seeds(bubble)}" if bubble else "") + "."))
+    if page['heisman']:
+        facts.append(("heisman", "Heisman race: " + awards.heisman_facts(page['heisman'])))
+    if our_line:
+        facts.append(("ours", f"{us_name} this week: {our_line}."))
+    streaks = page.get('streaks') or {}
+    for kind, label in (("winning", "Longest winning streaks"), ("losing", "Longest losing streaks")):
+        if streaks.get(kind):
+            facts.append(("streaks", f"{label}: " + "; ".join(f"{s['team']['name']} ({s['streak'][1:]} straight)" for s in streaks[kind][:3]) + "."))
+    return [(topic, spoken_names(text)) for topic, text in facts], headlines
+
+def weekly_welcome(hosts, week):
+    return (f"Welcome to {WEEKLY_NAME}, folks. I'm {hosts[0]['name']}, and here with me is {hosts[1]['name']}. "
+            f"Today we're going around college football after Week {week}.")
+
+def our_week_line(week, us):
+    """'beat Hawaii 24 to 18' for our game that week, or None on a bye."""
+    import recap
+    game = next((g for g in league.query_games(week=week) if us['id'] in (g['home_id'], g['away_id'])), None)
+    if not game:
+        return None
+    outcome, mine, theirs, venue, opponent_id = recap.side_result(game, us['id'])
+    opponent = league.query_teams().get(opponent_id)
+    name = opponent['name'] if opponent else "their opponent"
+    return {"W": f"beat {name} {mine} to {theirs}", "L": f"lost to {name} {mine} to {theirs}"}.get(outcome, f"tied {name} {mine} to {theirs}")
+
+def render_weekly_cover(selected_model, card, episode_dir):
+    """The Offensive Player of the Week on the cover, with his portrait face when the pack has it."""
+    import ai_engine, image_engine
+    row = next(iter(league.query_rows("SELECT * FROM league_players WHERE player_id = ?", (card.get('id'),))), None)
+    team_row = league.query_team(row['team_id']) if row else None
+    if not row or not team_row:
+        return None
+    path = os.path.join(media.PORTRAIT_DIRS['player'], row['portrait_file']) if row.get('portrait_file') else None
+    if not image_engine.ensure_running():
+        return None
+    ai_engine.unload_ollama_model(selected_model)
+    try:
+        prompt = ai_engine.player_photo_prompt(f"{row['name']} after a huge game, dramatic stadium lighting. No text, letters or captions anywhere in the image.",
+                                               {"position": row['position'], "jersey_num": row['jersey']}, team.team_details(team_row))
+        return image_engine.generate_image(prompt, f"podcast_cover_{int(time.time())}", *COVER_SIZE,
+                                           face_path=path if path and os.path.exists(path) else None)
+    except Exception:
+        return None
+    finally:
+        image_engine.free_memory()
+
+def generate_weekly_episode(selected_model, week=None, request_hosts=None):
+    """Writes, voices and stores a league-wide episode from one week's recap."""
+    import progress, recap
+    week = int(week) if week is not None else recap.default_week()
+    if week is None:
+        raise ValueError("No week has been played yet.")
+    page = recap.build_recap(week)
+    if not page['game_count']:
+        raise ValueError(f"No games were played in Week {week}.")
+    us = team.user_team()
+    hosts = hosts_from(request_hosts)
+    us_name = spoken_names(us['name'])
+    facts, headlines = weekly_facts(page, us_name, our_week_line(week, us))
+
+    progress.start()
+    try:
+        progress.step("Writing the script")
+        welcome = weekly_welcome(hosts, week)
+        about = f"{WEEKLY_NAME}, a two-host college football podcast that goes around the whole country after Week {week} (not one team's game)"
+        title, summary, lines = write_show(selected_model, hosts, show_setup(hosts, about, welcome), welcome,
+                                           weekly_segments(us_name), facts, f"Week {week} Around the League")
+        conn = database.get_db_connection()
+        cursor = conn.execute("""INSERT INTO podcast_episodes (week_num, opponent_name, title, summary, hosts_json, script_json, game_json)
+                                 VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                              (week, "Around the league", title, summary, json.dumps(hosts), json.dumps(lines),
+                               json.dumps({"kind": "weekly", "teams": [], "plays": [], "headlines": headlines,
+                                           "facts": [text for _, text in facts]})))
+        episode_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+
+        episode_dir = os.path.join(PODCAST_DIR, str(episode_id))
+        progress.step("Recording the voices", f"{len(lines)} lines")
+        recorded, total, error = record_episode(episode_id)
+        progress.step("Rendering the cover art")
+        cover = render_weekly_cover(selected_model, page['players'].get('offense') or {}, episode_dir)
+        conn = database.get_db_connection()
+        conn.execute("UPDATE podcast_episodes SET cover_image = ? WHERE episode_id = ?", (cover, episode_id))
+        conn.commit()
+        conn.close()
+    finally:
+        progress.finish()
     prune_episodes()
     return {"episodes": query_episodes(), "warning": None if recorded == total else recording_warning(recorded, total, error)}
 

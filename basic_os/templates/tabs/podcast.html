@@ -42,6 +42,17 @@
                 </div>
             </div>
         </div>
+        <div class="pod-source pod-source--weekly">
+            <div class="section-label">Or around the league &middot; Between the Numbers Weekly</div>
+            <p class="muted pod-source-note">No game needed: the hosts go around college football for a week, from the Weekly Recap
+                (game of the week, upsets, players of the week, the polls, the playoff picture and the Heisman race).</p>
+            <div class="pod-save-pick">
+                <select id="pod_weekly_week" aria-label="Week">
+                    {% for w in recap_weeks|reverse %}<option value="{{ w.week }}">Week {{ w.week }}{{ ' (still being played)' if w.in_progress else '' }}</option>{% else %}<option value="">No weeks played yet</option>{% endfor %}
+                </select>
+                <button type="button" id="pod_weekly"{{ ' disabled' if not recap_weeks else '' }}>Record the weekly episode</button>
+            </div>
+        </div>
         <div class="status-text" id="pod_status"></div>
         <div class="pod-review" id="pod_review" hidden></div>
     </div>
