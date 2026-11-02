@@ -12,6 +12,7 @@ import roster
 import scouting
 import storylines
 import team
+from sentences import split as sentence_split
 
 # Weekly podcast: two hosts break down a game from the scoring-summary screenshots (read by events.py) plus the save's
 # stats: the numbers, where each team shined and where it can be better, the season so far and the next opponent.
@@ -318,7 +319,7 @@ def write_show(selected_model, hosts, show, welcome, running_order, facts, fallb
                 if isinstance(line, dict):
                     text = speakable(spoken_names(ai_engine.clean_text(str(line.get('text') or ""))))  # clean_text also restores name capitals
                     text = re.sub(rf"^(?:({re.escape(a['name'])}|{re.escape(b['name'])})\s*:\s*)+", "", text)  # "Ava: Ava: ..." prefixes
-                    text = " ".join(re.split(r"(?<=[.!?])\s+", text)[:MAX_LINE_SENTENCES])
+                    text = " ".join(sentence_split(text)[:MAX_LINE_SENTENCES])
                     text = re.sub(r"\.{2,}$", ".", text)
                     if text and not is_repeat(text, lines + new_lines) and not invented_numbers(text, allowed):
                         new_lines.append({"host": 1 if line.get('host') in (1, "1", b['name']) else 0, "text": text})

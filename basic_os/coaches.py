@@ -6,6 +6,7 @@ import league
 import media
 import recap
 import team
+from sentences import split as sentence_split
 
 # Coaches news column: the top 10 and the hot seat for head coaches, offensive and defensive coordinators.
 # Rankings come from results in the save; the headline and quote for each coach are written by the AI.
@@ -136,7 +137,7 @@ MAX_QUOTE_SENTENCES = 2
 
 def tidy_quote(text):
     """Keeps the first two sentences (the model sometimes writes a whole press conference)."""
-    sentences = re.split(r"(?<=[.!?])\s+", text.strip())
+    sentences = sentence_split(text)
     return " ".join(sentences[:MAX_QUOTE_SENTENCES])
 
 def uses_banned(text):
