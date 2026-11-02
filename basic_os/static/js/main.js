@@ -14,20 +14,29 @@ import { applyTeamColors } from './utils.js';
 
 const page = JSON.parse(document.getElementById('page_data').textContent);
 
-initTabs();
-applyTeamColors();
-initTeamPages();
-renderTweets(page.tweets);
-renderStories(page.stories, page.game, page.team_name);
-initDepthChart(page.depth_chart);
-initStorylines(page.storylines);
-initRecap(page.recap_weeks, page.recap);
-initCoaches(page.coach_plan, page.plan_weeks, page.coach_news);
-initPodcast(page.podcast_episodes, page.event_uploads, page.event_draft);
-initGenerator(data => {
+/** Starts one component; an error in one tab is logged instead of stopping every tab after it. */
+function start(name, fn) {
+    try {
+        fn();
+    } catch (err) {
+        console.error('BASIC_OS: the ' + name + ' component failed to start', err);
+    }
+}
+
+start('tabs', initTabs);
+start('team colours', () => applyTeamColors());
+start('team pages', initTeamPages);
+start('campus feed', () => renderTweets(page.tweets));
+start('story column', () => renderStories(page.stories, page.game, page.team_name));
+start('depth chart', () => initDepthChart(page.depth_chart));
+start('locker room', () => initStorylines(page.storylines));
+start('weekly recap', () => initRecap(page.recap_weeks, page.recap));
+start('coaches', () => initCoaches(page.coach_plan, page.plan_weeks, page.coach_news));
+start('podcast', () => initPodcast(page.podcast_episodes, page.event_uploads, page.event_draft));
+start('hub generator', () => initGenerator(data => {
     renderTweets(data.tweets);
     renderStories(data.past_stories, page.game, page.team_name);
     if (data.storylines) renderStorylines(data.storylines);
     const preview = document.getElementById('scouting_preview');
     if (preview && data.scouting_preview) preview.textContent = data.scouting_preview;
-});
+}));

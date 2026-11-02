@@ -200,7 +200,8 @@ function initNews(news) {
         document.querySelectorAll('.news-list').forEach(b => b.setAttribute('aria-selected', String(b.dataset.list === state.list)));
         const cards = state.news ? state.news.lists[state.role][state.list] : [];
         grid.innerHTML = cards.length ? cards.map((c, i) => newsCard(c, state.list, i + 1)).join('') : '<p class="mag-empty">No games played yet.</p>';
-        if (state.news) document.getElementById('news_week').textContent = 'Week ' + state.news.week + ' Coaches Edition';
+        const edition = document.getElementById('news_week');
+        if (edition && state.news) edition.textContent = 'Week ' + state.news.week + ' Coaches Edition';
     };
     document.querySelectorAll('.news-role').forEach(b => b.addEventListener('click', () => { state.role = b.dataset.role; show(); }));
     document.querySelectorAll('.news-list').forEach(b => b.addEventListener('click', () => { state.list = b.dataset.list; show(); }));
