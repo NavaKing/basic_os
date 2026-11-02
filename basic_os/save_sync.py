@@ -3,6 +3,7 @@ import os
 import re
 import shutil
 import subprocess
+import threading
 import backups
 import database
 import league
@@ -48,8 +49,15 @@ def read_save(save_path):
         raise RuntimeError(error_lines[0] if error_lines else f"save reader exited with code {result.returncode}")
     return json.loads(result.stdout)
 
+# Page loads run in parallel; only one may sync at a time. The others wait, then find the save already synced.
+_sync_lock = threading.Lock()
+
 def sync_if_changed():
     """Re-imports the schedule and roster whenever the save changes. Returns a short status line for the page."""
+    with _sync_lock:
+        return _sync_if_changed()
+
+def _sync_if_changed():
     save_path = newest_save()
     if not save_path:
         return get_state('status') or f"Save sync unavailable: {os.path.basename(SAVE_FILE)} not found."
