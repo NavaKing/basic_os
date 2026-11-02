@@ -192,7 +192,7 @@ function episodeCard(ep) {
     const winner = a.final >= b.final ? a : b, loser = winner === a ? b : a;
     const week = ep.week_num !== null ? 'Week ' + esc(ep.week_num) : 'This week';
     return '<article class="mag-issue pod-episode" data-episode="' + esc(ep.episode_id) + '">' +
-        '<div class="mag-folio"><span>The Weekly Podcast &middot; ' + week + '</span><span>Episode ' + esc(ep.episode_id) + ' &middot; ' + ep.script.length + ' segments</span></div>' +
+        '<div class="mag-folio"><span>Between the Numbers &middot; ' + week + '</span><span>Episode ' + esc(ep.episode_id) + ' &middot; ' + ep.script.length + ' segments</span></div>' +
         '<div class="mag-top"><div class="mag-top-text">' +
             '<h3 class="mag-kicker-headline">' + esc(a.name) + ' vs ' + esc(b.name) + ', by the numbers</h3>' +
             '<p class="mag-byline">With ' + esc(ep.hosts[0].name) + ' and ' + esc(ep.hosts[1].name) + '</p></div>' +

@@ -79,10 +79,10 @@ def preview(voice, name):
     name = re.sub(r"[^\w .'-]", "", name or "")[:24] or "your host"
     folder = os.path.join(PODCAST_DIR, "previews")
     os.makedirs(folder, exist_ok=True)
-    file_name = f"{voice}_{re.sub(r'[^A-Za-z]', '', name)}.mp3"
+    file_name = f"{voice}_{re.sub(r'[^A-Za-z]', '', name)}_btn.mp3"
     path = os.path.join(folder, file_name)
     if not os.path.exists(path):
-        asyncio.run(edge_tts.Communicate(f"Hey everybody, I'm {name}. Let's break down this week's game by the numbers.", voice, rate="+4%").save(path))
+        asyncio.run(edge_tts.Communicate(f"Hey everybody, I'm {name}, and this is {SHOW_NAME}.", voice, rate="+4%").save(path))
     return f"podcasts/previews/{file_name}"
 
 # ---------- What the hosts know ----------
@@ -217,10 +217,22 @@ SPOKEN_RULES = ("This is read aloud by a text-to-speech voice, so write only spo
                 "Say scores as 'thirty-five to twenty-one' style numbers or '35 to 21', never '35-21'. Write 'yards', never 'Yd'. "
                 "Every player is a man; use he/him. Use only the facts given: never invent stats, injuries, quotes or plays.")
 
+SHOW_NAME = "Between the Numbers"
+
+def team_spoken(t):
+    """'the Indiana Hoosiers': the school plus nickname when the league knows the team."""
+    row = league.query_team(t['team_id']) if t.get('team_id') is not None else None
+    return "the " + spoken_names(team.team_details(row)['full_name'] if row else t['name'])
+
+def welcome_line(hosts, ours, theirs):
+    """Every episode opens the same way; the model takes over from the co-host's reply."""
+    return (f"Welcome to {SHOW_NAME}, folks. I'm {hosts[0]['name']}, and here with me is {hosts[1]['name']}. "
+            f"Today we'll be talking about {team_spoken(ours)} and {team_spoken(theirs)}.")
+
 def segments(ours, theirs):
     """The show's running order: (what the segment covers, fact topics it may use, how many lines)."""
     return [
-        ("a quick cold open and welcome that teases the final score and the biggest play", ("result", "us_good"), 3),
+        ("the co-host's reply to the welcome, then a quick cold open that teases the final score and the biggest play", ("result", "us_good"), 3),
         ("the result and how the game swung, quarter by quarter, using the running scores", ("result", "plays"), 5),
         ("the game by the numbers: team yards and the standout individual stat lines", ("numbers", "us_players"), 6),
         (f"where {ours} shined", ("us_good", "us_players"), 4),
@@ -244,15 +256,17 @@ def write_script(selected_model, hosts, ours, theirs, week, facts):
     import ai_engine
     a, b = hosts
     us_name, them_name = spoken_names(ours['name']), spoken_names(theirs['name'])
-    show = (f"You write a two-host college football podcast about {us_name}'s Week {week} game against {them_name} "
+    welcome = welcome_line(hosts, ours, theirs)
+    show = (f"You write {SHOW_NAME}, a two-host college football podcast, this episode about {us_name}'s Week {week} game against {them_name} "
             f"(final: {us_name} {ours['final']}, {them_name} {theirs['final']}). "
             f"Host 0 is {a['name']}, the {a['role']}. Host 1 is {b['name']}, the {b['role']}. They are friends: they banter, "
             "disagree a little, ask each other questions and build on each other's points. Lines are short and conversational, "
-            f"and the show is family friendly. {SPOKEN_RULES}")
-    lines, title, summary = [], None, None
+            f"and the show is family friendly. Host 0 has already opened the show with: \"{welcome}\" "
+            f"Nobody welcomes the listeners or introduces the hosts again. {SPOKEN_RULES}")
+    lines, title, summary = [{"host": 0, "text": welcome}], None, None
     for index, (topic, fact_topics, count) in enumerate(segments(us_name, them_name)):
         segment_facts = " ".join(text for t, text in facts if t in fact_topics) or "No extra facts: keep it general and don't invent any."
-        first_host = index % 2
+        first_host = (index + 1) % 2  # host 0 said the welcome, so host 1 answers it
         covered = "; ".join(seg[0] for seg in segments(us_name, them_name)[:index]) or "nothing yet (this opens the show)"
         prompt = (f"{show} Facts for this segment (the only facts you may use): {segment_facts} "
                   f"Write the next segment: {topic}. Exactly {count} lines that alternate between the hosts, starting with host {first_host}. "
