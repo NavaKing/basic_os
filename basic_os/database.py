@@ -147,13 +147,6 @@ def query_active_tweets(week_id):
     conn.close()
     return [dict(row) for row in rows]
 
-def save_game_score(week_id, wyo_score, opp_score):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("UPDATE schedule_tracking SET wyo_score = ?, opp_score = ? WHERE week_id = ?", (wyo_score, opp_score, week_id))
-    conn.commit()
-    conn.close()
-
 def save_story_to_db(week_id, opponent, text):
     remove_story_image(week_id)
     conn = get_db_connection()

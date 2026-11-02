@@ -18,9 +18,52 @@ import gameplan
 import coaches
 import events
 import podcast
+import os
+from urllib.parse import urlsplit
 from flask import Flask, render_template, request, jsonify, send_from_directory, abort, url_for
 
 app = Flask(__name__)
+# Screenshots for the podcast arrive as base64 images; nothing legitimate comes close to this
+app.config['MAX_CONTENT_LENGTH'] = 40 * 1024 * 1024
+
+# ---------- Local-only hardening ----------
+# The app only listens on this PC, but any website open in your browser can still send requests to localhost.
+LOCAL_HOSTS = {"127.0.0.1", "localhost"}
+CONTENT_SECURITY_POLICY = "; ".join([
+    "default-src 'self'",
+    "img-src 'self' data:",
+    "media-src 'self'",
+    "style-src 'self' https://fonts.googleapis.com",
+    "font-src 'self' https://fonts.gstatic.com",
+    "script-src 'self'",
+    "connect-src 'self'",
+    "frame-ancestors 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+])
+
+def host_name(value):
+    return (urlsplit(f"//{value}").hostname or "") if value else ""
+
+@app.before_request
+def only_local_requests():
+    # A page on another site can point its own domain name at 127.0.0.1 ("DNS rebinding") to read this app;
+    # its requests then carry that foreign name in the Host header.
+    if host_name(request.host) not in LOCAL_HOSTS:
+        abort(403)
+    # Other sites can't trigger generation, uploads or deletes: the browser names the page a change came from
+    if request.method not in ("GET", "HEAD", "OPTIONS"):
+        origin = request.headers.get("Origin")
+        if origin and host_name(urlsplit(origin).netloc) not in LOCAL_HOSTS:
+            abort(403)
+
+@app.after_request
+def security_headers(response):
+    response.headers.setdefault("Content-Security-Policy", CONTENT_SECURITY_POLICY)
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("Referrer-Policy", "no-referrer")
+    response.headers.setdefault("Cross-Origin-Resource-Policy", "same-origin")
+    return response
 
 WEATHER_ICONS = {"Rain": "🌧️", "Snow": "❄️", "Overcast": "☁️", "Cloudy": "☁️", "PartlyCloudy": "⛅", "Clear": "☀️", "Sunny": "☀️"}
 
@@ -265,4 +308,5 @@ def resolve_storyline(storyline_id):
     return jsonify({"storylines": storylines.query_storylines()})
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    # Debug mode (auto-reload and Werkzeug's in-browser debugger) is for development only: set BASIC_OS_DEBUG=1
+    app.run(host="127.0.0.1", port=5000, debug=os.environ.get("BASIC_OS_DEBUG") == "1")
