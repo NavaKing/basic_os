@@ -54,5 +54,17 @@ class Photos(unittest.TestCase):
         self.assertTrue(os.path.exists(stem + ".webp"))
 
 
+@unittest.skipUnless(Image, "needs Pillow")
+class Logos(unittest.TestCase):
+    def test_big_logo_shrinks_and_keeps_transparency(self):
+        import media
+        path = os.path.join(TEMP_DIR, "logo_test.png")
+        Image.new("RGBA", (500, 500), (0, 0, 0, 0)).save(path)
+        self.assertTrue(media.shrink_logo(path))
+        with Image.open(path) as img:
+            self.assertEqual((img.size, img.mode), ((media.LOGO_SIZE, media.LOGO_SIZE), "RGBA"))
+        self.assertFalse(media.shrink_logo(path))  # already small
+
+
 if __name__ == "__main__":
     unittest.main()

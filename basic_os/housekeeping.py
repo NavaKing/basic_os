@@ -28,10 +28,14 @@ def convert_photos():
         converted += 1
     return converted
 
+def shrink_logos():
+    import media
+    return sum(media.shrink_logo(path) for path in glob.glob(os.path.join(media.LOGO_DIR, "*.png")))
+
 def run():
     """All upkeep steps; returns {step: count} for the ones that did something."""
     import podcast  # also makes sure every table the steps update exists
     import backups
     done = {"photos converted to WebP": convert_photos(), "backups compressed": backups.compress_old_backups(),
-            "duplicate podcast MP3s removed": podcast.drop_joined_copies()}
+            "duplicate podcast MP3s removed": podcast.drop_joined_copies(), "logos shrunk": shrink_logos()}
     return {step: count for step, count in done.items() if count}
