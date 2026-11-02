@@ -48,7 +48,8 @@
                 (game of the week, upsets, players of the week, the polls, the playoff picture and the Heisman race).</p>
             <div class="pod-save-pick">
                 <select id="pod_weekly_week" aria-label="Week">
-                    {% for w in recap_weeks|reverse %}<option value="{{ w.week }}">Week {{ w.week }}{{ ' (still being played)' if w.in_progress else '' }}</option>{% else %}<option value="">No weeks played yet</option>{% endfor %}
+                    {% set finished = recap_weeks|rejectattr('in_progress')|list %}
+                    {% for w in recap_weeks|reverse %}<option value="{{ w.week }}"{{ ' selected' if finished and w.week == finished[-1].week else '' }}>Week {{ w.week }}{{ ' (still being played)' if w.in_progress else '' }}</option>{% else %}<option value="">No weeks played yet</option>{% endfor %}
                 </select>
                 <button type="button" id="pod_weekly"{{ ' disabled' if not recap_weeks else '' }}>Record the weekly episode</button>
             </div>
