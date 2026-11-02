@@ -126,6 +126,20 @@ def initialize_league_tables():
         game_date TEXT
     )
     """)
+    # Coaching carousel: a team's head coach or coordinator changed between two syncs
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS coaching_changes (
+        change_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        team_id INTEGER NOT NULL,
+        role TEXT NOT NULL,             -- hc, oc, dc
+        old_name TEXT,
+        new_name TEXT,
+        season_year INTEGER,
+        week INTEGER,
+        stage TEXT,
+        detected TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS league_conferences (
         name TEXT PRIMARY KEY,
@@ -153,10 +167,32 @@ def staff_view(team):
     return {role: {"name": member['name'], "portrait": media.coach_portrait_file(member.get('portraitId'), member.get('portraitAsset'))}
             for role, member in (team.get('staff') or {}).items() if member}
 
-def sync_league(league, current_week):
+def staff_names(team):
+    """{'hc': 'Jay Sawvel', ...} from a save team (staff with portraits) or a stored row (staff_json)."""
+    staff = team.get('staff') if 'staff' in team else json.loads(team.get('staff_json') or "{}")
+    return {role: (member or {}).get('name') for role, member in (staff or {}).items() if (member or {}).get('name')}
+
+def staff_changes(old_teams, new_teams):
+    """[(team_id, role, old name, new name)] for every HC/OC/DC slot whose coach changed."""
+    changes = []
+    for team in new_teams:
+        before = old_teams.get(team['id'])
+        if not before:
+            continue
+        old, new = staff_names(before), staff_names(team)
+        for role in ("hc", "oc", "dc"):
+            if old.get(role) != new.get(role) and (old.get(role) or new.get(role)):
+                changes.append((team['id'], role, old.get(role), new.get(role)))
+    return changes
+
+def sync_league(league, current_week, phase=None):
     """Replaces the league snapshot with the save's data and records this week's AP poll."""
     conn = database.get_db_connection()
     cursor = conn.cursor()
+    previous = {row['team_id']: dict(row) for row in conn.execute("SELECT team_id, staff_json FROM league_teams").fetchall()}
+    cursor.executemany("INSERT INTO coaching_changes (team_id, role, old_name, new_name, season_year, week, stage) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                       [(*change, (phase or {}).get('seasonYear'), current_week, (phase or {}).get('stage'))
+                        for change in staff_changes(previous, league['teams'])])
     for table in ("league_teams", "league_games", "league_players", "league_player_games", "league_awards", "league_heisman",
                   "league_season_awards", "league_bowls", "league_conferences"):
         cursor.execute(f"DELETE FROM {table}")
@@ -343,6 +379,9 @@ def query_season_awards():
 
 def query_bowls():
     return query_rows("SELECT * FROM league_bowls ORDER BY week, game_date, game_id")
+
+def query_coaching_changes():
+    return query_rows("SELECT * FROM coaching_changes ORDER BY change_id DESC")
 
 def query_conferences():
     return query_rows("SELECT * FROM league_conferences ORDER BY name")

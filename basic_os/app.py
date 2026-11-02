@@ -20,6 +20,7 @@ import events
 import podcast
 import backups
 import awards
+import offseason
 import os
 from urllib.parse import urlsplit
 from flask import Flask, render_template, request, jsonify, send_from_directory, abort, url_for
@@ -130,6 +131,7 @@ def home():
         'index.html',
         backup_auto_keep=backups.AUTO_KEEP,
         awards_page=awards.build_awards(),
+        offseason_page=offseason.build_offseason(),
         game=describe_game(active_game),
         last_game=describe_game(last_game),
         record=f"{wins}-{losses}",
@@ -331,6 +333,13 @@ def resolve_storyline(storyline_id):
 def generate_heisman_column():
     try:
         return jsonify({"column": awards.generate_heisman_column(request.json.get('model', 'gemma3:12b'))})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+@app.route('/offseason/signing-day/generate', methods=['POST'])
+def generate_signing_day():
+    try:
+        return jsonify({"column": offseason.generate_signing_day(request.json.get('model', 'gemma3:12b'))})
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 

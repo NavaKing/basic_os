@@ -71,7 +71,7 @@ def _sync_if_changed():
             backups.create_backup(backups.AUTO_LABEL)
         sync_schedule(dynasty)
         sync_roster(dynasty)
-        league.sync_league(dynasty['league'], dynasty['currentWeek'])
+        league.sync_league(dynasty['league'], dynasty['currentWeek'], dynasty.get('phase'))
         league.sync_plan_rosters(dynasty.get('planRosters'))
         league.sync_scoring(dynasty.get('scoringSummaries'))
         recruiting.sync_recruiting(dynasty.get('recruiting'), dynasty['league']['userTeamId'], dynasty['currentWeek'])
@@ -79,6 +79,8 @@ def _sync_if_changed():
         # The version isn't stored, so the next page load tries again (e.g. if the game was mid-write)
         return f"Save sync failed, showing last synced data: {e}"
 
+    set_state('phase', json.dumps({**(dynasty.get('phase') or {}), "week": dynasty['currentWeek']}))
+    set_state('departures', json.dumps(dynasty.get('departures') or {}))
     status = f"Synced from {dynasty['source']} · Week {dynasty['currentWeek']}"
     set_state('save_version', save_version)
     set_state('status', status)
@@ -157,7 +159,8 @@ def sync_roster(dynasty):
             health_status, injury_type, duration = map_injury(p)
             rows.append((p['id'], p['name'], position, p.get('jersey'), health_status, injury_type, duration, f"{position}{rank}",
                          p.get('overall'), p.get('classYear'), p.get('heightInches'), p.get('weightPounds'),
-                         media.player_portrait_file(p.get('assetName'), p.get('headAsset'))))
+                         media.player_portrait_file(p.get('assetName'), p.get('headAsset')),
+                         p.get('redshirt'), p.get('transferChance'), p.get('goProChance')))
 
     conn = roster.get_connection()
     # Drop placeholder players and anyone who has left the team in the save
@@ -165,14 +168,15 @@ def sync_roster(dynasty):
     conn.execute(f"DELETE FROM team_roster WHERE save_id IS NULL OR save_id NOT IN ({','.join('?' * len(synced_ids))})", synced_ids)
     conn.executemany("""
         INSERT INTO team_roster (save_id, player_name, position, jersey_num, health_status, injury_type, duration_weeks, depth_slot,
-                                 overall, class_year, height_in, weight_lb, portrait_file)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                 overall, class_year, height_in, weight_lb, portrait_file, redshirt, transfer_chance, go_pro_chance)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(save_id) DO UPDATE SET
             player_name = excluded.player_name, position = excluded.position, jersey_num = excluded.jersey_num,
             health_status = excluded.health_status, injury_type = excluded.injury_type,
             duration_weeks = excluded.duration_weeks, depth_slot = excluded.depth_slot,
             overall = excluded.overall, class_year = excluded.class_year, height_in = excluded.height_in, weight_lb = excluded.weight_lb,
-            portrait_file = excluded.portrait_file
+            portrait_file = excluded.portrait_file, redshirt = excluded.redshirt,
+            transfer_chance = excluded.transfer_chance, go_pro_chance = excluded.go_pro_chance
     """, rows)
     
     # Replace this season's stat lines; a player can have several records per game (e.g. offense + returns)

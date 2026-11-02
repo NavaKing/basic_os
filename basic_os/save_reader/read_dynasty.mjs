@@ -112,6 +112,10 @@ try {
       injurySeverity: clean(player.InjurySeverity),
       minInjuryDuration: player.MinInjuryDuration ?? null,
       maxInjuryDuration: player.MaxInjuryDuration ?? null,
+      redshirt: clean(player.RedshirtStatus),
+      // The game's own odds (0-100) that he transfers or turns pro after the season
+      transferChance: player.AbsoluteTransferChance ?? null,
+      goProChance: player.AbsoluteGoProChance ?? null,
       gameStats: await gameStatsFor(player)
     });
   }
@@ -580,11 +584,40 @@ try {
     if (entry) topProspects.push(entry);
   }
 
+  // ---------- Offseason ----------
+  // Where the dynasty is in its year, and the game's end-of-season departure lists (empty until the season ends)
+  const phase = {
+    stage: clean(seasonInfo.CurrentStage), weekType: clean(seasonInfo.CurrentWeekType), offseasonStage: seasonInfo.CurrentOffseasonStage ?? 0,
+    offseasonStages: seasonInfo.OffseasonNumStages ?? null, seasonYear: seasonInfo.CurrentSeasonYear ?? null,
+    carousel: Boolean(seasonInfo.IsCarouselPeriodActive), staffHiring: Boolean(seasonInfo.IsStaffHiringPeriodActive),
+    transferPortal: Boolean(seasonInfo.IsTransferPortalNewlyAvailable || seasonInfo.IsTransferSignPeriodActive),
+    signing: Boolean(seasonInfo.IsSigningPeriodActive), draft: Boolean(seasonInfo.IsDraftPeriodActive || seasonInfo.IsDraftActive)
+  };
+  const playersIn = async (owner, key) => {
+    const list = owner && await recordFromAny(ref(owner, key));
+    const out = [];
+    for (const field of list ? refFields(list) : []) {
+      const data = ref(list, field);
+      let player = recordFrom(playerTable, data);
+      if (!player) {
+        const entry = await recordFromAny(data);  // a LeavingPlayer-style record pointing at the player
+        player = entry && recordFrom(playerTable, ref(entry, 'Player'));
+      }
+      if (player) out.push(playerId(player));
+    }
+    return out;
+  };
+  const leavingTable = byName('PlayersLeavingEndOfSeason');
+  const leavingRoot = leavingTable ? (await leavingTable.readRecords(), leavingTable.records.find(live)) : null;
+  const departures = { transferCandidates: await playersIn(leavingRoot, 'TransferCandidates'), earlyDraft: await playersIn(leavingRoot, 'EarlyDraft') };
+
   process.stdout.write(JSON.stringify({
     source: path.basename(savePath),
     team: { name: userTeam.DisplayName, nickname: userTeam.NickName || '' },
     currentWeek: seasonInfo.CurrentWeek,
     currentWeekType: seasonInfo.CurrentWeekType,
+    phase,
+    departures,
     schedule,
     roster,
     depthChart,

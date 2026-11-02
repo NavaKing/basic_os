@@ -1,0 +1,29 @@
+/* Offseason tab: the phase banner, the roster outlook, the coaching carousel */
+
+#tab-offseason > * + * { margin-top: 20px; }
+
+.off-phase { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; }
+.off-phase-title { margin: 2px 0 0; font-family: var(--font-display); font-size: 28px; letter-spacing: 1px; text-transform: uppercase; color: #fff; }
+.off-windows { display: flex; flex-wrap: wrap; gap: 8px; font-size: 13px; }
+.off-window { padding: 5px 10px; border: 1px solid var(--gold); border-radius: 999px; color: var(--gold); font-family: var(--font-display);
+              font-size: 11px; letter-spacing: 1px; text-transform: uppercase; }
+
+.off-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+.off-col-title { margin: 0 0 6px; font-family: var(--font-display); font-size: 14px; letter-spacing: 1.5px; text-transform: uppercase; color: #fff; }
+.off-col-title--spaced { margin-top: 22px; }
+.off-source { margin: 0 0 8px; font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+
+.off-players, .off-moves { list-style: none; margin: 0; padding: 0; }
+.off-player, .off-move { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--border-soft); }
+.off-player-id { min-width: 0; }
+.off-player-name { font-weight: 700; color: #fff; overflow-wrap: anywhere; }
+.off-player-meta { font-size: 12px; color: #999; }
+.off-player-note { margin-top: 2px; font-size: 12px; color: var(--gold); }
+.off-tag { margin-left: 4px; padding: 1px 6px; border-radius: 3px; background: var(--gold-soft); color: var(--gold); font-family: var(--font-display);
+           font-size: 9px; letter-spacing: 1px; text-transform: uppercase; vertical-align: middle; }
+.off-move .team-logo { width: 32px; height: 32px; }
+.off-when { margin-left: auto; font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+
+@media (max-width: 1100px) {
+    .off-grid { grid-template-columns: minmax(0, 1fr); }
+}
