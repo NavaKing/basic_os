@@ -10,6 +10,7 @@ import { initRecap } from './recap.js';
 import { initTeamPages } from './team.js';
 import { initCoaches } from './coaches.js';
 import { initPodcast } from './podcast.js';
+import { initBackups } from './backups.js';
 import { applyTeamColors } from './utils.js';
 
 const page = JSON.parse(document.getElementById('page_data').textContent);
@@ -26,6 +27,7 @@ function start(name, fn) {
 start('tabs', initTabs);
 start('team colours', () => applyTeamColors());
 start('team pages', initTeamPages);
+start('backups', initBackups);
 start('campus feed', () => renderTweets(page.tweets));
 start('story column', () => renderStories(page.stories, page.game, page.team_name));
 start('depth chart', () => initDepthChart(page.depth_chart));
