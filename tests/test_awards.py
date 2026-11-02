@@ -37,6 +37,35 @@ class AllAmerica(unittest.TestCase):
         self.assertEqual(aa['conferences'], [])
 
 
+class OnDemand(unittest.TestCase):
+    """The page carries All-America and our conference; other conferences load from /awards/all-america/<name>."""
+
+    def setUp(self):
+        conn = database.get_db_connection()
+        for table in ("league_teams", "league_season_awards"):
+            conn.execute(f"DELETE FROM {table}")
+        conn.executemany("INSERT INTO league_teams (team_id, name, short_name, is_user, conference) VALUES (?, ?, ?, ?, ?)",
+                         [(1, "Wyoming", "WYO", 1, "MW"), (2, "Clemson", "CLEM", 0, "ACC")])
+        conn.executemany("INSERT INTO league_season_awards (award_type, position, conference, team_id, player_id, name) VALUES (?, ?, ?, ?, ?, ?)",
+                         [("ALL_AM_1ST_PRE", "QB", None, 2, "a", "National QB"), ("ALL_AM_1ST_PRE_CONF", "QB", "MW", 1, "b", "MW QB"),
+                          ("ALL_AM_1ST_PRE_CONF", "QB", "ACC", 2, "c", "ACC QB")])
+        conn.commit()
+        conn.close()
+
+    def test_page_carries_ours_only(self):
+        aa = awards.page_all_america()
+        self.assertEqual([c['name'] for c in aa['conferences']], ["MW", "ACC"])
+        self.assertEqual(aa['conferences'][0]['first'][0]['name'], "MW QB")
+        self.assertEqual(aa['conferences'][1], {"name": "ACC", "label": "ACC"})
+        self.assertEqual(aa['national']['first'][0]['name'], "National QB")
+
+    def test_route(self):
+        from app import app
+        client = app.test_client()
+        self.assertEqual(client.get("/awards/all-america/ACC", headers={"Host": "127.0.0.1:5000"}).get_json()['first'][0]['name'], "ACC QB")
+        self.assertEqual(client.get("/awards/all-america/Nope", headers={"Host": "127.0.0.1:5000"}).status_code, 404)
+
+
 class Bracket(unittest.TestCase):
     def test_projected_seeding(self):
         cfp = [{"seed": s, "team": {"id": s, "name": f"Team {s}"}, "record": "5-0"} for s in range(1, 13)]

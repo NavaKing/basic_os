@@ -371,6 +371,11 @@ def resolve_storyline(storyline_id):
         return jsonify({"error": str(e), "storylines": storylines.query_storylines()})
     return jsonify({"storylines": storylines.query_storylines()})
 
+@app.route('/awards/all-america/<name>')
+def all_conference_teams(name):
+    group = awards.conference_teams(name)
+    return jsonify(group) if group else (jsonify({"error": "No All-Conference teams for that conference."}), 404)
+
 @app.route('/awards/heisman/generate', methods=['POST'])
 def generate_heisman_column():
     try:

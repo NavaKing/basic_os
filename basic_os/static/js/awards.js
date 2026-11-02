@@ -38,8 +38,20 @@ function initAllAmerica(aa) {
         ? 'The game\'s end-of-season teams.'
         : 'Preseason teams, picked by the game before the season. They\'re replaced by the final teams once the season ends.';
     let side = 'first';
-    const show = () => {
+    const show = async () => {
         const group = groups[Number(select.value) || 0];
+        if (!group.first) {  // conferences other than ours load when picked
+            grid.innerHTML = '<div class="empty-note">Loading...</div>';
+            try {
+                const res = await fetch('/awards/all-america/' + encodeURIComponent(group.key));
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                Object.assign(group, await res.json());
+            } catch (err) {
+                grid.innerHTML = '<div class="empty-note">Could not load these teams: ' + esc(String(err.message || err)) + '</div>';
+                return;
+            }
+            if (groups[Number(select.value) || 0] !== group) return;  // the pick changed while loading
+        }
         document.querySelectorAll('.aa-side').forEach(b => b.setAttribute('aria-selected', String(b.dataset.side === side)));
         const players = group[side] || [];
         grid.innerHTML = players.length ? players.map(p =>

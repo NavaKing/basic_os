@@ -194,6 +194,21 @@ def generate_heisman_column(selected_model):
 
 # ---------- Page ----------
 
+def our_all_america():
+    teams = league.query_teams()
+    user = next((t for t in teams.values() if t.get('is_user')), None)
+    return all_america(league.query_season_awards(), teams, user['team_id'] if user else None, user.get('conference') if user else None)
+
+def conference_teams(name):
+    """One conference's first and second teams (the page loads the others on demand), or None."""
+    return next(({"first": c['first'], "second": c['second']} for c in our_all_america()['conferences'] if c['name'] == name), None)
+
+def page_all_america():
+    """All-America plus our conference (listed first) for the page; the other conferences carry only their names."""
+    aa = our_all_america()
+    aa['conferences'] = [c if i == 0 else {"name": c['name'], "label": c['label']} for i, c in enumerate(aa['conferences'])]
+    return aa
+
 def build_awards():
     teams = league.query_teams()
     user = next((t for t in teams.values() if t.get('is_user')), None)
@@ -203,7 +218,7 @@ def build_awards():
     return {
         "week": week,
         "conference": user.get('conference') if user else None,
-        "all_america": all_america(league.query_season_awards(), teams, user['team_id'] if user else None, user.get('conference') if user else None),
+        "all_america": page_all_america(),
         "heisman": page['heisman'][:5],
         "column": query_column(),
         "ceremony": regular_season_over(),
