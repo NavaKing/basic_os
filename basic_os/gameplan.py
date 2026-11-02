@@ -213,10 +213,9 @@ def injuries(roster):
 
 def season_line(player_id):
     totals = {}
-    for row in league.query_player_games():
-        if row['player_id'] == player_id:
-            for key, value in row['stats'].items():
-                totals[key] = totals.get(key, 0) + value
+    for row in league.query_player_games(player_ids=[player_id]):
+        for key, value in row['stats'].items():
+            totals[key] = totals.get(key, 0) + value
     return totals
 
 def qb_card(qb):

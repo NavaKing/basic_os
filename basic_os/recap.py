@@ -298,13 +298,14 @@ def active_streaks(ctx):
 
 def heisman_race(ctx):
     totals = {}
-    for row in league.query_player_games(through_week=ctx['week']):
+    heisman = league.query_heisman()
+    for row in league.query_player_games(through_week=ctx['week'], player_ids={h['player_id'] for h in heisman}):
         bucket = totals.setdefault(row['player_id'], {})
         for key, value in row['stats'].items():
             if key != 'GAMERATING' and 'LONGEST' not in key:
                 bucket[key] = bucket.get(key, 0) + value
     rows = []
-    for h in league.query_heisman():
+    for h in heisman:
         player = ctx['players'].get(h['player_id'])
         if not player or not totals.get(h['player_id']):
             continue
