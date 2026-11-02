@@ -67,3 +67,6 @@
     .pod-transcript { column-count: 1; }
     .pod-host { grid-template-columns: minmax(0, 1fr); }
 }
+.pod-episode .pod-retry { width: 100%; margin-bottom: 6px; padding: 10px; border-radius: 0; background: #b3201e; color: #fff; }
+.pod-episode .pod-retry:hover { background: #8f1418; }
+.pod-episode .pod-retry-status { margin-bottom: 14px; color: var(--ink-soft); }

@@ -159,7 +159,7 @@ function showReview(draft, onDone) {
             if (data.error) throw new Error(data.error);
             root.hidden = true;
             root.innerHTML = '';
-            onDone(data.episodes);
+            onDone(data.episodes, data.warning);
         } catch (err) {
             setStatus(status, String(err.message || err), true);
             e.target.disabled = false;
@@ -186,7 +186,8 @@ function boxScore(game) {
 function episodeCard(ep) {
     const lines = ep.script.map((line, i) => '<li class="pod-line pod-line--' + line.host + '" data-line="' + i + '"><b>' + esc(ep.hosts[line.host].name) + ':</b> ' + esc(line.text) + '</li>').join('');
     const plays = ep.game.plays.map(p => '<div class="mag-post"><b>' + (p.quarter === 5 ? 'OT' : 'Q' + esc(p.quarter)) + ' &middot; ' + esc(p.clock) + ' &middot; ' + esc(p.team) + '</b>' + esc(p.text) + '</div>').join('');
-    const hasAudio = ep.script.some(l => l.audio);
+    const recorded = ep.script.filter(l => l.audio).length;
+    const hasAudio = recorded === ep.script.length;
     const [a, b] = ep.game.teams;
     const winner = a.final >= b.final ? a : b, loser = winner === a ? b : a;
     const week = ep.week_num !== null ? 'Week ' + esc(ep.week_num) : 'This week';
@@ -203,7 +204,8 @@ function episodeCard(ep) {
                 (hasAudio ? '<div class="pod-controls"><button type="button" class="pod-play">▶ Play episode</button>' +
                     '<div class="pod-progress"><progress class="pod-bar" max="' + ep.script.length + '" value="0"></progress><span class="pod-now">Ready</span></div>' +
                     (ep.audio_file ? '<a class="pod-download" href="' + esc(staticUrl(ep.audio_file)) + '" download>Download MP3</a>' : '') + '</div>'
-                    : '<p class="mag-small">The audio wasn\'t recorded (the voice service may have been offline). The script is here.</p>') +
+                    : '<p class="mag-small">' + recorded + ' of ' + ep.script.length + ' lines are recorded; Microsoft\'s voice service dropped the rest. The script is here.</p>' +
+                      '<button type="button" class="pod-retry" data-id="' + esc(ep.episode_id) + '">Retry recording</button><div class="status-text pod-retry-status"></div>') +
                 '<h4 class="mag-feature-title">The Scoring Summary</h4><div class="mag-bubble">' + plays + '</div>' +
             '</div>' +
             '<div class="mag-col mag-col--center">' +
@@ -255,6 +257,20 @@ function renderFeed(episodes) {
     feed.innerHTML = episodes.length ? episodes.map(episodeCard).join('') : '<div class="panel empty-note">No episodes yet. Upload a game\'s screenshots above to record one.</div>';
     applyTeamColors(feed);
     episodes.forEach(ep => wirePlayer(feed.querySelector('[data-episode="' + ep.episode_id + '"]'), ep));
+    feed.querySelectorAll('.pod-retry').forEach(b => b.addEventListener('click', async () => {
+        const note = b.nextElementSibling;
+        b.disabled = true;
+        setStatus(note, 'Recording the missing lines...');
+        try {
+            const data = await postJSON('/podcast/' + b.dataset.id + '/record');
+            if (data.error) throw new Error(data.error);
+            renderFeed(data.episodes);
+            if (data.warning) setStatus(document.getElementById('pod_status'), data.warning, true);
+        } catch (err) {
+            setStatus(note, String(err.message || err), true);
+            b.disabled = false;
+        }
+    }));
     feed.querySelectorAll('.pod-delete').forEach(b => b.addEventListener('click', async () => {
         if (!confirm('Delete this episode, its audio and its cover art?')) return;
         renderFeed(await (await fetch('/podcast/' + b.dataset.id, { method: 'DELETE' })).json());
@@ -296,7 +312,11 @@ export function initPodcast(episodes, uploads, draft) {
         setStatus(status, '');
     });
 
-    const done = list => { renderFeed(list); refreshUploads(); setStatus(status, 'Episode recorded. The screenshots were deleted.'); };
+    const done = (list, warning) => {
+        renderFeed(list);
+        refreshUploads();
+        setStatus(status, warning || 'Episode recorded. The screenshots were deleted.', Boolean(warning));
+    };
     document.getElementById('pod_read').addEventListener('click', async e => {
         e.target.disabled = true;
         setStatus(status, 'Reading the screenshots (about 10 seconds each)...');

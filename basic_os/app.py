@@ -265,7 +265,14 @@ def podcast_preview():
 @app.route('/podcast/generate', methods=['POST'])
 def generate_podcast():
     try:
-        return jsonify({"episodes": podcast.generate_episode(request.json.get('model', 'gemma3:12b'), request.json.get('draft'), request.json.get('hosts'))})
+        return jsonify(podcast.generate_episode(request.json.get('model', 'gemma3:12b'), request.json.get('draft'), request.json.get('hosts')))
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/podcast/<int:episode_id>/record', methods=['POST'])
+def retry_podcast_recording(episode_id):
+    try:
+        return jsonify(podcast.retry_recording(episode_id))
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

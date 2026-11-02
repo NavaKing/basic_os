@@ -22,7 +22,7 @@ DEFAULT_HOSTS = [{"name": "Andrew", "voice": "en-US-AndrewNeural", "role": "lead
                  {"name": "Ava", "voice": "en-US-AvaNeural", "role": "color analyst with strong opinions on effort and execution"}]
 VOICE_LOCALES = ("en-US", "en-GB", "en-AU", "en-CA")
 TTS_WORKERS = 4
-TTS_ATTEMPTS = 5
+TTS_ATTEMPTS = 8
 COVER_SIZE = (1024, 1024)
 TARGET_LINES = 30
 
@@ -294,32 +294,80 @@ def speakable(text):
 
 # ---------- Audio ----------
 
+def line_path(episode_dir, index):
+    return os.path.join(episode_dir, f"line_{index:03d}.mp3")
+
 def voice_lines(episode_dir, lines, hosts):
-    """Synthesizes every line (a few at a time) and joins them into one episode file. Returns the episode file name."""
+    """Records every line that isn't recorded yet (a few at a time). Microsoft's free service drops a share of requests
+    at random, so each line retries with growing pauses, and lines already recorded are kept for the next try.
+    Returns (recorded count, last error text)."""
     import edge_tts
     os.makedirs(episode_dir, exist_ok=True)
+    errors = []
 
     async def synth_all():
         gate = asyncio.Semaphore(TTS_WORKERS)
         async def one(index, line):
+            path = line_path(episode_dir, index)
+            if os.path.exists(path) and os.path.getsize(path) > 0:
+                return
             async with gate:
-                path = os.path.join(episode_dir, f"line_{index:03d}.mp3")
                 for attempt in range(TTS_ATTEMPTS):
                     try:
                         await edge_tts.Communicate(line['text'], hosts[line['host']]['voice'], rate="+4%").save(path)
-                        return
-                    except Exception:
-                        await asyncio.sleep(2 * (attempt + 1))  # the service sometimes drops requests for a few seconds
-                raise RuntimeError("Microsoft's voice service didn't answer. Check the internet connection and try again.")
+                        if os.path.getsize(path) > 0:
+                            return
+                    except Exception as e:
+                        errors.append(f"{type(e).__name__}: {e}")
+                    if os.path.exists(path):
+                        os.remove(path)  # a dropped request can leave an empty file behind
+                    await asyncio.sleep(min(2 * (attempt + 1), 12))
         await asyncio.gather(*(one(i, line) for i, line in enumerate(lines)))
     asyncio.run(synth_all())
+    recorded = sum(1 for i in range(len(lines)) if os.path.exists(line_path(episode_dir, i)))
+    return recorded, (errors[-1] if errors else "")
 
-    # MP3 frames from the same voice service share one format, so the files join end to end
+def join_episode(episode_dir, count):
+    """MP3 frames from the same voice service share one format, so the line files join end to end."""
     with open(os.path.join(episode_dir, "episode.mp3"), "wb") as out:
-        for index in range(len(lines)):
-            with open(os.path.join(episode_dir, f"line_{index:03d}.mp3"), "rb") as part:
+        for index in range(count):
+            with open(line_path(episode_dir, index), "rb") as part:
                 out.write(part.read())
-    return "episode.mp3"
+
+def record_episode(episode_id):
+    """Records an episode's missing lines; once every line exists, joins them into the downloadable MP3.
+    Returns (recorded, total, error text)."""
+    conn = database.get_db_connection()
+    row = conn.execute("SELECT hosts_json, script_json FROM podcast_episodes WHERE episode_id = ?", (episode_id,)).fetchone()
+    conn.close()
+    if not row:
+        raise ValueError("That episode no longer exists.")
+    hosts, lines = json.loads(row['hosts_json']), json.loads(row['script_json'])
+    episode_dir = os.path.join(PODCAST_DIR, str(int(episode_id)))
+    recorded, error = voice_lines(episode_dir, lines, hosts)
+    for index, line in enumerate(lines):
+        if os.path.exists(line_path(episode_dir, index)):
+            line['audio'] = f"podcasts/{episode_id}/line_{index:03d}.mp3"
+        else:
+            line.pop('audio', None)
+    audio_file = None
+    if recorded == len(lines):
+        join_episode(episode_dir, len(lines))
+        audio_file = f"podcasts/{episode_id}/episode.mp3"
+    conn = database.get_db_connection()
+    conn.execute("UPDATE podcast_episodes SET script_json = ?, audio_file = ? WHERE episode_id = ?", (json.dumps(lines), audio_file, episode_id))
+    conn.commit()
+    conn.close()
+    return recorded, len(lines), error
+
+def retry_recording(episode_id):
+    """The Retry recording button: records whatever is still missing."""
+    recorded, total, error = record_episode(episode_id)
+    return {"episodes": query_episodes(), "warning": None if recorded == total else recording_warning(recorded, total, error)}
+
+def recording_warning(recorded, total, error):
+    return (f"Recorded {recorded} of {total} lines; Microsoft's voice service kept dropping the rest"
+            + (f" ({error})" if error else "") + ". The script is saved: press Retry recording on the episode in a minute.")
 
 # ---------- Cover art ----------
 
@@ -392,26 +440,20 @@ def generate_episode(selected_model, draft, request_hosts=None):
 
         episode_dir = os.path.join(PODCAST_DIR, str(episode_id))
         progress.step("Recording the voices", f"{len(lines)} lines")
-        try:
-            audio_file = voice_lines(episode_dir, lines, hosts)
-        except Exception:
-            delete_episode(episode_id)  # don't leave a half-made episode; the screenshots stay so it can be retried
-            raise
-        for index, line in enumerate(lines):
-            line['audio'] = f"podcasts/{episode_id}/line_{index:03d}.mp3"
+        # The script is already saved, so a flaky voice service never costs the episode: missing lines can be retried
+        recorded, total, error = record_episode(episode_id)
         progress.step("Rendering the cover art")
         cover = render_cover(selected_model, ours, theirs, draft['plays'], episode_dir)
 
         conn = database.get_db_connection()
-        conn.execute("UPDATE podcast_episodes SET script_json = ?, audio_file = ?, cover_image = ? WHERE episode_id = ?",
-                     (json.dumps(lines), f"podcasts/{episode_id}/{audio_file}", cover, episode_id))
+        conn.execute("UPDATE podcast_episodes SET cover_image = ? WHERE episode_id = ?", (cover, episode_id))
         conn.commit()
         conn.close()
     finally:
         progress.finish()
     events.clear_uploads()
     events.clear_draft()
-    return query_episodes()
+    return {"episodes": query_episodes(), "warning": None if recorded == total else recording_warning(recorded, total, error)}
 
 def query_episodes():
     conn = database.get_db_connection()
