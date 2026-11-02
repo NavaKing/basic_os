@@ -4,7 +4,7 @@ import sqlite3
 import os
 import media
 
-DB_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dynasty_data.db")
+DB_FILE = os.environ.get("BASIC_OS_DB") or os.path.join(os.path.dirname(os.path.abspath(__file__)), "dynasty_data.db")
 
 # Depth chart slots for the starter roster, plus backups so position battles are possible
 DEFAULT_DEPTH_SLOTS = {

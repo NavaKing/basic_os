@@ -2,7 +2,8 @@ import os
 import sqlite3
 import random
 
-DB_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dynasty_data.db")
+# BASIC_OS_DB points the app at another database (the tests use a throwaway one)
+DB_FILE = os.environ.get("BASIC_OS_DB") or os.path.join(os.path.dirname(os.path.abspath(__file__)), "dynasty_data.db")
 STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
 
 # Columns added to schedule_tracking after the first version (scores, then game-day details from the save)
