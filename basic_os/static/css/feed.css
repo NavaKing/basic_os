@@ -1,0 +1,11 @@
+/* Campus feed: simulated Twitter/X posts */
+
+.twitter-container { background-color: #000; border-radius: 8px; border: 1px solid var(--border-soft); max-height: 760px; overflow-y: auto; }
+.tweet-card { padding: 12px 15px; border-bottom: 1px solid #222; display: flex; flex-direction: column; text-align: left; }
+.tweet-header { display: flex; align-items: center; margin-bottom: 5px; font-size: 13px; }
+.tweet-name { font-weight: bold; color: #fff; margin-right: 4px; }
+.tweet-handle { color: #71767b; }
+.tweet-badge { color: var(--blue); font-size: 11px; margin-left: 4px; }
+.tweet-body { font-size: 13px; line-height: 1.4; color: #e7e9ea; margin-bottom: 8px; word-wrap: break-word; }
+.tweet-photo { width: 100%; border-radius: 12px; border: 1px solid var(--border-soft); margin: 2px 0 8px; display: block; }
+.tweet-footer { display: flex; justify-content: space-between; color: #71767b; font-size: 11px; max-width: 90%; }

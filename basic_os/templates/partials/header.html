@@ -1,0 +1,20 @@
+<header class="site-header">
+    {# Background layer is clipped to the bar; the main logo sits outside it so it can break out of the bar #}
+    <div class="site-header-art" aria-hidden="true">
+        {% if us.logo %}<img class="site-header-watermark" src="{{ us.logo }}" alt="">{% endif %}
+    </div>
+    {% if us.logo %}<img class="site-header-logo" src="{{ us.logo }}" alt="{{ us.name }}"{% if us.id %} data-team-id="{{ us.id }}" title="Team page"{% endif %}>{% endif %}
+    <div class="site-header-text">
+        <h1 class="site-title">{{ us.full_name }} <span class="site-year">{{ season_year }}</span></h1>
+        <p class="site-subtitle">{{ us.full_name }} Football Custom Local Companion Engine{% if sync_status %} &middot; {{ sync_status }}{% endif %}</p>
+    </div>
+    <div class="generator">
+        <select id="model_select" aria-label="AI model">
+            <option value="cfb-gemma:latest">cfb-gemma:latest (Sports Context)</option>
+            <option value="gemma3:12b">gemma3:12b (Strict Layout)</option>
+        </select>
+        <button id="generate_btn" type="button">EXECUTE HUB GENERATOR</button>
+        <progress class="generator-progress" id="generator_progress" hidden></progress>
+        <div class="status-text" id="generator_status"></div>
+    </div>
+</header>

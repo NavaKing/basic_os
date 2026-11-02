@@ -1,0 +1,70 @@
+/* Weekly podcast tab */
+
+.pod-intake { margin-bottom: 16px; border-top: 3px solid var(--gold); }
+.pod-hosts { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; }
+.pod-host { display: grid; grid-template-columns: 140px minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 10px; border-radius: 6px;
+            background-color: var(--panel-inset); border: 1px solid var(--border-soft); }
+.pod-host .section-label { grid-column: 1 / -1; margin: 0; }
+.pod-host input, .pod-host select { margin: 0; }
+.pod-preview { width: auto; padding: 8px 10px; }
+
+.pod-drop { display: flex; flex-direction: column; align-items: center; gap: 6px; margin: 14px 0; padding: 26px; border: 2px dashed var(--border); border-radius: 8px;
+            color: #aaa; cursor: pointer; text-align: center; }
+.pod-drop:hover, .pod-drop.is-over { border-color: var(--gold); color: #fff; background-color: rgba(203, 157, 6, 0.06); }
+.pod-drop-icon { font-size: 30px; }
+.pod-uploads { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
+.pod-thumb { position: relative; margin: 0; }
+.pod-thumb img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 6px; border: 1px solid var(--border); display: block; }
+.pod-thumb figcaption { font-size: 11px; color: #999; margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pod-remove { position: absolute; top: 6px; right: 6px; width: 26px; height: 26px; padding: 0; border-radius: 50%; background-color: rgba(0, 0, 0, 0.7); color: #fff; font-size: 16px; line-height: 1; }
+.pod-plays .pod-remove { position: static; }
+.pod-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 12px; }
+.pod-actions button { width: auto; padding: 8px 14px; }
+
+.pod-review { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border); }
+.pod-warning { padding: 10px 12px; border-left: 3px solid var(--loss); background-color: rgba(239, 83, 80, 0.08); font-size: 13px; margin: 10px 0; }
+.pod-ok { padding: 10px 12px; border-left: 3px solid var(--win); background-color: rgba(102, 187, 106, 0.08); font-size: 13px; margin-bottom: 10px; }
+.pod-board, .pod-plays { width: 100%; margin-bottom: 12px; }
+.pod-board td, .pod-board th { text-align: center; }
+.pod-board td:first-child, .pod-board th:first-child { text-align: left; }
+.pod-plays input, .pod-plays select, .pod-board input { margin: 0; padding: 6px; }
+.pod-plays .ev-text { width: 100%; }
+.ev-points { text-align: center; color: #aaa; }
+
+/* Episodes */
+.pod-episode { margin-bottom: 18px; border-top: 3px solid var(--gold); }
+.pod-episode-head { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 20px; align-items: center; margin-bottom: 16px; }
+.pod-cover { width: 220px; height: 220px; object-fit: cover; border-radius: 10px; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5); }
+.pod-cover--blank { display: flex; align-items: center; justify-content: center; font-size: 70px; background: linear-gradient(135deg, var(--brown), var(--panel-inset)); }
+.pod-title { margin: 4px 0; color: #fff; font-size: 28px; font-weight: 900; line-height: 1.15; }
+.pod-summary { margin: 0 0 6px; color: #ccc; font-style: italic; }
+.pod-with { font-size: 12px; color: #999; margin-bottom: 12px; }
+.pod-controls { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.pod-play { width: auto; padding: 10px 18px; font-size: 14px; }
+.pod-progress { display: flex; flex-direction: column; gap: 4px; min-width: 220px; flex: 1; }
+.pod-bar { width: 100%; height: 8px; accent-color: var(--gold); }
+.pod-now { font-size: 11px; color: #aaa; }
+.pod-download { font-size: 12px; color: var(--gold); }
+
+.pod-columns { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 24px; }
+.pod-transcript { list-style: none; margin: 0; padding: 0; max-height: 640px; overflow-y: auto; }
+.pod-line { padding: 10px 12px; margin-bottom: 6px; border-radius: 8px; font-size: 14px; line-height: 1.55; color: #ddd; cursor: pointer;
+            background-color: var(--panel-inset); border-left: 3px solid var(--gold); }
+.pod-line--1 { border-left-color: var(--blue); margin-left: 24px; }
+.pod-line b { display: block; font-size: 11px; color: var(--gold); text-transform: uppercase; letter-spacing: 1px; }
+.pod-line--1 b { color: var(--blue); }
+.pod-line:hover { background-color: #2a2a34; }
+.pod-line.is-playing { background-color: rgba(203, 157, 6, 0.16); color: #fff; }
+.pod-side { min-width: 0; }
+.pod-box { margin-bottom: 14px; }
+.pod-plays-list { list-style: none; margin: 4px 0 14px; padding: 0; }
+.pod-plays-list li { font-size: 12px; color: #ddd; padding: 6px 0; border-bottom: 1px solid var(--border-soft); }
+.pod-play-q { display: inline-block; min-width: 58px; color: #888; }
+.pod-delete { width: auto; font-size: 11px; padding: 6px 10px; }
+
+@media (max-width: 900px) {
+    .pod-hosts, .pod-columns { grid-template-columns: minmax(0, 1fr); }
+    .pod-episode-head { grid-template-columns: minmax(0, 1fr); }
+    .pod-cover { width: 100%; height: auto; aspect-ratio: 1; }
+    .pod-host { grid-template-columns: minmax(0, 1fr); }
+}

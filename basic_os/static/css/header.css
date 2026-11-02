@@ -1,0 +1,40 @@
+/* Header bar (title, sync status, hub generator) and the tab bar */
+
+/* Team banner: an oversized logo breaks out of the bar, over a faded watermark and a gold diagonal stripe */
+.site-header { position: relative; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;
+               min-height: 96px; padding: 18px 20px 18px 170px; margin: 26px 0 22px; border-radius: 8px;
+               background: linear-gradient(120deg, var(--brown) 0%, var(--brown-dark) 60%, #120e0b 100%);
+               border-bottom: 3px solid var(--gold); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55); }
+.site-header-art { position: absolute; inset: 0; overflow: hidden; border-radius: inherit; pointer-events: none; }
+.site-header-art::before { content: ""; position: absolute; top: -40%; bottom: -40%; left: 118px; width: 26px; transform: skewX(-20deg);
+                           background: linear-gradient(var(--gold), #8a6a04); opacity: 0.85; box-shadow: 14px 0 0 rgba(203, 157, 6, 0.25); }
+.site-header-art::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(-20deg, transparent 0 14px, rgba(255, 255, 255, 0.018) 14px 15px); }
+.site-header-watermark { position: absolute; right: 22%; top: 50%; height: 260%; transform: translateY(-50%) rotate(-12deg); opacity: 0.07; filter: grayscale(1) brightness(2); }
+.site-header-logo { position: absolute; left: 6px; top: 50%; height: 150px; transform: translateY(-50%) rotate(-6deg); z-index: 1;
+                    filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.7)) drop-shadow(0 0 1px var(--gold)); }
+.site-header-text, .generator { position: relative; z-index: 1; }
+.site-title { margin: 0; color: #fff; font-size: 34px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; line-height: 1.05;
+              text-shadow: 0 2px 0 rgba(0, 0, 0, 0.6), 0 0 18px rgba(203, 157, 6, 0.25); }
+.site-year { color: var(--gold); font-weight: 300; letter-spacing: 4px; margin-left: 6px; }
+.site-subtitle { margin: 6px 0 0 0; color: #b9aa98; font-size: 13px; }
+
+@media (max-width: 700px) {
+    .site-header { padding-left: 110px; }
+    .site-header-logo { height: 110px; left: 0; }
+    .site-header-art::before { left: 78px; }
+    .site-title { font-size: 24px; }
+}
+
+.generator { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.generator select { width: auto; margin: 0; }
+.generator button { width: auto; padding: 10px 16px; }
+.generator .status-text { width: 100%; text-align: right; }
+
+.tabs { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; border-bottom: 2px solid var(--brown); }
+.tab { width: auto; background-color: transparent; color: #aaa; border-radius: 6px 6px 0 0; padding: 12px 20px; font-size: 13px; letter-spacing: 0.5px; }
+.tab:hover { background-color: var(--panel); color: #fff; }
+.tab[aria-selected="true"] { background-color: var(--gold); color: var(--bg); }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+.generator-progress { width: 100%; height: 6px; accent-color: var(--gold); }

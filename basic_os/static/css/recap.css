@@ -1,0 +1,105 @@
+/* Weekly Recap tab */
+
+.recap-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; border-top: 3px solid var(--gold); }
+.recap-title { margin: 0; color: #fff; font-size: 22px; letter-spacing: 1px; text-transform: uppercase; }
+.recap-subtitle { color: #888; font-size: 12px; margin-top: 2px; }
+.recap-nav { display: flex; gap: 6px; align-items: center; }
+.recap-nav select { width: auto; margin: 0; }
+.recap-arrow { font-size: 18px; line-height: 1; padding: 6px 12px; }
+
+.recap-row { display: grid; gap: 12px; margin-bottom: 12px; align-items: stretch; }
+.recap-row--3 { grid-template-columns: repeat(3, 1fr); }
+.recap-row--4 { grid-template-columns: repeat(4, 1fr); }
+
+/* Cards: red accent bar on the heading, like a broadcast graphic */
+.recap-card { display: flex; flex-direction: column; min-width: 0; }
+.recap-card-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; border-bottom: 1px solid var(--border); margin-bottom: 10px; }
+.recap-card-head h3 { border: none; margin: 0; padding: 0 0 8px 10px; border-left: 3px solid var(--red); font-size: 14px; }
+.recap-card-aside { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
+
+/* Team badge; --team-color is set per element from the team's colour */
+.team-chip { display: inline-flex; align-items: center; justify-content: center; min-width: 34px; height: 20px; padding: 0 4px; border-radius: 3px; margin-right: 8px;
+             background-color: var(--team-color, #555); color: #fff; font-size: 9px; font-weight: bold; letter-spacing: 0.3px; flex-shrink: 0; text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5); }
+.recap-logo { margin-right: 8px; }
+.team-name { font-weight: 600; color: #eee; }
+.team-rank { color: #aaa; font-weight: normal; font-size: 11px; }
+
+/* Player of the week cards */
+.player-hero { display: flex; gap: 14px; align-items: center; padding: 14px; border-radius: 6px; margin-bottom: 10px;
+               background: linear-gradient(135deg, color-mix(in srgb, var(--team-color, #444) 55%, transparent), var(--panel-inset) 75%); }
+.player-avatar { width: var(--headshot-size); height: var(--headshot-size); border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+                 background-color: var(--team-color, #555); color: #fff; font-size: 22px; font-weight: bold; border: 2px solid rgba(255, 255, 255, 0.25); }
+/* Headshots: portraits are head-and-shoulders on a white 512px canvas, so zoom in on the face */
+.player-avatar.has-photo, .heisman-avatar.has-photo { overflow: hidden; background: #e6e6e6; }
+.player-avatar.has-photo img, .heisman-avatar img { width: 100%; height: 100%; object-fit: cover; transform: scale(1.6); transform-origin: 50% 40%; }
+.player-avatar { overflow: hidden; }
+.heisman-avatar { width: var(--headshot-size); height: var(--headshot-size); border-radius: 50%; flex-shrink: 0; margin-right: 8px; overflow: hidden; border: 1px solid var(--border); }
+.heisman-avatar:not(.has-photo) { display: none; }
+.player-id { min-width: 0; }
+.player-first { color: #ddd; font-size: 15px; text-transform: uppercase; }
+.player-last { color: #fff; font-size: 24px; font-weight: 800; text-transform: uppercase; line-height: 1.1; overflow-wrap: anywhere; }
+.player-meta { color: #bbb; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; margin: 4px 0 8px; }
+.player-result { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; font-size: 12px; color: #aaa; }
+.player-result .team-chip { margin-right: 4px; }
+.player-note { font-size: 11px; color: #aaa; margin-top: 6px; }
+.result-win { color: var(--win); font-weight: bold; }
+.result-loss { color: var(--loss); font-weight: bold; }
+
+.stat-boxes { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid var(--gold); border-radius: 4px; margin-top: auto; }
+.stat-box { text-align: center; padding: 8px 4px; border-left: 1px solid var(--border-soft); }
+.stat-box:first-child { border-left: none; }
+.stat-box-value { font-size: 22px; font-weight: 800; color: #fff; }
+.stat-box-label { font-size: 9px; color: #999; text-transform: uppercase; letter-spacing: 0.5px; }
+.stat-boxes--inline { border-color: var(--border); margin-top: 0; min-width: 260px; }
+.stat-boxes--inline .stat-box-value { font-size: 16px; }
+
+/* Box scores */
+.box-score { margin-top: 0; }
+.box-score th { position: static; font-size: 10px; text-transform: uppercase; }
+.box-score td { vertical-align: middle; }
+.box-num { text-align: center; font-size: 15px; font-weight: 600; color: #ccc; }
+.box-total { font-size: 18px; color: #fff; }
+.box-winner .box-total { color: var(--loss); }
+.box-score th:not(:first-child) { text-align: center; }
+.box-footer { font-size: 12px; color: #aaa; margin: 8px 0 4px; display: flex; align-items: center; gap: 8px; }
+.box-tag { background-color: rgba(198, 40, 40, 0.25); color: var(--loss); font-weight: bold; padding: 2px 6px; border-radius: 3px; font-size: 11px; }
+
+/* Lists: CFP, polls, swings, streaks */
+.recap-list, .cfp-list, .heisman-list { list-style: none; margin: 0; padding: 0; }
+.recap-list li, .cfp-list li, .heisman-list li { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--border-soft); font-size: 13px; }
+.recap-list li:last-child, .cfp-list li:last-child, .heisman-list li:last-child { border-bottom: none; }
+.list-main { display: flex; align-items: center; flex-wrap: wrap; flex: 1; min-width: 0; gap: 0 4px; }
+.list-sub { font-size: 11px; color: #888; width: 100%; }
+.recap-list .list-main .list-sub { padding-left: 46px; }
+.list-seed { width: 22px; color: #888; font-size: 16px; text-align: center; flex-shrink: 0; }
+.list-record { color: #888; font-size: 11px; margin-left: auto; white-space: nowrap; }
+.swing-now { color: #888; font-size: 11px; white-space: nowrap; }
+.list-value { font-weight: bold; color: #fff; min-width: 48px; text-align: right; }
+.cfp-list { columns: 2; column-gap: 20px; }
+.cfp-list li { break-inside: avoid; }
+.poll-move { color: #aaa; white-space: nowrap; }
+.poll-move strong { color: #fff; font-size: 15px; }
+.swing { font-weight: bold; min-width: 60px; text-align: right; }
+.swing-up { color: var(--win); }
+.swing-down { color: var(--loss); }
+.streak-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.streak-label { font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+.streak { font-weight: bold; font-size: 15px; }
+.streak-win { color: var(--win); }
+.streak-loss { color: var(--loss); }
+
+/* Heisman race */
+.heisman-list li { gap: 16px; }
+.heisman-name { color: #fff; font-weight: bold; text-transform: uppercase; }
+.heisman-list .list-main { flex-wrap: nowrap; }
+.heisman-list .list-sub { width: auto; }
+.heisman-move { width: 40px; text-align: center; }
+
+@media (max-width: 1400px) {
+    .recap-row--4 { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 900px) {
+    .recap-row--3, .recap-row--4 { grid-template-columns: 1fr; }
+    .cfp-list { columns: 1; }
+    .heisman-list li { flex-wrap: wrap; }
+}

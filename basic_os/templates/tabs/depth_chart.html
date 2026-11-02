@@ -1,0 +1,72 @@
+{% set injury_classes = {'Out': 'out', 'Doubtful': 'out', 'Questionable': 'questionable'} %}
+
+<section class="tab-panel" id="tab-depth" role="tabpanel">
+    <div class="depth-layout">
+        {# Roster table (rows rendered by static/js/depth-chart.js) #}
+        <div class="panel">
+            <h3>📋 Depth Chart &middot; Full Roster</h3>
+            <div class="depth-toolbar">
+                <select id="position_select" aria-label="Position">
+                    <option value="ALL">All positions ({{ depth_chart|length }} players)</option>
+                    {% for code, name in positions %}
+                    <option value="{{ code }}">{{ code }} &mdash; {{ name|title }}</option>
+                    {% endfor %}
+                </select>
+                <span class="depth-count" id="depth_count"></span>
+            </div>
+            <div class="table-wrapper table-wrapper--tall">
+                <table>
+                    <thead>
+                        <tr><th>Slot</th><th>#</th><th>Name</th><th>Class</th><th>Ht / Wt</th><th>OVR</th><th>Status</th><th>{{ 'Week ' ~ last_game.week_id if last_game else 'Last game' }}</th></tr>
+                    </thead>
+                    <tbody id="depth_chart_body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="depth-side">
+        {# Injury report #}
+        <div class="panel">
+            <h3>🏥 {{ us.name }} Injury Report</h3>
+            {% for player in injuries %}
+                {% set level = injury_classes.get(player.health_status, 'probable') %}
+                <div class="injury-card injury-{{ level }}">
+                    <div class="section-label">#{{ player.jersey_num }} {{ player.player_name }} ({{ player.depth_slot or player.position }})
+                        <span class="status-chip status-{{ level }}">{{ player.health_status }}</span>
+                    </div>
+                    <div class="injury-detail">
+                        Injury: {{ player.injury_type }}<br>
+                        Timeline: {{ player.duration_weeks }}
+                    </div>
+                </div>
+            {% else %}
+                <div class="empty-note empty-note--compact">All roster players reporting 100% healthy{% if game %} for Week {{ game.week_id }}{% endif %}.</div>
+            {% endfor %}
+        </div>
+
+        {# Season stat leaders #}
+        <div class="panel">
+            <h3>🏆 {{ us.name }} Season Leaders</h3>
+            <div class="leader-boards">
+                {% for board in leaders %}
+                <div class="leader-board">
+                    <div class="section-label">{{ board.title }}</div>
+                    {% for p in board.leaders %}
+                    <div class="leader{{ ' leader--top' if loop.first else '' }}">
+                        <span class="headshot">{% if p.portrait %}<img src="{{ p.portrait }}" alt="" loading="lazy">{% endif %}</span>
+                        <div class="leader-id">
+                            <div class="leader-name">{{ p.name }}</div>
+                            <div class="muted leader-detail">#{{ p.jersey }} {{ p.position }} &middot; {{ p.detail }}</div>
+                        </div>
+                        <div class="leader-value">{{ p.value }}<span>{{ board.unit }}</span></div>
+                    </div>
+                    {% else %}
+                    <div class="muted leader-empty">No stats yet.</div>
+                    {% endfor %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        </div>
+    </div>
+</section>

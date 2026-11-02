@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}BASIC OS - {{ us.name if us else 'Dynasty' }} Dynasty Hub{% endblock %}</title>
+    {% for sheet in ['base', 'header', 'gameday', 'feed', 'story', 'depth-chart', 'storylines', 'recap', 'team', 'recruiting', 'season', 'coaches', 'podcast'] %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/' ~ sheet ~ '.css') }}">
+    {% endfor %}
+</head>
+<body>
+    <div class="page">
+        {% block content %}{% endblock %}
+    </div>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

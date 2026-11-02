@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.pyc
+
+# Node
+node_modules/
+
+# Your dynasty data (personal; rebuilt from the save on first run)
+*.db
+*.db-journal
+basic_os/data_exports/
+basic_os/game_saves/
+
+# Generated at runtime
+basic_os/static/generated/
+basic_os/static/podcasts/
+basic_os/uploads/
+
+# Team logos are trademarks: downloaded locally by `python media.py`, never committed
+basic_os/static/logos/
+
+# Editors / OS
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini

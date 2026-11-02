@@ -1,0 +1,69 @@
+import database
+import league
+import media
+import roster
+import storylines
+import team
+
+# The season as a story: one entry per week with the game, that week's dispatch and photos,
+# the player of the game, storyline beats and where the team stood in the AP poll.
+
+TWEET_PHOTOS = 3
+
+def player_of_the_game(week):
+    """Our best performer in that week's game by impact score, with his stat line."""
+    stats = roster.query_week_stats(week)
+    if not stats:
+        return None
+    players = {p['save_id']: p for p in roster.query_full_roster() if p['save_id']}
+    best = max((pid for pid in stats if pid in players), key=lambda pid: storylines.impact_score(stats[pid]), default=None)
+    if not best:
+        return None
+    p = players[best]
+    return {"name": p['player_name'], "position": p['position'], "line": roster.format_stat_line(stats[best]),
+            "portrait": media.portrait_url("player", p.get('portrait_file'))}
+
+def storyline_beats():
+    """{week: [beat]} for storylines starting, continuing and ending each week."""
+    beats = {}
+    for status in ("active", "resolved"):
+        for s in storylines.query_storyline_rows(status):
+            for chapter in storylines.query_chapters(s['storyline_id']):
+                kind = "started" if chapter['week_num'] == s['start_week'] else "chapter"
+                beats.setdefault(chapter['week_num'], []).append({"kind": kind, "title": s['title'], "text": chapter['chapter_text']})
+            if status == "resolved" and s.get('end_week'):
+                beats.setdefault(s['end_week'], []).append({"kind": "resolved", "title": s['title'], "text": s.get('finale_text') or s.get('resolution') or ""})
+    return beats
+
+def build_timeline():
+    us = team.user_team()
+    stories = {s['week_num']: s for s in database.query_archived_stories()}
+    beats = storyline_beats()
+    polls = dict(league.query_team_polls(us['id'])) if us.get('id') is not None else {}
+    active = database.query_active_week()
+    entries = []
+    for game in database.query_full_schedule():
+        week = game['week_id']
+        if not game['is_played'] and (not active or week != active['week_id']):
+            continue  # future weeks beyond the next game have nothing to tell yet
+        opponent = team.opponent(game['opponent_name'])
+        story = stories.get(week)
+        tweets = database.query_active_tweets(week)
+        result = None
+        if game['is_played'] and game['wyo_score'] is not None:
+            mine, theirs = game['wyo_score'], game['opp_score']
+            result = {"outcome": "W" if mine > theirs else ("L" if mine < theirs else "T"), "score": f"{mine}-{theirs}"}
+        rank = polls.get(week)
+        entries.append({
+            "week": week, "played": bool(game['is_played']), "date": game.get('game_date'),
+            "venue": "vs" if game.get('site') in ("Home", "Neutral") else "at",
+            "opponent": game['opponent_name'], "opponent_id": opponent['id'] if opponent else None, "opponent_logo": opponent['logo'] if opponent else None,
+            "result": result,
+            "rank_after": rank if rank and rank <= 25 else None,
+            "player": player_of_the_game(week) if game['is_played'] else None,
+            "story": {"text": story['generated_text'], "image": story.get('image_path')} if story else None,
+            "photos": [t['image_path'] for t in tweets if t.get('image_path')][:TWEET_PHOTOS],
+            "top_post": next((t['tweet_text'] for t in tweets), None),
+            "beats": beats.get(week, []),
+        })
+    return entries

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block content %}
+    {% include "partials/header.html" %}
+    {% include "partials/tab_nav.html" %}
+
+    {% include "tabs/gameday.html" %}
+    {% include "tabs/story.html" %}
+    {% include "tabs/depth_chart.html" %}
+    {% include "tabs/locker_room.html" %}
+    {% include "tabs/weekly_recap.html" %}
+    {% include "tabs/recruiting.html" %}
+    {% include "tabs/season.html" %}
+    {% include "tabs/coaches.html" %}
+    {% include "tabs/podcast.html" %}
+
+    {# Team page; filled in by static/js/team.js when a team logo is clicked #}
+    <dialog class="team-dialog" id="team_dialog" aria-label="Team details"></dialog>
+{% endblock %}
+
+{% block scripts %}
+    {# Data for the JavaScript components; rendered client-side so first load and live updates share one code path #}
+    <script type="application/json" id="page_data">{{ {"team_name": us.name, "storylines": storylines, "tweets": tweets, "stories": past_stories, "depth_chart": depth_chart, "game": game, "recap": recap, "recap_weeks": recap_weeks, "coach_plan": coach_plan, "plan_weeks": plan_weeks, "coach_news": coach_news, "podcast_episodes": podcast_episodes, "event_uploads": event_uploads, "event_draft": event_draft}|tojson }}</script>
+    <script type="module" src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% endblock %}

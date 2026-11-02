@@ -1,0 +1,44 @@
+/* Locker Room tab: storyline tracker cards */
+
+.tracker-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; border-bottom: 1px solid var(--border); margin-bottom: 12px; padding-bottom: 8px; }
+.tracker-header h3 { border-bottom: none; margin: 0; padding: 0; }
+.tracker-controls { display: flex; gap: 8px; flex-wrap: wrap; }
+.tracker .status-text { margin-bottom: 8px; }
+.storyline-empty { font-size: 12px; color: #666; padding: 20px 0; }
+.tracker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 12px; }
+
+.storyline-card { background-color: var(--panel-inset); padding: 14px; border-radius: 4px; border-top: 3px solid var(--blue); font-size: 13px; line-height: 1.5; display: flex; flex-direction: column; }
+.storyline-card.type-battle { border-top-color: var(--orange); }
+.storyline-card.type-pressure { border-top-color: var(--red); }
+.storyline-card.type-hype { border-top-color: var(--gold); }
+.storyline-card.type-comeback { border-top-color: var(--green); }
+.storyline-card.resolved { border-top-color: #555; color: #bbb; }
+
+.storyline-topline { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
+.type-badge { font-weight: bold; padding: 2px 6px; border-radius: 3px; color: #fff; background-color: var(--blue); }
+.type-battle .type-badge { background-color: var(--orange); }
+.type-pressure .type-badge { background-color: var(--red); }
+.type-hype .type-badge { background-color: var(--gold); color: var(--bg); }
+.type-comeback .type-badge { background-color: var(--green); }
+.resolved .type-badge { background-color: #555; }
+.storyline-title { font-weight: bold; color: #fff; font-size: 15px; margin-bottom: 4px; }
+.storyline-trigger { font-size: 11px; color: #999; font-style: italic; margin-bottom: 10px; }
+
+.cast-row { background-color: var(--panel); border-radius: 4px; padding: 8px 10px; margin-bottom: 6px; }
+.cast-head { display: flex; justify-content: space-between; gap: 8px; }
+.cast-name { font-weight: bold; color: #fff; }
+.cast-role { font-size: 9px; font-weight: bold; text-transform: uppercase; color: var(--gold); margin-right: 6px; }
+.cast-slot { font-size: 11px; color: #aaa; white-space: nowrap; }
+.cast-stats { font-size: 11px; color: #ccc; margin-top: 2px; }
+.health-injured { color: var(--loss); }
+
+.storyline-timeline { border-left: 2px solid var(--border-soft); margin: 8px 0 0 4px; padding-left: 12px; }
+.storyline-chapter { position: relative; margin-bottom: 8px; }
+.storyline-chapter::before { content: ""; position: absolute; left: -17px; top: 6px; width: 8px; height: 8px; border-radius: 50%; background-color: var(--gold); }
+.storyline-chapter.final::before { background-color: var(--text-muted); }
+.storyline-chapter-week { font-size: 10px; color: var(--gold); font-weight: bold; text-transform: uppercase; display: block; }
+
+.storyline-actions { display: flex; gap: 6px; margin-top: auto; padding-top: 10px; }
+.storyline-actions button { padding: 8px; font-size: 11px; }
+.storyline-concluded { margin-top: 14px; }
+.storyline-concluded summary { cursor: pointer; color: #888; font-size: 11px; margin-bottom: 10px; text-transform: uppercase; }

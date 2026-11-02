@@ -1,0 +1,33 @@
+{# Coaches: the weekly game plan and the coaches news column. Rendered by static/js/coaches.js from gameplan.py / coaches.py data #}
+<section class="tab-panel" id="tab-coaches" role="tabpanel">
+    <div class="plan-shell">
+        <div class="plan-weeks" id="plan_weeks" role="tablist" aria-label="Opponent"></div>
+        <div id="coach_plan"></div>
+    </div>
+
+    <div class="panel news-panel">
+        <div class="news-head">
+            <div>
+                <div class="section-label">Around the league</div>
+                <h2 class="news-title">What the Coaches Are Saying</h2>
+                <div class="muted news-sub">Rankings from this season's results. Quotes are AI-written for your dynasty and aren't real.</div>
+            </div>
+            <div class="news-actions">
+                <button type="button" id="news_generate">Write this week's quotes</button>
+                <div class="status-text" id="news_status"></div>
+            </div>
+        </div>
+        <div class="news-controls">
+            <div class="news-roles" role="tablist">
+                <button type="button" class="news-role" data-role="hc">Head Coaches</button>
+                <button type="button" class="news-role" data-role="oc">Offensive Coordinators</button>
+                <button type="button" class="news-role" data-role="dc">Defensive Coordinators</button>
+            </div>
+            <div class="news-lists" role="tablist">
+                <button type="button" class="news-list" data-list="top">🏆 Top 10</button>
+                <button type="button" class="news-list" data-list="hot">🔥 Hot Seat</button>
+            </div>
+        </div>
+        <div class="news-grid" id="news_grid"></div>
+    </div>
+</section>

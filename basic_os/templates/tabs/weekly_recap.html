@@ -1,0 +1,16 @@
+{# Weekly Recap: league-wide awards, games, polls and races. Cards are rendered by static/js/recap.js #}
+<section class="tab-panel" id="tab-recap" role="tabpanel">
+    <div class="panel recap-header">
+        <div>
+            <h2 class="recap-title">📅 Weekly Recap</h2>
+            <div class="recap-subtitle" id="recap_subtitle"></div>
+        </div>
+        <div class="recap-nav">
+            <button class="btn-secondary recap-arrow" id="recap_prev" type="button" aria-label="Previous week">&lsaquo;</button>
+            <select id="recap_week" aria-label="Week"></select>
+            <button class="btn-secondary recap-arrow" id="recap_next" type="button" aria-label="Next week">&rsaquo;</button>
+        </div>
+    </div>
+    <div class="status-text" id="recap_status"></div>
+    <div id="recap_body"></div>
+</section>

@@ -1,0 +1,166 @@
+/* Coaches tab: game plan and coaches news column */
+
+.plan-shell { margin-bottom: 18px; }
+.plan-weeks { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 10px; }
+.plan-week { width: auto; flex-shrink: 0; padding: 6px 10px; font-size: 11px; background-color: var(--panel); color: #aaa; border: 1px solid var(--border-soft); }
+.plan-week span { color: #777; font-weight: normal; }
+.plan-week.is-played { opacity: 0.7; }
+.plan-week.is-current { border-color: var(--red); color: #fff; background-color: rgba(198, 40, 40, 0.18); opacity: 1; }
+
+/* Matchup banner */
+.plan-banner { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 340px) minmax(0, 1fr); gap: 16px; align-items: center; padding: 22px;
+               border-radius: 8px; margin-bottom: 10px; background: linear-gradient(90deg, var(--brown) 0%, var(--panel) 35%, var(--panel) 65%, #1b1b22 100%);
+               border-top: 3px solid var(--red); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45); }
+.plan-side { display: flex; align-items: center; gap: 16px; min-width: 0; }
+.plan-side--right { flex-direction: row-reverse; text-align: right; }
+.plan-side-logo { width: 110px; height: 110px; object-fit: contain; flex-shrink: 0; filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.6)); }
+.plan-side > .team-chip { width: 110px; height: 110px; border-radius: 50%; font-size: 18px; }
+.plan-side-id { min-width: 0; }
+.plan-side-label { color: var(--gold); font-size: 10px; font-weight: bold; letter-spacing: 3px; text-transform: uppercase; }
+.plan-side-name { color: #fff; font-size: 34px; font-weight: 900; text-transform: uppercase; line-height: 1; letter-spacing: 1px; overflow-wrap: anywhere; }
+.plan-side-record { color: #ddd; font-weight: bold; margin: 2px 0 10px; }
+.plan-coach { display: inline-flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 6px; background-color: rgba(0, 0, 0, 0.3); border: 1px solid var(--border-soft); text-align: left; }
+.plan-side--right .plan-coach { flex-direction: row-reverse; text-align: right; }
+.plan-coach-name { color: #fff; font-weight: 800; text-transform: uppercase; }
+.plan-coach-scheme { font-size: 11px; color: #bbb; }
+.plan-coach-scheme b { color: var(--gold); }
+
+.plan-center { text-align: center; }
+.plan-vs { display: inline-block; padding: 4px 14px; border: 1px solid var(--border); color: #fff; font-weight: 900; font-size: 20px; letter-spacing: 3px; margin-bottom: 10px; }
+.plan-odds { display: flex; justify-content: space-between; align-items: baseline; }
+.plan-odds-us, .plan-odds-them { font-size: 20px; font-weight: 900; color: var(--gold); }
+.plan-odds-them { color: #ccc; }
+.plan-odds-label { font-size: 9px; color: #888; letter-spacing: 2px; text-transform: uppercase; }
+.plan-odds-bar { width: 100%; height: 8px; accent-color: var(--gold); }
+.plan-line { display: flex; flex-direction: column; margin: 8px auto; padding: 6px; border: 1px solid var(--border-soft); border-radius: 4px; }
+.plan-line strong { color: #fff; }
+.plan-line span, .plan-venue { font-size: 10px; color: #888; letter-spacing: 2px; text-transform: uppercase; }
+.plan-when { color: #fff; font-weight: 800; text-transform: uppercase; }
+.plan-when span { color: #aaa; font-weight: normal; }
+.plan-generate { margin-top: 12px; width: auto; padding: 8px 14px; }
+
+.plan-nav { display: flex; flex-wrap: wrap; gap: 4px; padding: 8px; margin-bottom: 12px; border-radius: 6px; background-color: var(--panel); position: sticky; top: 0; z-index: 5; }
+.plan-nav button { width: auto; padding: 6px 10px; font-size: 11px; background: transparent; color: #aaa; text-transform: uppercase; letter-spacing: 0.5px; }
+.plan-nav button:hover { background-color: var(--red); color: #fff; }
+.plan-note { font-size: 12px; color: #bbb; padding: 10px 12px; margin-bottom: 12px; border-left: 3px solid var(--gold); background-color: var(--panel); border-radius: 4px; }
+
+/* Cards and section heads */
+.plan-row { display: grid; gap: 12px; margin-bottom: 12px; }
+.plan-row--3 { grid-template-columns: 1.2fr 1.2fr 0.8fr; }
+.plan-row--2 { grid-template-columns: 1fr 1fr; }
+.plan-card { scroll-margin-top: 60px; min-width: 0; }
+.plan-section { margin-bottom: 12px; }
+.plan-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 10px; border-bottom: 1px solid var(--border); margin-bottom: 12px; padding-bottom: 8px; }
+.plan-kicker { color: var(--red); font-size: 10px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase; }
+.plan-title { margin: 0; padding: 0; border: none; color: #fff; font-size: 20px; font-weight: 900; letter-spacing: 0.5px; }
+.plan-aside { font-size: 11px; color: #999; text-transform: uppercase; text-align: right; }
+.plan-empty { font-size: 12px; color: #777; padding: 12px 0; }
+.plan-empty--inline { padding: 4px 0 8px; }
+
+.plan-keys { list-style: none; margin: 0; padding: 0; }
+.plan-keys li { display: flex; gap: 12px; align-items: center; padding: 12px; margin-bottom: 8px; border: 1px solid var(--border-soft); border-radius: 6px; background-color: var(--panel-inset); font-size: 14px; color: #eee; }
+.plan-keys li span { color: var(--red); font-size: 20px; font-weight: 900; min-width: 22px; text-align: center; }
+
+.plan-bullets { list-style: none; margin: 0; padding: 0; }
+.plan-bullets li { display: flex; gap: 10px; padding: 9px 10px; margin-bottom: 6px; border: 1px solid var(--border-soft); border-radius: 6px; background-color: var(--panel-inset); font-size: 13px; color: #ddd; }
+.plan-bullet-icon { flex-shrink: 0; }
+
+.plan-staff { display: flex; flex-wrap: wrap; gap: 10px 18px; margin-bottom: 12px; }
+.plan-staff-member { display: flex; align-items: center; gap: 8px; }
+.plan-staff-role { font-size: 10px; color: #999; text-transform: uppercase; }
+
+.plan-avail-team { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: bold; color: #ccc; text-transform: uppercase; margin-top: 10px; }
+.plan-injury { font-size: 12px; color: #ccc; padding: 4px 0; }
+.plan-injury-status { color: var(--loss); font-weight: bold; }
+
+/* Quarterbacks */
+.plan-qb { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 16px; }
+.plan-qb-id { text-align: center; padding: 12px 8px; border: 1px solid var(--border-soft); border-radius: 6px; background-color: var(--panel-inset); }
+.headshot--lg { --headshot-size: 96px; }
+.plan-qb-jersey { font-size: 11px; color: #999; margin-top: 4px; }
+.plan-qb-first { color: #aaa; font-size: 12px; text-transform: uppercase; margin-top: 6px; }
+.plan-qb-last { color: #fff; font-size: 24px; font-weight: 900; text-transform: uppercase; line-height: 1.05; overflow-wrap: anywhere; }
+.plan-qb-meta { font-size: 10px; color: #999; text-transform: uppercase; margin-top: 4px; }
+.plan-statline { display: grid; grid-template-columns: repeat(auto-fit, minmax(62px, 1fr)); border: 1px solid var(--border); border-radius: 4px; margin-bottom: 10px; }
+.plan-statline div { text-align: center; padding: 8px 4px; border-left: 1px solid var(--border-soft); }
+.plan-statline div:first-child { border-left: none; }
+.plan-statline b { display: block; color: #fff; font-size: 18px; }
+.plan-statline span { font-size: 9px; color: #999; text-transform: uppercase; }
+.plan-ratings { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; margin-bottom: 10px; }
+.plan-rating { display: grid; grid-template-columns: 96px minmax(0, 1fr) 26px; align-items: center; gap: 8px; font-size: 11px; color: #aaa; }
+.plan-rating meter { width: 100%; height: 8px; }
+.plan-rating b { color: #fff; text-align: right; }
+
+/* Matchups */
+.plan-personnel { padding: 10px 14px; margin-bottom: 14px; border-radius: 6px; border: 1px solid rgba(198, 40, 40, 0.5); background-color: rgba(198, 40, 40, 0.08); font-size: 13px; color: #eee; }
+.plan-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.plan-col-title { margin: 0 0 10px; padding-left: 10px; color: #fff; font-size: 16px; font-weight: 900; text-transform: uppercase; border-left: 3px solid var(--win); }
+.plan-col-title--lose { border-left-color: var(--loss); }
+.plan-col-title--call { border-left-color: var(--gold); margin-top: 18px; }
+.plan-col-title sup { color: #777; font-size: 10px; }
+.plan-col-title small { display: block; font-size: 10px; color: #888; font-weight: normal; text-transform: none; }
+
+.plan-matchup { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; padding: 10px; margin-bottom: 8px; border-radius: 6px;
+                background-color: var(--panel-inset); border: 1px solid var(--border-soft); border-left: 3px solid var(--win); }
+.plan-matchup--lose { border-left-color: var(--loss); }
+.plan-faces { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
+.plan-face { display: flex; flex-direction: column; align-items: center; text-align: center; min-width: 0; --headshot-size: 52px; }
+.plan-face b { font-size: 11px; color: #fff; text-transform: uppercase; margin-top: 4px; max-width: 64px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.plan-face span { font-size: 9px; color: #999; }
+.plan-vs-small { font-size: 10px; color: #777; text-transform: uppercase; }
+.plan-matchup-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 4px; }
+.plan-matchup-label { color: var(--win); font-size: 11px; font-weight: bold; letter-spacing: 1px; text-transform: uppercase; }
+.plan-matchup--lose .plan-matchup-label { color: var(--loss); }
+.plan-matchup-note { font-size: 13px; color: #eee; line-height: 1.4; }
+.plan-grade { display: inline-flex; align-items: center; gap: 6px; font-size: 10px; color: #999; text-transform: uppercase; white-space: nowrap; }
+.plan-grade i { display: inline-flex; gap: 2px; }
+.plan-grade em { width: 12px; height: 4px; border-radius: 2px; background-color: #444; }
+.plan-grade--win em.on { background-color: var(--win); }
+.plan-grade--lose em.on { background-color: var(--loss); }
+.plan-call { padding: 9px 12px; margin-bottom: 6px; border-radius: 6px; background-color: var(--panel-inset); border: 1px solid var(--border-soft); border-left: 3px solid var(--gold); }
+.plan-call .plan-matchup-label { color: var(--gold); }
+
+/* Tale of the tape */
+.plan-tape { width: 100%; max-width: 640px; margin: 0 auto; }
+.plan-tape th { text-align: center; position: static; }
+.plan-tape td { text-align: center; font-size: 16px; font-weight: bold; color: #bbb; padding: 6px; border-bottom: 1px solid var(--border-soft); }
+.plan-tape td.plan-tape-label { font-size: 11px; color: #888; font-weight: normal; text-transform: uppercase; letter-spacing: 1px; }
+.plan-tape td.plan-better { color: var(--win); }
+
+/* Coaches news column */
+.news-panel { border-top: 3px solid var(--gold); }
+.news-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; flex-wrap: wrap; }
+.news-title { margin: 2px 0; color: #fff; font-size: 24px; font-weight: 900; text-transform: uppercase; }
+.news-sub { font-size: 12px; }
+.news-actions { text-align: right; }
+.news-actions button { width: auto; padding: 8px 14px; }
+.news-controls { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin: 14px 0; }
+.news-roles, .news-lists { display: flex; gap: 6px; flex-wrap: wrap; }
+.news-role, .news-list { width: auto; padding: 8px 12px; font-size: 12px; background-color: var(--panel-inset); color: #aaa; border: 1px solid var(--border-soft); }
+.news-role[aria-selected="true"] { background-color: var(--gold); color: var(--bg); }
+.news-list[aria-selected="true"] { background-color: var(--red); color: #fff; }
+.news-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+.news-card { padding: 14px; border-radius: 8px; background-color: var(--panel-inset); border: 1px solid var(--border-soft); border-top: 3px solid var(--team-color, var(--gold)); display: flex; flex-direction: column; gap: 8px; }
+.news-card--hot { box-shadow: inset 0 0 0 1px rgba(239, 83, 80, 0.25); }
+.news-card-head { display: flex; gap: 12px; align-items: center; }
+.news-card-id { min-width: 0; }
+.news-card-name { color: #fff; font-size: 16px; font-weight: 800; }
+.news-card-team { font-size: 12px; color: #ccc; }
+.news-card-stat { font-size: 11px; color: var(--gold); }
+.news-card-headline { margin: 0; color: #fff; font-size: 15px; }
+.news-card-quote { margin: 0; padding-left: 10px; border-left: 2px solid var(--team-color, var(--gold)); font-size: 13px; line-height: 1.5; color: #ddd; font-style: italic; }
+.news-card-foot { margin-top: auto; font-size: 11px; color: #888; }
+
+@media (max-width: 1200px) {
+    .plan-row--3 { grid-template-columns: 1fr 1fr; }
+    .plan-banner { grid-template-columns: 1fr; }
+    .plan-side--right { flex-direction: row; text-align: left; }
+    .plan-side--right .plan-coach { flex-direction: row; text-align: left; }
+}
+@media (max-width: 900px) {
+    .plan-row--3, .plan-row--2, .plan-columns { grid-template-columns: minmax(0, 1fr); }
+    .plan-qb { grid-template-columns: minmax(0, 1fr); }
+    .plan-matchup { grid-template-columns: minmax(0, 1fr); }
+    .plan-side-name { font-size: 24px; }
+    .plan-side-logo, .plan-side > .team-chip { width: 72px; height: 72px; }
+}

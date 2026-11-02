@@ -1,0 +1,58 @@
+/* Game Day tab: game of the week, forecast, last result, schedule */
+
+.gameday-grid { display: grid; grid-template-columns: 1fr 1.3fr 1fr; gap: 12px; align-items: start; }
+
+.gotw { background: linear-gradient(160deg, var(--brown), var(--panel) 70%); border-top: 4px solid var(--gold); }
+.gotw-kicker { font-size: 11px; color: var(--gold); font-weight: bold; letter-spacing: 1px; text-transform: uppercase; }
+.gotw-matchup { font-size: 22px; font-weight: bold; color: #fff; margin: 8px 0 2px; line-height: 1.25; }
+.gotw-record { color: #aaa; font-size: 13px; margin-bottom: 12px; }
+.gotw-facts { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; font-size: 13px; }
+.gotw-facts dt { color: #888; }
+.gotw-facts dd { margin: 0; color: #fff; }
+
+.forecast { display: flex; align-items: center; gap: 16px; background-color: var(--panel-inset); border-radius: 6px; padding: 14px; margin-top: 14px; }
+.forecast-icon { font-size: 44px; line-height: 1; }
+.forecast-temp { font-size: 30px; font-weight: bold; color: #fff; }
+.forecast-detail { font-size: 12px; color: #bbb; line-height: 1.6; }
+
+.last-result { margin-top: 12px; font-size: 13px; background-color: var(--panel-inset); border-radius: 6px; padding: 12px; border-left: 3px solid var(--green); }
+.last-result.result-loss { border-left-color: var(--red); }
+.last-result-detail { font-size: 12px; margin-top: 4px; }
+
+@media (max-width: 1200px) {
+    .gameday-grid { grid-template-columns: 1fr; }
+}
+
+/* Logo + head coach on each side of the Game of the Week */
+.gotw-sides { display: flex; align-items: flex-start; justify-content: space-around; gap: 12px; margin: 14px 0 6px; }
+.gotw-side { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; min-width: 0; flex: 1; }
+.gotw-vs { align-self: center; }
+.gotw-logo { width: 72px; height: 72px; object-fit: contain; }
+/* Head coach first and larger, then the OC and DC */
+.gotw-coach { display: flex; align-items: center; gap: 10px; width: 100%; max-width: 220px; text-align: left; }
+.gotw-coach-text { min-width: 0; }
+.gotw-coach-name { color: #eee; font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gotw-coach-role { color: #888; font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px; }
+.gotw-coach--lead { margin: 4px 0 2px; }
+.gotw-coach--lead .headshot { border-color: var(--gold); }
+.gotw-coach--lead .gotw-coach-name { font-size: 14px; color: #fff; }
+.gotw-coach--lead .gotw-coach-role { color: var(--gold); }
+.gotw-vs { color: var(--gold); font-weight: bold; font-size: 18px; }
+.gotw-logo--blank { display: flex; align-items: center; justify-content: center; font-size: 36px; opacity: 0.5; }
+.gotw-team { color: #fff; font-weight: bold; font-size: 13px; }
+.gotw-team { overflow-wrap: anywhere; }
+
+/* Opponent scouting card */
+.scouting { margin-top: 12px; border-top: 3px solid var(--team-color, var(--border)); }
+.scouting-head { display: flex; align-items: center; gap: 12px; }
+.scouting-logo { width: 56px; height: 56px; object-fit: contain; }
+.scouting-name { font-size: 17px; font-weight: bold; color: #fff; }
+.scouting-meta { font-size: 12px; }
+.scouting-last { font-size: 12px; margin-top: 10px; }
+.scouting-preview { font-size: 13px; line-height: 1.5; color: #ddd; margin: 10px 0; }
+.scouting-label { margin-top: 12px; }
+.scouting-players { list-style: none; margin: 0; padding: 0; }
+.scouting-players li { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--border-soft); }
+.scouting-players li:last-child { border-bottom: none; }
+.scouting-player-name { font-weight: 600; color: #fff; }
+.scouting-player-line { font-size: 11px; }

@@ -1,0 +1,9 @@
+{
+  "name": "basic-os-save-reader",
+  "private": true,
+  "type": "module",
+  "description": "Reads the CFB 27 dynasty save directly with madden-franchise and prints JSON for the Flask app.",
+  "dependencies": {
+    "madden-franchise": "4.3.7"
+  }
+}

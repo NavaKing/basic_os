@@ -1,0 +1,35 @@
+{# Weekly podcast: upload post-game screenshots, review what was read, then two hosts break the game down. Rendered by static/js/podcast.js #}
+<section class="tab-panel" id="tab-podcast" role="tabpanel">
+    <div class="panel pod-intake">
+        <div class="section-label">Optional</div>
+        <h2 class="news-title">🎙️ Record This Week's Podcast</h2>
+        <div class="muted news-sub">Upload the post-game Scoring Summary screenshots (scroll down and take another if the list is long).
+            They're read, you check the result, and two hosts break the game down using the save's stats. The screenshots are deleted afterwards.</div>
+
+        <div class="pod-hosts">
+            {% for i in range(2) %}
+            <div class="pod-host">
+                <div class="section-label">Host {{ i + 1 }}</div>
+                <input class="pod-host-name" data-host="{{ i }}" aria-label="Host {{ i + 1 }} name" maxlength="24">
+                <select class="pod-host-voice" data-host="{{ i }}" aria-label="Host {{ i + 1 }} voice"><option>Loading voices...</option></select>
+                <button type="button" class="btn-secondary pod-preview" data-host="{{ i }}">▶ Preview</button>
+            </div>
+            {% endfor %}
+        </div>
+
+        <label class="pod-drop" id="pod_drop">
+            <input type="file" id="pod_files" accept="image/*" multiple hidden>
+            <span class="pod-drop-icon">📸</span>
+            <span>Drop screenshots here, or click to choose them</span>
+        </label>
+        <div class="pod-uploads" id="pod_uploads"></div>
+        <div class="pod-actions">
+            <button type="button" id="pod_read">Read the screenshots</button>
+            <button type="button" class="btn-secondary" id="pod_clear">Clear screenshots</button>
+            <div class="status-text" id="pod_status"></div>
+        </div>
+        <div class="pod-review" id="pod_review" hidden></div>
+    </div>
+
+    <div id="pod_feed"></div>
+</section>

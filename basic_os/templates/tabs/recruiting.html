@@ -1,0 +1,90 @@
+{# Recruiting: our board, our commits and the national top prospects (data from recruiting.py) #}
+{% macro stars(count) -%}
+<span class="stars" aria-label="{{ count }} stars">{% for i in range(5) %}<span class="{{ 'star-on' if i < count else 'star-off' }}">★</span>{% endfor %}</span>
+{%- endmacro %}
+
+{% macro school_logo(s) -%}
+<span class="recruit-school{{ ' recruit-school--us' if s.is_user else '' }}" data-team-id="{{ s.id }}" title="{{ s.name }}{% if s.influence %}: {{ s.influence }}{% endif %}">
+    {% if s.logo %}<img class="team-logo" src="{{ s.logo }}" alt="{{ s.short }}">{% else %}<span class="team-chip" data-color="{{ s.color or '' }}">{{ s.short }}</span>{% endif %}
+</span>
+{%- endmacro %}
+
+{% macro prospect_id(p) -%}
+<span class="headshot">{% if p.portrait %}<img src="{{ p.portrait }}" alt="" loading="lazy">{% endif %}</span>
+<div class="recruit-id">
+    <div class="recruit-name">{{ p.name }}</div>
+    <div class="recruit-meta">{{ stars(p.stars) }} <span class="muted">{{ p.position }} &middot; {{ p['class'] }}{% if p.size %} &middot; {{ p.size }}{% endif %}</span></div>
+    {% if p.hometown %}<div class="muted recruit-hometown">📍 {{ p.hometown }}</div>{% endif %}
+</div>
+{%- endmacro %}
+
+<section class="tab-panel" id="tab-recruiting" role="tabpanel">
+    {% if recruiting %}
+    <div class="recruit-summary">
+        <div class="panel recruit-tile"><div class="recruit-tile-value">{{ recruiting.summary.board }}</div><div class="recruit-tile-label">On the board</div></div>
+        <div class="panel recruit-tile"><div class="recruit-tile-value">{{ recruiting.summary.leading }}</div><div class="recruit-tile-label">Leading for</div></div>
+        <div class="panel recruit-tile"><div class="recruit-tile-value">{{ recruiting.summary.commits }}</div><div class="recruit-tile-label">Commits</div></div>
+        <div class="panel recruit-tile"><div class="recruit-tile-value">{{ recruiting.summary.avg_stars or '—' }}</div><div class="recruit-tile-label">Avg stars (class)</div></div>
+    </div>
+
+    <div class="recruit-layout">
+        <div class="panel">
+            <h3>🎯 {{ us.name }} Recruiting Board</h3>
+            <div class="table-wrapper table-wrapper--tall">
+                <table class="recruit-table">
+                    <thead><tr><th>Prospect</th><th>Rank</th><th>Our influence</th><th>Top schools</th><th>Status</th></tr></thead>
+                    <tbody>
+                    {% for p in recruiting.board %}
+                    <tr>
+                        <td><div class="recruit-cell">{{ prospect_id(p) }}</div></td>
+                        <td class="nowrap"><strong>#{{ p.national_rank }}</strong><div class="muted recruit-sub">{{ p.position }} #{{ p.position_rank }} &middot; State #{{ p.state_rank }}</div></td>
+                        <td class="nowrap">
+                            <strong>{{ p.influence }}</strong>
+                            {% if p.trend > 0 %}<span class="swing-up">▲{{ p.trend }}</span>{% elif p.trend < 0 %}<span class="swing-down">▼{{ -p.trend }}</span>{% endif %}
+                            <div class="recruit-sub {{ 'swing-up' if p.leading else 'muted' }}">{% if p.leading %}Leading{% elif p.behind is not none %}{{ p.behind }} behind the leader{% else %}Not in his top 5{% endif %}</div>
+                        </td>
+                        <td><div class="recruit-schools">{% for s in p.schools %}{{ school_logo(s) }}{% endfor %}</div></td>
+                        <td><span class="recruit-status{{ ' recruit-status--committed' if p.committed_to else '' }}">{{ p.status }}</span></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="5" class="empty-note">No prospects on the board yet.</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="recruit-side">
+            <div class="panel">
+                <h3>✍️ Commits</h3>
+                {% for p in recruiting.commits %}
+                <div class="recruit-commit">{{ prospect_id(p) }}<strong class="nowrap">#{{ p.national_rank }}</strong></div>
+                {% else %}
+                <div class="empty-note empty-note--compact">No commitments yet. A three-star or better commit starts a storyline for the starter at his position.</div>
+                {% endfor %}
+            </div>
+
+            <div class="panel">
+                <h3>🌟 National Top Prospects</h3>
+                <ol class="recruit-top">
+                    {% for p in recruiting.top %}
+                    <li>
+                        <span class="list-seed">{{ p.national_rank }}</span>
+                        <div class="recruit-top-id">
+                            <div class="recruit-name">{{ p.name }}</div>
+                            <div class="recruit-meta">{{ stars(p.stars) }} <span class="muted">{{ p.position }}{% if p.hometown %} &middot; {{ p.hometown }}{% endif %}</span></div>
+                        </div>
+                        <div class="recruit-top-lean">
+                            {% if p.committed_to %}<span class="recruit-status recruit-status--committed">Committed</span>{% else %}<span class="muted recruit-sub">Leans</span>{% endif %}
+                            {% if p.schools %}{{ school_logo(p.schools[0]) }}{% endif %}
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ol>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="panel empty-note">Recruiting appears after the first save sync.</div>
+    {% endif %}
+</section>

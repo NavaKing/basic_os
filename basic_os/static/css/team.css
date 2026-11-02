@@ -1,0 +1,55 @@
+/* Team page dialog (opened by clicking any team logo) */
+
+[data-team-id] { cursor: pointer; }
+.team-link:hover, [data-team-id]:hover .team-name { text-decoration: underline; }
+img[data-team-id]:hover { filter: drop-shadow(0 0 4px rgba(203, 157, 6, 0.8)); }
+
+.team-dialog { width: min(980px, calc(100vw - 32px)); max-height: calc(100vh - 48px); padding: 0; border: 1px solid var(--border); border-radius: 10px;
+               background-color: var(--panel); color: var(--text); box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7); overflow-y: auto; }
+.team-dialog::backdrop { background: rgba(0, 0, 0, 0.65); }
+
+.team-dialog-hero { position: relative; display: flex; align-items: center; gap: 20px; padding: 22px 56px 22px 24px;
+                    background: linear-gradient(120deg, color-mix(in srgb, var(--team-color, #444) 75%, #000), var(--panel) 85%);
+                    border-bottom: 3px solid var(--team-color, var(--gold)); }
+.team-dialog-logo { width: 96px; height: 96px; object-fit: contain; flex-shrink: 0; filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.6)); }
+.team-dialog-hero > .team-chip { width: 96px; height: 96px; font-size: 18px; border-radius: 50%; }
+.team-schedule .team-chip { min-width: 30px; height: 16px; margin-right: 6px; vertical-align: middle; }
+.team-dialog-title { min-width: 0; }
+.team-dialog-title h2 { margin: 2px 0 4px; font-size: 28px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; color: #fff; }
+.team-dialog-kicker { color: var(--gold); font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+.team-dialog-stadium { color: #ccc; font-size: 13px; }
+.team-dialog-close { position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; padding: 0; border-radius: 50%; font-size: 22px; line-height: 1;
+                     background-color: rgba(0, 0, 0, 0.35); color: #fff; }
+
+.team-staff { display: flex; flex-wrap: wrap; gap: 14px 28px; padding: 16px 24px; border-bottom: 1px solid var(--border-soft); }
+.team-staff-member { display: flex; align-items: center; gap: 10px; }
+.team-staff-name { font-weight: 600; color: #fff; }
+.team-staff-role { font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 0.5px; }
+
+.team-dialog-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 24px; padding: 18px 24px 24px; }
+.team-schedule { width: 100%; font-size: 13px; }
+.team-schedule td { padding: 7px 6px; border-bottom: 1px solid var(--border-soft); }
+.team-schedule .team-logo--sm { vertical-align: middle; }
+.team-schedule-result { text-align: right; }
+
+.team-players { list-style: none; margin: 0; padding: 0; }
+.team-players li { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border-soft); }
+.team-player-id { flex: 1; min-width: 0; }
+.team-player-name { font-weight: 700; color: #fff; }
+.team-player-meta { font-size: 11px; color: #999; }
+.team-players .stat-boxes--inline { min-width: 0; width: 240px; }
+
+.team-polls-head { margin-top: 20px; }
+.team-polls { display: flex; gap: 8px; flex-wrap: wrap; }
+.team-poll { text-align: center; min-width: 64px; padding: 8px 6px; border: 1px solid var(--border); border-radius: 6px; background-color: var(--panel-inset); }
+.team-poll-rank { font-size: 18px; font-weight: 800; color: #fff; }
+.team-poll-week { font-size: 10px; color: #999; text-transform: uppercase; }
+
+@media (max-width: 760px) {
+    .team-dialog-grid { grid-template-columns: minmax(0, 1fr); }
+    .team-dialog-hero { padding: 18px 50px 18px 16px; gap: 12px; }
+    .team-dialog-logo { width: 64px; height: 64px; }
+    .team-dialog-title h2 { font-size: 20px; }
+    .team-players li { flex-wrap: wrap; }
+    .team-players .stat-boxes--inline { width: 100%; }
+}

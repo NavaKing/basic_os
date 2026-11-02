@@ -1,0 +1,45 @@
+/* Depth Chart tab: roster table, position picker, injury report */
+
+.depth-layout { display: grid; grid-template-columns: 3fr 1fr; gap: 12px; align-items: start; }
+.depth-toolbar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.depth-toolbar select { width: auto; min-width: 260px; margin: 0; }
+.depth-count { font-size: 12px; color: #888; }
+
+.slot-cell { font-weight: bold; color: var(--gold); white-space: nowrap; }
+.starter-row td { background-color: rgba(203, 157, 6, 0.06); }
+.group-row td { background-color: var(--panel-inset); color: var(--gold); font-weight: bold; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+.ovr { font-weight: bold; color: #fff; }
+.stat-cell { color: #bbb; font-size: 11px; }
+
+.status-chip { font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 3px; text-transform: uppercase; }
+.status-healthy { color: var(--win); }
+.status-out { background-color: var(--red); color: #fff; }
+.status-questionable { background-color: var(--orange); color: #fff; }
+.status-probable { background-color: var(--yellow); color: var(--bg); }
+
+.injury-card { background-color: var(--panel-inset); padding: 10px; border-radius: 4px; margin-bottom: 8px; border-left: 3px solid var(--yellow); font-size: 13px; text-align: left; }
+.injury-card.injury-out { border-left-color: var(--red); }
+.injury-card.injury-questionable { border-left-color: var(--orange); }
+.injury-card .status-chip { float: right; }
+.injury-detail { margin-top: 5px; color: #ddd; font-size: 12px; }
+
+@media (max-width: 1200px) {
+    .depth-layout { grid-template-columns: 1fr; }
+}
+
+.name-cell { white-space: nowrap; }
+.name-cell .headshot { margin-right: 10px; }
+
+/* Right column: injury report and season leaders */
+.depth-side { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.leader-boards { display: grid; grid-template-columns: 1fr; gap: 16px; }
+.leader { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--border-soft); }
+.leader:last-child { border-bottom: none; }
+.leader-id { flex: 1; min-width: 0; }
+.leader-name { font-weight: 600; color: #fff; }
+.leader--top .leader-name { font-size: 15px; }
+.leader-detail { font-size: 11px; }
+.leader-value { font-size: 20px; font-weight: 800; color: #fff; text-align: right; white-space: nowrap; }
+.leader-value span { font-size: 10px; color: #999; font-weight: normal; margin-left: 3px; text-transform: uppercase; }
+.leader:not(.leader--top) .leader-value { font-size: 15px; }
+.leader-empty { font-size: 12px; padding: 4px 0; }

@@ -1,0 +1,75 @@
+{# Season timeline: one entry per week, oldest first (data from timeline.py) #}
+{% set beat_labels = {'started': 'Storyline begins', 'chapter': 'Storyline', 'resolved': 'Storyline ends'} %}
+
+<section class="tab-panel" id="tab-season" role="tabpanel">
+    <div class="panel season-head">
+        <h2 class="recap-title">🗓️ {{ us.full_name }} &middot; {{ season_year }} Season</h2>
+        <div class="recap-subtitle">{{ record }} &middot; every game, dispatch and storyline in one place</div>
+    </div>
+
+    <ol class="timeline">
+        {% for e in timeline %}
+        <li class="timeline-week{{ ' timeline-week--next' if not e.played else '' }}{{ ' timeline-week--loss' if e.result and e.result.outcome == 'L' else '' }}">
+            <div class="timeline-marker">
+                <span class="timeline-week-label">WK {{ e.week }}</span>
+                {% if e.result %}<span class="timeline-result timeline-result--{{ e.result.outcome|lower }}">{{ e.result.outcome }}</span>{% else %}<span class="timeline-result">NEXT</span>{% endif %}
+            </div>
+
+            <div class="panel timeline-card">
+                <div class="timeline-game">
+                    {% if e.opponent_logo %}<img class="timeline-logo" src="{{ e.opponent_logo }}" alt=""{% if e.opponent_id %} data-team-id="{{ e.opponent_id }}"{% endif %}>{% endif %}
+                    <div>
+                        <div class="timeline-title">
+                            {{ e.venue }} <span class="team-link"{% if e.opponent_id %} data-team-id="{{ e.opponent_id }}"{% endif %}>{{ e.opponent }}</span>
+                            {% if e.result %}<span class="score {{ 'score-win' if e.result.outcome == 'W' else ('score-loss' if e.result.outcome == 'L' else '') }}">{{ e.result.outcome }} {{ e.result.score }}</span>{% endif %}
+                        </div>
+                        <div class="muted timeline-meta">
+                            {% if e.date %}{{ e.date }}{% endif %}
+                            {% if e.rank_after %} &middot; <span class="timeline-rank">AP #{{ e.rank_after }} after this week</span>{% endif %}
+                            {% if not e.played %} &middot; Upcoming{% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                {% if e.player %}
+                <div class="timeline-player">
+                    <span class="headshot">{% if e.player.portrait %}<img src="{{ e.player.portrait }}" alt="" loading="lazy">{% endif %}</span>
+                    <div>
+                        <div class="section-label">Player of the Game</div>
+                        <div class="timeline-player-name">{{ e.player.name }} <span class="muted">{{ e.player.position }}</span></div>
+                        <div class="muted timeline-player-line">{{ e.player.line }}</div>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if e.story %}
+                <div class="timeline-story">
+                    {% if e.story.image %}<img class="timeline-hero" src="{{ url_for('static', filename=e.story.image) }}" alt="" loading="lazy">{% endif %}
+                    <div class="section-label">Week {{ e.week }} Dispatch</div>
+                    <p>{{ e.story.text }}</p>
+                </div>
+                {% endif %}
+
+                {% if e.photos %}
+                <div class="timeline-photos">
+                    {% for photo in e.photos %}<img src="{{ url_for('static', filename=photo) }}" alt="" loading="lazy">{% endfor %}
+                </div>
+                {% endif %}
+
+                {% for b in e.beats %}
+                <div class="timeline-beat timeline-beat--{{ b.kind }}">
+                    <div class="section-label">{{ beat_labels[b.kind] }} &middot; {{ b.title }}</div>
+                    <p>{{ b.text }}</p>
+                </div>
+                {% endfor %}
+
+                {% if e.played and not e.story and not e.beats %}
+                <div class="muted timeline-empty">No dispatch was generated for this week.</div>
+                {% endif %}
+            </div>
+        </li>
+        {% else %}
+        <li class="empty-note">The timeline fills in as the season is played.</li>
+        {% endfor %}
+    </ol>
+</section>

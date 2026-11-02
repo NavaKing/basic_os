@@ -1,0 +1,17 @@
+{# Small pieces of game display reused across the schedule and game cards #}
+
+{# "vs" for home and neutral-site games, "at" (or "@" when short) for away games #}
+{% macro venue_word(game, short=False) -%}
+    {{ 'vs' if game.site in ('Home', 'Neutral') else ('@' if short else 'at') }}
+{%- endmacro %}
+
+{# W/L/T badge with the score, from our team's side #}
+{% macro result_badge(game) -%}
+    {% if game.wyo_score > game.opp_score %}
+        <span class="score score-win">W {{ game.wyo_score }}-{{ game.opp_score }}</span>
+    {% elif game.wyo_score < game.opp_score %}
+        <span class="score score-loss">L {{ game.wyo_score }}-{{ game.opp_score }}</span>
+    {% else %}
+        <span class="score">T {{ game.wyo_score }}-{{ game.opp_score }}</span>
+    {% endif %}
+{%- endmacro %}

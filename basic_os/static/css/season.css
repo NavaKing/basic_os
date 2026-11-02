@@ -1,0 +1,48 @@
+/* Season timeline tab */
+
+.season-head { margin-bottom: 18px; border-top: 3px solid var(--gold); }
+
+.timeline { list-style: none; margin: 0; padding: 0; position: relative; }
+/* The vertical spine the week markers sit on */
+.timeline::before { content: ""; position: absolute; top: 0; bottom: 0; left: 39px; width: 3px; background: linear-gradient(var(--gold), var(--brown)); }
+
+.timeline-week { position: relative; display: grid; grid-template-columns: 82px minmax(0, 1fr); gap: 16px; margin-bottom: 18px; }
+.timeline-marker { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 14px; }
+.timeline-week-label { font-size: 11px; font-weight: bold; color: var(--gold); letter-spacing: 1px; background-color: var(--bg); padding: 2px 4px; }
+.timeline-result { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 14px;
+                   background-color: var(--panel); border: 3px solid var(--border); color: #aaa; }
+.timeline-result--w { border-color: var(--win); color: var(--win); }
+.timeline-result--l { border-color: var(--loss); color: var(--loss); }
+.timeline-week--next .timeline-result { font-size: 9px; border-style: dashed; border-color: var(--gold); color: var(--gold); }
+
+.timeline-card { display: flex; flex-direction: column; gap: 14px; border-left: 3px solid var(--win); }
+.timeline-week--loss .timeline-card { border-left-color: var(--loss); }
+.timeline-week--next .timeline-card { border-left-color: var(--gold); border-left-style: dashed; }
+
+.timeline-game { display: flex; align-items: center; gap: 14px; }
+.timeline-logo { width: 56px; height: 56px; object-fit: contain; flex-shrink: 0; }
+.timeline-title { font-size: 20px; font-weight: 800; color: #fff; display: flex; align-items: baseline; flex-wrap: wrap; gap: 10px; }
+.timeline-title .score { font-size: 20px; }
+.timeline-meta { font-size: 12px; margin-top: 2px; }
+.timeline-rank { color: var(--gold); font-weight: bold; }
+
+.timeline-player { display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 6px; background-color: var(--panel-inset); }
+.timeline-player-name { font-weight: 700; color: #fff; font-size: 15px; }
+.timeline-player-line { font-size: 12px; }
+
+.timeline-story p, .timeline-beat p { margin: 4px 0 0; font-size: 14px; line-height: 1.55; color: #ddd; }
+.timeline-hero { width: 100%; max-height: 240px; object-fit: cover; border-radius: 6px; margin-bottom: 10px; display: block; }
+
+.timeline-photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; }
+.timeline-photos img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 6px; }
+
+.timeline-beat { padding-left: 12px; border-left: 2px solid var(--border); }
+.timeline-beat--started { border-left-color: var(--blue); }
+.timeline-beat--resolved { border-left-color: var(--gold); }
+.timeline-empty { font-size: 13px; }
+
+@media (max-width: 700px) {
+    .timeline::before { left: 23px; }
+    .timeline-week { grid-template-columns: 50px minmax(0, 1fr); gap: 8px; }
+    .timeline-title { font-size: 16px; }
+}

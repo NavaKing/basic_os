@@ -1,0 +1,133 @@
+{% from "macros/game.html" import venue_word, result_badge %}
+
+{% macro coach_card(member, lead=False) %}
+<div class="gotw-coach{{ ' gotw-coach--lead' if lead else '' }}" title="{{ member.role }}">
+    <span class="headshot">{% if member.portrait %}<img src="{{ member.portrait }}" alt="" loading="lazy">{% endif %}</span>
+    <div class="gotw-coach-text">
+        <div class="gotw-coach-name">{{ member.name }}</div>
+        <div class="gotw-coach-role">{{ member.role if lead else member.short_role }}</div>
+    </div>
+</div>
+{% endmacro %}
+
+{% macro gotw_side(team, name) %}
+<div class="gotw-side">
+    {% if team.logo %}<img class="gotw-logo" src="{{ team.logo }}" alt="{{ name }}"{% if team.id %} data-team-id="{{ team.id }}"{% endif %}>{% else %}<div class="gotw-logo gotw-logo--blank" aria-hidden="true">🏈</div>{% endif %}
+    <div class="gotw-team">{{ name }}</div>
+    {% for member in team.staff %}{{ coach_card(member, lead=loop.first and member.short_role == 'HC') }}{% endfor %}
+</div>
+{% endmacro %}
+
+<section class="tab-panel" id="tab-gameday" role="tabpanel">
+    <div class="gameday-grid">
+        <div>
+            {# Game of the week + forecast #}
+            <div class="panel gotw">
+                {% if game %}
+                <div class="gotw-kicker">Week {{ game.week_id }} &middot; Game of the Week</div>
+                <div class="gotw-sides">
+                    {{ gotw_side(us, us.name) }}
+                    <div class="gotw-vs">{{ venue_word(game) }}</div>
+                    {{ gotw_side({'id': game.opponent_id, 'logo': game.opponent_logo, 'staff': game.opponent_staff}, game.opponent_name) }}
+                </div>
+                <div class="gotw-matchup">{{ us.full_name }} {{ venue_word(game) }} {{ game.opponent_name }}</div>
+                <div class="gotw-record">{{ us.name }} {{ record }} &middot; <span class="badge badge-site">{{ game.site|upper if game.site else 'TBD' }}</span></div>
+                <dl class="gotw-facts">
+                    <dt>Date</dt><dd>{{ game.date_text or 'TBD' }}</dd>
+                    <dt>Kickoff</dt><dd>{{ game.kickoff_text or 'TBD' }}</dd>
+                    <dt>Venue</dt><dd>{{ game.venue }}</dd>
+                    <dt>Broadcast</dt><dd>{{ game.network or 'TBD' }}</dd>
+                </dl>
+                <div class="forecast">
+                    <div class="forecast-icon" aria-hidden="true">{{ game.weather_icon }}</div>
+                    <div>
+                        <div class="forecast-temp">{{ game.temperature if game.temperature is not none else '--' }}&deg;F</div>
+                        <div class="forecast-detail">
+                            {{ game.weather_text or 'Forecast pending' }}{% if game.precip_chance %} &middot; {{ game.precip_chance }}% chance of precipitation{% endif %}<br>
+                            {% if game.wind_text %}Wind: {{ game.wind_text }}{% if game.wind_speed %}, {{ game.wind_speed }} mph{% endif %}{% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="empty-note">No games on the schedule yet.</div>
+                {% endif %}
+            </div>
+
+            {# Opponent scouting card #}
+            {% if scouting %}
+            <div class="panel scouting" data-color="{{ scouting.color or '' }}">
+                <div class="scouting-head">
+                    {% if scouting.logo %}<img class="scouting-logo" src="{{ scouting.logo }}" alt="" data-team-id="{{ scouting.id }}">{% endif %}
+                    <div>
+                        <div class="section-label">Scouting Report</div>
+                        <div class="scouting-name team-link" data-team-id="{{ scouting.id }}">{% if scouting.rank %}<span class="team-rank">#{{ scouting.rank }}</span> {% endif %}{{ scouting.full_name }}</div>
+                        <div class="muted scouting-meta">{{ scouting.record }}{% if scouting.head_coach %} &middot; HC {{ scouting.head_coach.name }}{% endif %}</div>
+                    </div>
+                </div>
+                {% if scouting.last_result %}<div class="scouting-last"><span class="muted">Last game:</span> {{ scouting.last_result }}</div>{% endif %}
+                <p class="scouting-preview" id="scouting_preview">{{ scouting.preview or 'The scouting preview is written with the next hub generation.' }}</p>
+                {% if scouting.players %}
+                <div class="section-label scouting-label">Players to watch</div>
+                <ul class="scouting-players">
+                    {% for p in scouting.players %}
+                    <li>
+                        <span class="headshot">{% if p.portrait %}<img src="{{ p.portrait }}" alt="" loading="lazy">{% endif %}</span>
+                        <div><div class="scouting-player-name">{{ p.name }}</div><div class="muted scouting-player-line">{{ p.position }} &middot; {{ p.line }}</div></div>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            {# Last result #}
+            {% if last_game %}
+            <div class="last-result{{ ' result-loss' if (last_game.wyo_score or 0) < (last_game.opp_score or 0) else '' }}">
+                <div class="section-label">Last Game &middot; Week {{ last_game.week_id }}</div>
+                {% if last_game.wyo_score is not none %}<strong>{{ result_badge(last_game) }}</strong>{% endif %}
+                {{ venue_word(last_game) }} {{ last_game.opponent_name }}
+                <div class="muted last-result-detail">{{ us.name }} {{ last_game.wyo_pass_yds }} pass / {{ last_game.wyo_rush_yds }} rush yds &middot; {{ last_game.weather_text }}, {{ last_game.temperature }}&deg;F</div>
+            </div>
+            {% endif %}
+        </div>
+
+        {# Season schedule #}
+        <div class="panel">
+            <h3>📅 Season Schedule &amp; Ledger</h3>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr><th>Wk</th><th>Date</th><th>Opponent</th><th>Result</th><th>Forecast</th><th>{{ us.short or 'Our' }} P/R</th><th>Opp P/R</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for g in schedule %}
+                        <tr>
+                            <td><strong>{{ g.week_id }}</strong></td>
+                            <td class="muted nowrap">{{ g.date_text }}</td>
+                            <td class="nowrap">{{ venue_word(g, short=True) }} <span class="team-link"{% if g.opponent_id %} data-team-id="{{ g.opponent_id }}"{% endif %}>{% if g.opponent_logo %}<img class="team-logo team-logo--sm" src="{{ g.opponent_logo }}" alt="">{% endif %}{{ g.opponent_name }}</span></td>
+                            <td>
+                                {% if g.is_played == 1 and g.wyo_score is not none and g.opp_score is not none %}
+                                    {{ result_badge(g) }}
+                                {% elif game and g.week_id == game.week_id %}
+                                    <span class="badge badge-unplayed">Next</span>
+                                {% else %}
+                                    <span class="score-pending">&mdash;</span>
+                                {% endif %}
+                            </td>
+                            <td class="nowrap" title="{{ g.weather_text }}">{% if g.weather %}{{ g.weather_icon }} {{ g.temperature }}&deg;{% endif %}</td>
+                            <td>{% if g.is_played %}{{ g.wyo_pass_yds }}/{{ g.wyo_rush_yds }}{% else %}<span class="muted">&mdash;</span>{% endif %}</td>
+                            <td>{% if g.is_played %}{{ g.opp_pass_yds }}/{{ g.opp_rush_yds }}{% else %}<span class="muted">&mdash;</span>{% endif %}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        {# Campus feed (rendered by static/js/feed.js) #}
+        <div class="panel">
+            <h3>📱 Campus Feed // {{ us.hashtag }}</h3>
+            <div class="twitter-container" id="twitter_feed_box"></div>
+        </div>
+    </div>
+</section>

@@ -1,0 +1,16 @@
+{# Locker Room: storyline cards are rendered by static/js/storylines.js #}
+<section class="tab-panel" id="tab-locker" role="tabpanel">
+    <div class="panel tracker">
+        <div class="tracker-header">
+            <h3>🎭 Storyline Tracker</h3>
+            <div class="tracker-controls">
+                {% if last_game %}
+                <button class="btn-secondary" id="game_storyline_btn" type="button">📊 BUILD FROM WEEK {{ last_game.week_id }} VS {{ last_game.opponent_name|upper }}</button>
+                {% endif %}
+                <button class="btn-secondary" id="new_storyline_btn" type="button">🎲 RANDOM STORYLINE</button>
+            </div>
+        </div>
+        <div class="status-text" id="storyline_status"></div>
+        <div id="storyline_list"></div>
+    </div>
+</section>
