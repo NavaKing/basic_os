@@ -31,7 +31,7 @@ app.config['MAX_CONTENT_LENGTH'] = 40 * 1024 * 1024
 LOCAL_HOSTS = {"127.0.0.1", "localhost"}
 CONTENT_SECURITY_POLICY = "; ".join([
     "default-src 'self'",
-    "img-src 'self' data:",
+    "img-src 'self' data: blob:",  # blob: lets the podcast uploader read a chosen screenshot before cropping it
     "media-src 'self'",
     "style-src 'self' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com",
