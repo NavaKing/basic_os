@@ -64,6 +64,17 @@ class Casing(unittest.TestCase):
     def test_normal_text_only_gets_names(self):
         self.assertEqual(ai_engine.fix_casing("What a day for wyoming. hard to argue."), "What a day for Wyoming. hard to argue.")
 
+    def test_i_and_contractions_in_normal_text(self):
+        self.assertEqual(ai_engine.fix_casing("Coach said i'm proud, and i’ll say it: i love it."), "Coach said I'm proud, and I’ll say it: I love it.")
+
+    def test_all_caps_names_from_any_casing(self):
+        conn = database.get_db_connection()
+        conn.execute("INSERT INTO league_teams (team_id, name, nickname, short_name) VALUES (2, 'NDSU', 'Bison', 'NDSU')")
+        conn.commit()
+        conn.close()
+        self.assertEqual(ai_engine.fix_casing("Ndsu's a physical team. We respect ndsu."), "NDSU's a physical team. We respect NDSU.")
+        self.assertEqual(ai_engine.fix_casing("The bison run downhill."), "The Bison run downhill.")
+
     def test_hawaii_apostrophe(self):
         self.assertEqual(ai_engine.fix_casing("we flew to hawai'i."), "We flew to hawai'i.")
 
