@@ -1,6 +1,7 @@
 // Awards tab: All-America and All-Conference teams, the Heisman race and column, the playoff bracket and the bowl schedule.
 
 import { esc, setStatus, postJSON, applyTeamColors } from './utils.js';
+import { longJob } from './notify.js';
 
 function teamMark(team) {
     if (!team) return '';
@@ -95,7 +96,7 @@ function initColumn(column, ceremony) {
         button.disabled = true;
         setStatus(status, 'Writing the column...');
         try {
-            const data = await postJSON('/awards/heisman/generate');
+            const data = await longJob('The Heisman column', postJSON('/awards/heisman/generate'));
             if (data.error) throw new Error(data.error);
             renderColumn(data.column, ceremony);
             setStatus(status, '');

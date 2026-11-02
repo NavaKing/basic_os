@@ -2,6 +2,7 @@
 // and the coaches news column (top 10 and hot seat for HCs, OCs and DCs).
 
 import { esc, postJSON, setStatus, applyTeamColors } from './utils.js';
+import { longJob } from './notify.js';
 
 const GRADE_BARS = { decisive: 3, clear: 2, slight: 1 };
 const SECTIONS = [['keys', 'Keys'], ['staff', 'Their staff'], ['availability', 'Availability'], ['qbs', 'Quarterbacks'],
@@ -209,7 +210,7 @@ function initNews(news) {
         button.disabled = true;
         setStatus(status, 'Writing a quote for each of the 60 coaches (a minute or two)...');
         try {
-            const data = await postJSON('/coaches/news/generate');
+            const data = await longJob("This week's coach quotes", postJSON('/coaches/news/generate'));
             if (data.error) throw new Error(data.error);
             state.news = data;
             show();
@@ -244,7 +245,7 @@ export function initCoaches(plan, weeks, news) {
             button.disabled = true;
             setStatus(status, 'Writing the game plan (three AI passes, about 30 seconds)...');
             try {
-                const data = await postJSON('/coaches/plan/' + current + '/generate');
+                const data = await longJob('The game plan', postJSON('/coaches/plan/' + current + '/generate'));
                 if (data.error) throw new Error(data.error);
                 render(root, data);
                 wire();
