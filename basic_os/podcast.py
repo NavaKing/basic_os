@@ -13,6 +13,7 @@ import scouting
 import storylines
 import team
 from sentences import split as sentence_split
+from fact_check import invented_numbers, spoken_numbers
 
 # Weekly podcast: two hosts break down a game from the scoring-summary screenshots (read by events.py) plus the save's
 # stats: the numbers, where each team shined and where it can be better, the season so far and the next opponent.
@@ -246,27 +247,6 @@ def segments(ours, theirs):
     ]
 
 MAX_LINE_SENTENCES = 3
-
-# Numbers check: small models drift into made-up scores ("forty-five to twenty") even with the facts in front of them.
-# A line that states a number the facts don't contain is dropped. Small numbers (0-4) are everyday words ("one of the best").
-NUMBER_WORDS = {w: i for i, w in enumerate("zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen "
-                                            "fifteen sixteen seventeen eighteen nineteen".split())}
-TENS = {"twenty": 20, "thirty": 30, "forty": 40, "fifty": 50, "sixty": 60, "seventy": 70, "eighty": 80, "ninety": 90}
-CHECKED_FROM = 5
-
-def spoken_numbers(text):
-    """Every number in the text, written as digits ('227', '1,200') or words ('forty-five', 'eighteen')."""
-    found = {int(n.replace(",", "")) for n in re.findall(r"\d[\d,]*", text)}
-    compound = re.compile(r"\b(" + "|".join(TENS) + r")(?:[- ](one|two|three|four|five|six|seven|eight|nine))?\b")
-    for tens, ones in compound.findall(text.lower()):
-        found.add(TENS[tens] + (NUMBER_WORDS[ones] if ones else 0))
-    rest = compound.sub(" ", text.lower())  # so the "five" in "forty-five" isn't counted again
-    for word in re.findall(r"\b(" + "|".join(NUMBER_WORDS) + r")\b", rest):
-        found.add(NUMBER_WORDS[word])
-    return found
-
-def invented_numbers(text, allowed):
-    return sorted(n for n in spoken_numbers(text) if n >= CHECKED_FROM and n not in allowed)
 
 def is_repeat(text, lines):
     """True when a line says (nearly) the same thing as one already in the script."""

@@ -7,6 +7,7 @@ import database
 import image_engine
 import team
 import progress
+import fact_check
 
 TWEET_COUNT = 8
 PHOTO_TWEETS = 3  # how many tweets get a generated photo
@@ -237,6 +238,8 @@ def generate_dynasty_content(selected_model, storyline_context="", player_lines=
         # Don't save anything, so the existing story for this week is kept
         return f"Ollama processing connection dropped: {str(e)}"
 
+    # Drop sentences with scores or stats the facts don't contain (kept whole if nothing would survive)
+    story_text = fact_check.drop_invented(story_text, fact_check.spoken_numbers(article_prompt)) or story_text
     database.save_story_to_db(active_stats['week_id'], active_stats['opponent_name'], story_text)
 
     # Generate tweets
@@ -268,6 +271,10 @@ def generate_dynasty_content(selected_model, storyline_context="", player_lines=
     except Exception:
         # Fallback layout inject if the tweet call or json formatting fails
         tweet_list = [{"handle": "@GamedayFan", "name": "Gameday Fan", "text": f"Locked in for the week {active_stats['week_id']} matchup vs {active_stats['opponent_name']}! {team.user_team()['hashtag']}"}]
+    allowed = fact_check.spoken_numbers(tweet_prompt)
+    for tweet in tweet_list:
+        tweet['text'] = fact_check.drop_invented(tweet.get('text') or "", allowed)
+    tweet_list = [t for t in tweet_list if t['text']] or tweet_list[:1]
     render_week_images(selected_model, active_stats, tweet_list)
     database.save_tweets_to_db(active_stats['week_id'], tweet_list)
 

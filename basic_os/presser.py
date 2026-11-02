@@ -2,6 +2,7 @@ import hashlib
 import json
 import re
 import database
+import fact_check
 import league
 import media
 import roster
@@ -113,16 +114,14 @@ def transcript(week=None):
              "answer": r['answer'], "portrait": portraits.get(r['role'])} for r in rows]
 
 def stat_count(text):
-    import podcast
-    return len([n for n in podcast.spoken_numbers(text) if n >= podcast.CHECKED_FROM])
+    return len([n for n in fact_check.spoken_numbers(text) if n >= fact_check.CHECKED_FROM])
 
 def usable(text, allowed):
     """The answer with real words only, keeping sentences that: use numbers from the facts, stay in character (no talk of
     'facts provided'), and fit the stat budget (later sentences that would push it past MAX_STATS numbers are dropped)."""
-    import podcast
     kept, stats = [], 0
     for sentence in sentence_split((text or "").strip().strip('"').strip()):
-        if podcast.invented_numbers(sentence, allowed) or META.search(sentence):
+        if fact_check.invented_numbers(sentence, allowed) or META.search(sentence):
             continue
         if stats + stat_count(sentence) > MAX_STATS:
             continue
@@ -146,7 +145,7 @@ def best_answer(write, allowed, attempts=3):
     return best
 
 def ask(selected_model, role, question):
-    import ai_engine, podcast
+    import ai_engine
     question = " ".join((question or "").split())[:MAX_QUESTION]
     if len(question) < 5:
         raise ValueError("Type a question first.")
@@ -167,7 +166,7 @@ def ask(selected_model, role, question):
               "Every player is a man; use he/him. Never refer to yourself in the third person. "
               f"Facts: {facts} " + (f"Earlier this week: {said} Stay consistent with it. " if said else "")
               + 'Respond with ONLY JSON: {"answer": "..."}')
-    allowed = podcast.spoken_numbers(facts + " " + question + " " + said)
+    allowed = fact_check.spoken_numbers(facts + " " + question + " " + said)
     answer = best_answer(lambda: ai_engine.clean_text(str(json.loads(ai_engine.call_ollama(selected_model, prompt, force_json=True)).get('answer') or "")),
                          allowed)
     if not answer:

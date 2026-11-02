@@ -5,6 +5,7 @@ from unittest import mock
 
 import tests  # noqa: F401  (sets up the throwaway database first)
 import ai_engine
+import fact_check
 import podcast
 
 
@@ -53,13 +54,26 @@ class WeeklyFacts(unittest.TestCase):
 
 class NumbersCheck(unittest.TestCase):
     def test_reads_digits_and_words(self):
-        self.assertEqual(podcast.spoken_numbers("Forty-five to twenty, 1,200 yards, eighteen catches, 24 to 18"), {45, 20, 1200, 18, 24})
+        self.assertEqual(fact_check.spoken_numbers("Forty-five to twenty, 1,200 yards, eighteen catches, 24 to 18"), {45, 20, 1200, 18, 24})
 
     def test_flags_only_numbers_missing_from_the_facts(self):
         allowed = {24, 18}
-        self.assertEqual(podcast.invented_numbers("They won forty-five to twenty!", allowed), [20, 45])
-        self.assertEqual(podcast.invented_numbers("Wyoming beat Hawaii 24 to 18, one of the best", allowed), [])
-        self.assertEqual(podcast.invented_numbers("Three lead changes and four straight wins", allowed), [])  # small numbers pass
+        self.assertEqual(fact_check.invented_numbers("They won forty-five to twenty!", allowed), [20, 45])
+        self.assertEqual(fact_check.invented_numbers("Wyoming beat Hawaii 24 to 18, one of the best", allowed), [])
+        self.assertEqual(fact_check.invented_numbers("Three lead changes and four straight wins", allowed), [])  # small numbers pass
+
+
+class DropInvented(unittest.TestCase):
+    """The dispatch and campus posts keep only sentences whose numbers are in the facts."""
+
+    def test_sentences_paragraphs_tags_and_years(self):
+        allowed = {24, 18, 7220}
+        text = "Wyoming beat Hawaii 24-18. They won 45 to 20, wow.\n\nThe 2026 season rolls on! #7220SPEED @Wyo88 loves it."
+        self.assertEqual(fact_check.drop_invented(text, allowed),
+                         "Wyoming beat Hawaii 24-18.\n\nThe 2026 season rolls on! #7220SPEED @Wyo88 loves it.")
+
+    def test_everything_invented_leaves_nothing(self):
+        self.assertEqual(fact_check.drop_invented("They scored 63 points.", {24}), "")
 
 
 class ShowWriter(unittest.TestCase):
