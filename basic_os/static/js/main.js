@@ -15,6 +15,7 @@ import { initAwards } from './awards.js';
 import { initOffseason } from './offseason.js';
 import { initPlayerPages } from './players.js';
 import { initRivals } from './rivals.js';
+import { initPresser } from './presser.js';
 import { applyTeamColors } from './utils.js';
 
 const page = JSON.parse(document.getElementById('page_data').textContent);
@@ -34,6 +35,7 @@ start('team pages', initTeamPages);
 start('backups', initBackups);
 start('player pages', initPlayerPages);
 start('rival watch', initRivals);
+start('press room', initPresser);
 start('campus feed', () => renderTweets(page.tweets));
 start('story column', () => renderStories(page.stories, page.game, page.team_name));
 start('depth chart', () => initDepthChart(page.depth_chart));

@@ -23,6 +23,7 @@ import awards
 import offseason
 import players
 import rivals
+import presser
 import os
 from urllib.parse import urlsplit
 from flask import Flask, render_template, request, jsonify, send_from_directory, abort, url_for
@@ -135,6 +136,7 @@ def home():
         awards_page=awards.build_awards(),
         offseason_page=offseason.build_offseason(),
         rival_page=rivals.build_page(),
+        presser_page=presser.build_page(),
         game=describe_game(active_game),
         last_game=describe_game(last_game),
         record=f"{wins}-{losses}",
@@ -362,6 +364,24 @@ def generate_signing_day():
 def generate_rivalry_issue():
     try:
         return jsonify({"column": rivals.generate_issue(request.json.get('model', 'gemma3:12b'))})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+@app.route('/presser', methods=['GET', 'POST', 'DELETE'])
+def press_conference():
+    try:
+        if request.method == 'POST':
+            return jsonify({"transcript": presser.ask(request.json.get('model', 'gemma3:12b'), request.json.get('role'), request.json.get('question'))})
+        if request.method == 'DELETE':
+            presser.clear_week()
+        return jsonify({"transcript": presser.transcript()})
+    except Exception as e:
+        return jsonify({"error": str(e), "transcript": presser.transcript()}), 400
+
+@app.route('/presser/questions', methods=['POST'])
+def press_questions():
+    try:
+        return jsonify({"questions": presser.suggest_questions(request.json.get('model', 'gemma3:12b'))})
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
