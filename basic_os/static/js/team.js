@@ -38,7 +38,7 @@ function playerList(players) {
     if (!players.length) return '<div class="empty-note empty-note--compact">No stats recorded yet.</div>';
     return '<ul class="team-players">' + players.map(p =>
         '<li>' + headshot(p.portrait) +
-            '<div class="team-player-id"><div class="team-player-name">' + esc(p.name) + '</div>' +
+            '<div class="team-player-id"><div class="team-player-name" data-player-id="' + esc(p.id) + '">' + esc(p.name) + '</div>' +
             '<div class="team-player-meta">#' + esc(p.jersey) + ' &middot; ' + esc(p.position) + ' &middot; ' + esc(p.class) + '</div></div>' +
             '<div class="stat-boxes stat-boxes--inline">' + p.boxes.map(b =>
                 '<div class="stat-box"><div class="stat-box-value">' + esc(b.value) + '</div><div class="stat-box-label">' + esc(b.label) + '</div></div>').join('') + '</div>' +
@@ -88,6 +88,7 @@ async function openTeam(dialog, teamId) {
 export function initTeamPages() {
     const dialog = document.getElementById('team_dialog');
     document.addEventListener('click', event => {
+        if (event.target.closest('[data-player-id]')) return;  // a player inside a team element opens his profile instead
         const target = event.target.closest('[data-team-id]');
         if (target && target.dataset.teamId) openTeam(dialog, target.dataset.teamId);
     });

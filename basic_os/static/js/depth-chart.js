@@ -23,7 +23,7 @@ function playerRow(player) {
         '<td class="slot-cell">' + esc(player.depth_slot) + '</td>' +
         '<td>' + esc(player.jersey_num) + '</td>' +
         '<td class="name-cell">' + (player.portrait ? '<span class="headshot"><img src="' + esc(player.portrait) + '" alt="" loading="lazy"></span>' : '') +
-            '<strong>' + esc(player.player_name) + '</strong></td>' +
+            '<strong' + (player.save_id ? ' data-player-id="' + esc(player.save_id) + '"' : '') + '>' + esc(player.player_name) + '</strong></td>' +
         '<td>' + esc(player.class_year) + '</td>' +
         '<td class="muted nowrap">' + sizeText(player) + '</td>' +
         '<td class="ovr">' + esc(player.overall) + '</td>' +

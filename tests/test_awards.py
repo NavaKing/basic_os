@@ -11,7 +11,7 @@ TEAMS = {1: {"team_id": 1, "name": "Wyoming", "short_name": "WYO", "color": "#49
 
 
 def pick(award_type, position, team_id=2, conference=None, name="Player"):
-    return {"award_type": award_type, "position": position, "conference": conference, "team_id": team_id, "name": name,
+    return {"award_type": award_type, "position": position, "conference": conference, "team_id": team_id, "name": name, "player_id": name,
             "jersey": 1, "class_year": "Junior", "overall": 90, "portrait_file": None}
 
 

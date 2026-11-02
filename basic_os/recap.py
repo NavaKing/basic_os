@@ -114,7 +114,7 @@ def player_card(player_id, entry, ctx, note=None):
     outcome, mine, theirs, venue, opponent_id = side_result(game, player['team_id'])
     first, _, last = player['name'].partition(" ")
     return {
-        "first_name": first, "last_name": last or first,
+        "id": player_id, "first_name": first, "last_name": last or first,
         "position": player['position'], "class": class_label(player),
         "portrait": media.portrait_url("player", player.get('portrait_file')),
         "team": team_view(team, ctx['ranks_before'].get(team['team_id'])),
@@ -310,7 +310,7 @@ def heisman_race(ctx):
         if not player or not totals.get(h['player_id']):
             continue
         movement = (h['last_rank'] - h['rank']) if h['last_rank'] and h['rank'] else 0
-        rows.append({"rank": h['rank'], "movement": movement, "name": player['name'], "position": player['position'],
+        rows.append({"id": h['player_id'], "rank": h['rank'], "movement": movement, "name": player['name'], "position": player['position'],
                      "portrait": media.portrait_url("player", player.get('portrait_file')),
                      "team": team_view(ctx['teams'][player['team_id']], ctx['ranks_after'].get(player['team_id'])),
                      "boxes": [{"label": label, "value": value} for label, value in stat_boxes(totals.get(h['player_id'], {}))]})

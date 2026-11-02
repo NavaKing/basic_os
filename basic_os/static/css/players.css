@@ -1,0 +1,42 @@
+/* Player profile dialog (opened by clicking a player's name). Shares the team dialog's frame and hero. */
+
+[data-player-id] { cursor: pointer; }
+[data-player-id]:hover { text-decoration: underline; text-decoration-color: var(--gold); text-underline-offset: 3px; }
+
+.player-dialog { width: min(820px, calc(100vw - 32px)); }
+.pp-headshot { --headshot-size: 112px; border: 3px solid var(--team-color, var(--gold)); }
+.pp-team { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; color: #fff; font-weight: 600; }
+.pp-team .team-logo { width: 22px; height: 22px; }
+
+.pp-body { padding: 4px 24px 24px; }
+.pp-facts { display: flex; flex-wrap: wrap; gap: 8px; padding: 16px 0 4px; }
+.pp-fact { min-width: 86px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--panel-inset); text-align: center; }
+.pp-fact-value { font-family: var(--font-display); font-size: 18px; font-weight: 600; color: #fff; }
+.pp-fact-label { font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 0.6px; }
+
+.pp-section { margin-top: 20px; }
+.pp-section h3 { margin: 0 0 8px; font-family: var(--font-display); font-size: 13px; letter-spacing: 2px; text-transform: uppercase; color: var(--gold); }
+.pp-line { margin: 8px 0 0; font-size: 13px; color: var(--text-dim); }
+
+.pp-games { width: 100%; font-size: 13px; }
+.pp-games td { padding: 7px 6px; border-bottom: 1px solid var(--border-soft); vertical-align: middle; }
+.pp-games .team-logo { width: 18px; height: 18px; vertical-align: middle; }
+.pp-game-line { color: var(--text-dim); }
+
+.pp-honors { margin: 0; padding-left: 18px; font-size: 14px; line-height: 1.7; color: #fff; }
+.pp-stories { list-style: none; margin: 0; padding: 0; }
+.pp-stories li { padding: 10px 0; border-bottom: 1px solid var(--border-soft); }
+.pp-story-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px; font-size: 14px; color: #fff; }
+.pp-story-head .muted { font-size: 12px; }
+.pp-stories p { margin: 6px 0 0; font-size: 13px; line-height: 1.55; color: var(--text-dim); }
+
+.pp-photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.pp-photos figure { margin: 0; }
+.pp-photos img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 6px; border: 1px solid var(--border); }
+.pp-photos figcaption { margin-top: 4px; font-size: 12px; color: var(--text-muted); line-height: 1.4; }
+
+@media (max-width: 640px) {
+    .pp-headshot { --headshot-size: 72px; }
+    .pp-body { padding: 4px 16px 18px; }
+    .pp-games .pp-game-line { display: block; }
+}

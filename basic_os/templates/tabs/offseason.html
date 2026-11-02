@@ -11,7 +11,7 @@
     <li class="off-player">
         <span class="headshot">{% if p.portrait %}<img src="{{ p.portrait }}" alt="" loading="lazy">{% endif %}</span>
         <div class="off-player-id">
-            <div class="off-player-name">{{ p.name }}{% if p.starter %} <span class="off-tag">Starter</span>{% endif %}</div>
+            <div class="off-player-name"><span data-player-id="{{ p.id }}">{{ p.name }}</span>{% if p.starter %} <span class="off-tag">Starter</span>{% endif %}</div>
             <div class="off-player-meta">{{ p.position }} &middot; #{{ p.jersey }} &middot; {{ p.class }} &middot; {{ p.overall }} OVR</div>
             {% if p.note and p.note != 'Starter' %}<div class="off-player-note">{{ p.note }}</div>{% endif %}
         </div>

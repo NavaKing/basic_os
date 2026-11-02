@@ -62,7 +62,7 @@ def has_odds(p, key):
     return p.get(key) is not None and p[key] >= 0
 
 def player_view(p, note=None):
-    return {"name": p['player_name'], "position": p['position'], "jersey": p['jersey_num'], "overall": p['overall'],
+    return {"id": p['save_id'], "name": p['player_name'], "position": p['position'], "jersey": p['jersey_num'], "overall": p['overall'],
             "class": p['class_year'] or "", "portrait": media.portrait_url("player", p.get('portrait_file')),
             "starter": p['starter'], "note": note}
 

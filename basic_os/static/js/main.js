@@ -13,6 +13,7 @@ import { initPodcast } from './podcast.js';
 import { initBackups } from './backups.js';
 import { initAwards } from './awards.js';
 import { initOffseason } from './offseason.js';
+import { initPlayerPages } from './players.js';
 import { applyTeamColors } from './utils.js';
 
 const page = JSON.parse(document.getElementById('page_data').textContent);
@@ -30,6 +31,7 @@ start('tabs', initTabs);
 start('team colours', () => applyTeamColors());
 start('team pages', initTeamPages);
 start('backups', initBackups);
+start('player pages', initPlayerPages);
 start('campus feed', () => renderTweets(page.tweets));
 start('story column', () => renderStories(page.stories, page.game, page.team_name));
 start('depth chart', () => initDepthChart(page.depth_chart));

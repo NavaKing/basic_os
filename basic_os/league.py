@@ -152,7 +152,8 @@ def initialize_league_tables():
                                     ("league_teams", "off_scheme", "TEXT"), ("league_teams", "def_scheme", "TEXT"),
                                     ("league_teams", "off_rank", "INTEGER"), ("league_teams", "def_rank", "INTEGER"),
                                     ("league_teams", "ratings_json", "TEXT"), ("league_teams", "conference", "TEXT"),
-                                    ("league_players", "portrait_file", "TEXT")):
+                                    ("league_players", "portrait_file", "TEXT"), ("league_players", "hometown", "TEXT"),
+                                    ("league_players", "home_state", "TEXT"), ("league_players", "stars", "INTEGER")):
         if column not in [c[1] for c in cursor.execute(f"PRAGMA table_info({table})").fetchall()]:
             cursor.execute(f"ALTER TABLE {table} ADD COLUMN {column} {col_type}")
     conn.commit()
@@ -222,9 +223,11 @@ def sync_league(league, current_week, phase=None):
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, [(g['id'], g['week'], g['weekType'], g['homeId'], g['awayId'], int(g['played']), g['homeScore'], g['awayScore'],
            json.dumps(g['homeQuarters']), json.dumps(g['awayQuarters']), g['homeYards'], g['awayYards']) for g in league['games']])
-    cursor.executemany("INSERT INTO league_players (player_id, name, position, class_year, redshirt, jersey, team_id, portrait_file) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+    cursor.executemany("""INSERT INTO league_players (player_id, name, position, class_year, redshirt, jersey, team_id, portrait_file,
+                                                      hometown, home_state, stars) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                        [(p['id'], p['name'], p['position'], p['classYear'], p['redshirt'], p['jersey'], p['teamId'],
-                         media.player_portrait_file(p.get('assetName'), p.get('headAsset'))) for p in league['players']])
+                         media.player_portrait_file(p.get('assetName'), p.get('headAsset')), p.get('hometown'), p.get('homeState'), p.get('stars'))
+                        for p in league['players']])
     cursor.executemany("INSERT OR REPLACE INTO league_player_games (player_id, game_id, week, stats_json) VALUES (?, ?, ?, ?)",
                        [(p['id'], g['gameId'], g['week'], json.dumps(g['stats'])) for p in league['players'] for g in p['games']])
     cursor.executemany("INSERT INTO league_awards (award_type, week, player_id, team_id) VALUES (?, ?, ?, ?)",

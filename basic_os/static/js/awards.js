@@ -27,7 +27,7 @@ function initAllAmerica(aa) {
     const grid = document.getElementById('aa_grid');
     const groups = [];
     if (aa.national) groups.push({ key: 'national', label: 'All-America', ...aa.national });
-    aa.conferences.forEach(c => groups.push({ key: c.name, label: 'All-' + c.name, ...c }));
+    aa.conferences.forEach(c => groups.push({ ...c, key: c.name, label: 'All-' + c.label }));
     if (!groups.length) {
         grid.innerHTML = '<div class="empty-note">The game hasn\'t named its All-America teams yet.</div>';
         return;
@@ -46,7 +46,7 @@ function initAllAmerica(aa) {
                 '<span class="aa-pos">' + esc(p.position) + '</span>' +
                 headshot(p.portrait) +
                 '<div class="aa-id">' +
-                    '<div class="aa-name">' + esc(p.name) + '</div>' +
+                    '<div class="aa-name" data-player-id="' + esc(p.id) + '">' + esc(p.name) + '</div>' +
                     '<div class="aa-meta">' + teamMark(p.team) + '<span>' + esc(p.team ? p.team.short : '') + '</span>' +
                         (p.class ? '<span>' + esc(p.class) + '</span>' : '') + (p.overall ? '<span>' + esc(p.overall) + ' OVR</span>' : '') + '</div>' +
                 '</div>' +
@@ -66,7 +66,7 @@ function renderHeisman(rows) {
     list.innerHTML = rows.length ? rows.map(h =>
         '<li class="aw-heisman-row">' +
             '<span class="aw-heisman-rank">' + esc(h.rank) + '</span>' + headshot(h.portrait) +
-            '<div class="aw-heisman-id"><div class="aa-name">' + esc(h.name) + ' ' + move(h.movement) + '</div>' +
+            '<div class="aw-heisman-id"><div class="aa-name"><span data-player-id="' + esc(h.id) + '">' + esc(h.name) + '</span> ' + move(h.movement) + '</div>' +
                 '<div class="aa-meta">' + teamMark(h.team) + '<span>' + esc(h.position) + ' &middot; ' + esc(h.team.name) + '</span></div></div>' +
             '<div class="stat-boxes stat-boxes--inline">' + h.boxes.map(b =>
                 '<div class="stat-box"><div class="stat-box-value">' + esc(b.value) + '</div><div class="stat-box-label">' + esc(b.label) + '</div></div>').join('') + '</div>' +
