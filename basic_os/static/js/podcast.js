@@ -183,11 +183,19 @@ function boxScore(game) {
 }
 
 /** An episode as a printed magazine page (static/css/magazine.css): the transcript reads like a Q&A interview. */
+/** The headlines a weekly episode covered, as a list for its page. */
+function headlineList(ep) {
+    return '<ol class="mag-numbered pod-headlines">' + (ep.game.headlines || []).map(h => '<li><p>' + esc(h) + '</p></li>').join('') + '</ol>';
+}
+
+function isWeekly(ep) {
+    return ep.game.kind === 'weekly';
+}
+
 function episodeCard(ep) {
+    if (isWeekly(ep)) return weeklyCard(ep);
     const lines = ep.script.map((line, i) => '<li class="pod-line pod-line--' + line.host + '" data-line="' + i + '"><b>' + esc(ep.hosts[line.host].name) + ':</b> ' + esc(line.text) + '</li>').join('');
     const plays = ep.game.plays.map(p => '<div class="mag-post"><b>' + (p.quarter === 5 ? 'OT' : 'Q' + esc(p.quarter)) + ' &middot; ' + esc(p.clock) + ' &middot; ' + esc(p.team) + '</b>' + esc(p.text) + '</div>').join('');
-    const recorded = ep.script.filter(l => l.audio).length;
-    const hasAudio = recorded === ep.script.length;
     const [a, b] = ep.game.teams;
     const winner = a.final >= b.final ? a : b, loser = winner === a ? b : a;
     const week = ep.week_num !== null ? 'Week ' + esc(ep.week_num) : 'This week';
@@ -201,11 +209,7 @@ function episodeCard(ep) {
         '<div class="mag-grid">' +
             '<div class="mag-col mag-col--left">' +
                 (ep.cover_image ? '<img class="pod-cover" src="' + esc(staticUrl(ep.cover_image)) + '" alt="">' : '<div class="pod-cover pod-cover--blank">ON AIR</div>') +
-                (hasAudio ? '<div class="pod-controls"><button type="button" class="pod-play">▶ Play episode</button>' +
-                    '<div class="pod-progress"><progress class="pod-bar" max="' + ep.script.length + '" value="0"></progress><span class="pod-now">Ready</span></div>' +
-                    (ep.audio_file ? '<a class="pod-download" href="' + esc(staticUrl(ep.audio_file)) + '" download>Download MP3</a>' : '') + '</div>'
-                    : '<p class="mag-small">' + recorded + ' of ' + ep.script.length + ' lines are recorded; Microsoft\'s voice service dropped the rest. The script is here.</p>' +
-                      '<button type="button" class="pod-retry" data-id="' + esc(ep.episode_id) + '">Retry recording</button><div class="status-text pod-retry-status"></div>') +
+                playerControls(ep) +
                 '<h4 class="mag-feature-title">The Scoring Summary</h4><div class="mag-bubble">' + plays + '</div>' +
             '</div>' +
             '<div class="mag-col mag-col--center">' +
@@ -215,6 +219,44 @@ function episodeCard(ep) {
             '</div>' +
             '<div class="mag-col mag-col--right">' +
                 '<h4 class="mag-feature-title">The Box Score</h4>' + boxScore(ep.game) +
+                '<p class="mag-small">Click any line of the transcript to hear it.</p>' +
+                '<button type="button" class="btn-secondary pod-delete" data-id="' + esc(ep.episode_id) + '">Delete this episode</button>' +
+            '</div>' +
+        '</div></article>';
+}
+
+/** Controls shared by both kinds of episode page: play, progress and download, or retry when lines are missing. */
+function playerControls(ep) {
+    const recorded = ep.script.filter(l => l.audio).length;
+    return recorded === ep.script.length
+        ? '<div class="pod-controls"><button type="button" class="pod-play">▶ Play episode</button>' +
+          '<div class="pod-progress"><progress class="pod-bar" max="' + ep.script.length + '" value="0"></progress><span class="pod-now">Ready</span></div>' +
+          (ep.audio_file ? '<a class="pod-download" href="' + esc(staticUrl(ep.audio_file)) + '" download>Download MP3</a>' : '') + '</div>'
+        : '<p class="mag-small">' + recorded + ' of ' + ep.script.length + ' lines are recorded; Microsoft\'s voice service dropped the rest. The script is here.</p>' +
+          '<button type="button" class="pod-retry" data-id="' + esc(ep.episode_id) + '">Retry recording</button><div class="status-text pod-retry-status"></div>';
+}
+
+function weeklyCard(ep) {
+    const lines = ep.script.map((line, i) => '<li class="pod-line pod-line--' + line.host + '" data-line="' + i + '"><b>' + esc(ep.hosts[line.host].name) + ':</b> ' + esc(line.text) + '</li>').join('');
+    return '<article class="mag-issue pod-episode" data-episode="' + esc(ep.episode_id) + '">' +
+        '<div class="mag-folio"><span>Between the Numbers Weekly &middot; Week ' + esc(ep.week_num) + '</span><span>Episode ' + esc(ep.episode_id) + ' &middot; ' + ep.script.length + ' segments</span></div>' +
+        '<div class="mag-top"><div class="mag-top-text">' +
+            '<h3 class="mag-kicker-headline">Around college football after Week ' + esc(ep.week_num) + '</h3>' +
+            '<p class="mag-byline">With ' + esc(ep.hosts[0].name) + ' and ' + esc(ep.hosts[1].name) + '</p></div>' +
+            '<div class="mag-badge"><span class="mag-badge-top">Weekly</span><span class="mag-badge-main">WK ' + esc(ep.week_num) + '</span>' +
+            '<span class="mag-badge-bottom">Around the league</span></div></div>' +
+        '<div class="mag-grid">' +
+            '<div class="mag-col mag-col--left">' +
+                (ep.cover_image ? '<img class="pod-cover" src="' + esc(staticUrl(ep.cover_image)) + '" alt="">' : '<div class="pod-cover pod-cover--blank">ON AIR</div>') +
+                playerControls(ep) +
+            '</div>' +
+            '<div class="mag-col mag-col--center">' +
+                '<h2 class="mag-slab">' + esc(ep.title) + '</h2>' +
+                '<div class="mag-strap">' + (ep.summary ? esc(ep.summary) : 'Two hosts go around the league') + '</div>' +
+                '<ol class="pod-transcript">' + lines + '</ol>' +
+            '</div>' +
+            '<div class="mag-col mag-col--right">' +
+                '<h4 class="mag-feature-title">The Headlines</h4>' + headlineList(ep) +
                 '<p class="mag-small">Click any line of the transcript to hear it.</p>' +
                 '<button type="button" class="btn-secondary pod-delete" data-id="' + esc(ep.episode_id) + '">Delete this episode</button>' +
             '</div>' +
@@ -256,11 +298,13 @@ function wirePlayer(card, ep) {
 function archiveItem(ep) {
     const recorded = ep.script.filter(l => l.audio).length;
     const [a, b] = ep.game.teams;
+    const kicker = isWeekly(ep) ? 'Week ' + esc(ep.week_num) + ' &middot; Between the Numbers Weekly'
+        : (ep.week_num !== null ? 'Week ' + esc(ep.week_num) + ' &middot; ' : '') + esc(a.name) + ' ' + esc(a.final) + ', ' + esc(b.name) + ' ' + esc(b.final);
     const transcript = ep.script.map(line => '<p class="pod-archive-line"><b>' + esc(ep.hosts[line.host].name) + ':</b> ' + esc(line.text) + '</p>').join('');
     return '<li class="pod-archive-item">' +
         (ep.cover_image ? '<img class="pod-archive-cover" src="' + esc(staticUrl(ep.cover_image)) + '" alt="" loading="lazy">' : '<div class="pod-archive-cover pod-cover--blank">ON AIR</div>') +
         '<div class="pod-archive-body">' +
-            '<div class="mag-numbered-kicker">' + (ep.week_num !== null ? 'Week ' + esc(ep.week_num) + ' &middot; ' : '') + esc(a.name) + ' ' + esc(a.final) + ', ' + esc(b.name) + ' ' + esc(b.final) + '</div>' +
+            '<div class="mag-numbered-kicker">' + kicker + '</div>' +
             '<h3 class="mag-card-title">' + esc(ep.title) + '</h3>' +
             (ep.summary ? '<p class="mag-card-text">' + esc(ep.summary) + '</p>' : '') +
             (ep.audio_file ? '<audio class="pod-archive-audio" controls preload="none" src="' + esc(staticUrl(ep.audio_file)) + '"></audio>'
@@ -383,6 +427,31 @@ export function initPodcast(episodes, uploads, draft) {
             setStatus(status, String(err.message || err), true);
         } finally {
             readSave.disabled = false;
+        }
+    });
+
+    // Between the Numbers Weekly: around the league from one week's recap
+    const weekly = document.getElementById('pod_weekly');
+    weekly.addEventListener('click', async () => {
+        const week = document.getElementById('pod_weekly_week').value;
+        if (!week) return;
+        weekly.disabled = true;
+        setStatus(status, 'Starting...');
+        const timer = setInterval(async () => {
+            try {
+                const p = await (await fetch('/generate/progress')).json();
+                if (p.running) setStatus(status, p.step + (p.detail ? ' (' + p.detail + ')' : '') + '... ' + p.elapsed + 's');
+            } catch { /* keep waiting */ }
+        }, POLL_MS);
+        try {
+            const data = await postJSON('/podcast/weekly/generate', { week: Number(week), hosts: currentHosts() });
+            if (data.error) throw new Error(data.error);
+            done(data.episodes, data.warning);
+        } catch (err) {
+            setStatus(status, String(err.message || err), true);
+        } finally {
+            clearInterval(timer);
+            weekly.disabled = false;
         }
     });
 
