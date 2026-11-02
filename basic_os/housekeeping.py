@@ -31,5 +31,6 @@ def convert_photos():
 def run():
     """All upkeep steps; returns {step: count} for the ones that did something."""
     import podcast  # noqa: F401  (makes sure every table the steps update exists)
-    done = {"photos converted to WebP": convert_photos()}
+    import backups
+    done = {"photos converted to WebP": convert_photos(), "backups compressed": backups.compress_old_backups()}
     return {step: count for step, count in done.items() if count}

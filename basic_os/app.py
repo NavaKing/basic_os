@@ -460,7 +460,8 @@ def backup_file(file_name):
     if request.method == 'DELETE':
         backups.delete_backup(file_name)
         return jsonify({"backups": backups.list_backups()})
-    return send_from_directory(backups.BACKUP_DIR, file_name, as_attachment=True)
+    data, download_name = backups.download(file_name)
+    return Response(data, mimetype="application/x-sqlite3", headers={"Content-Disposition": f'attachment; filename="{download_name}"'})
 
 @app.route('/backups/<file_name>/restore', methods=['POST'])
 def backup_restore(file_name):

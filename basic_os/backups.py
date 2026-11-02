@@ -1,20 +1,27 @@
+import contextlib
 import datetime
+import gzip
 import os
 import re
+import shutil
 import sqlite3
+import tempfile
 import database
 
 # Copies of dynasty_data.db: made by hand from the Backups window, or automatically right before a save sync
-# writes new data. Copies use SQLite's backup API, so they're consistent even while the app is running.
+# writes new data. Copies use SQLite's backup API, so they're consistent even while the app is running, and are
+# stored gzip-compressed (about a quarter of the size). Older uncompressed .db backups still list, restore and download.
 # Restoring brings back everything the app made (stories, storylines, podcasts, quotes, game plans, edits);
 # schedule and stats re-sync from the dynasty save on the next page load as usual.
 
 BACKUP_DIR = os.environ.get("BASIC_OS_BACKUPS") or os.path.join(os.path.dirname(os.path.abspath(__file__)), "backups")
 AUTO_LABEL = "before-sync"
 AUTO_KEEP = 10          # automatic backups kept; hand-made ones are only deleted by hand
-FILE_PATTERN = re.compile(r"^dynasty_(\d{8}-\d{6})(?:_([a-z0-9-]{1,40}))?\.db$")
+FILE_PATTERN = re.compile(r"^dynasty_(\d{8}-\d{6})(?:_([a-z0-9-]{1,40}))?\.db(\.gz)?$")
 REQUIRED_TABLES = {"schedule_tracking", "team_roster"}  # what makes a file a BASIC_OS database
 LABEL_TEXT = {AUTO_LABEL: "Automatic, before a save sync", "before-restore": "Automatic, before a restore", "uploaded": "Uploaded"}
+SQLITE_HEADER = b"SQLite format 3\x00"
+GZIP_MAGIC = b"\x1f\x8b"
 
 def timestamp():
     return datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -39,18 +46,51 @@ def copy_database(source, target):
         src.close()
         dst.close()
 
-def create_backup(label=""):
-    os.makedirs(BACKUP_DIR, exist_ok=True)
-    label = clean_label(label)
-    stamp = timestamp()
-    file_name = f"dynasty_{stamp}{'_' + label if label else ''}.db"
-    path = os.path.join(BACKUP_DIR, file_name)
-    if os.path.exists(path):  # two in the same second
+def compress(source, target):
+    with open(source, "rb") as src, gzip.open(target, "wb", compresslevel=6) as dst:
+        shutil.copyfileobj(src, dst)
+
+@contextlib.contextmanager
+def plain_copy(path):
+    """Yields the path of an uncompressed copy of a backup (the file itself when it isn't compressed)."""
+    if not path.endswith(".gz"):
+        yield path
+        return
+    folder = tempfile.mkdtemp(prefix="basic_os_backup_")
+    try:
+        plain = os.path.join(folder, "dynasty.db")
+        with gzip.open(path, "rb") as src, open(plain, "wb") as dst:
+            shutil.copyfileobj(src, dst)
+        yield plain
+    finally:
+        shutil.rmtree(folder, ignore_errors=True)
+
+def new_name(label):
+    """A fresh backup file name; ValueError if one was made in this same second."""
+    name = f"dynasty_{timestamp()}{'_' + label if label else ''}.db.gz"
+    if os.path.exists(os.path.join(BACKUP_DIR, name)) or os.path.exists(os.path.join(BACKUP_DIR, name[:-3])):
         raise ValueError("A backup was just made; try again in a moment.")
-    copy_database(database.DB_FILE, path)
+    return name
+
+def store(plain_db, label):
+    """Compresses an uncompressed database into the backups folder; returns the new file name."""
+    os.makedirs(BACKUP_DIR, exist_ok=True)
+    name = new_name(label)
+    compress(plain_db, os.path.join(BACKUP_DIR, name))
+    return name
+
+def create_backup(label=""):
+    label = clean_label(label)
+    folder = tempfile.mkdtemp(prefix="basic_os_backup_")
+    try:
+        snapshot = os.path.join(folder, "dynasty.db")
+        copy_database(database.DB_FILE, snapshot)
+        name = store(snapshot, label)
+    finally:
+        shutil.rmtree(folder, ignore_errors=True)
     if label == AUTO_LABEL:
         prune_automatic()
-    return file_name
+    return name
 
 def list_backups():
     """Newest first: [{file, created (ISO), label, label_text, size, automatic}]."""
@@ -74,9 +114,9 @@ def prune_automatic():
         os.remove(os.path.join(BACKUP_DIR, b['file']))
 
 def check_database(path):
-    """ValueError unless the file is an intact BASIC_OS database."""
+    """ValueError unless the (uncompressed) file is an intact BASIC_OS database."""
     with open(path, "rb") as f:
-        if f.read(16) != b"SQLite format 3\x00":
+        if f.read(16) != SQLITE_HEADER:
             raise ValueError("That file isn't a database.")
     conn = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
     try:
@@ -90,25 +130,45 @@ def check_database(path):
 
 def restore_backup(file_name):
     """Replaces the live database with a backup, after saving the current one as 'before-restore'."""
-    path = backup_path(file_name)
-    check_database(path)
-    safety = create_backup("before-restore")
-    copy_database(path, database.DB_FILE)
+    with plain_copy(backup_path(file_name)) as plain:
+        check_database(plain)
+        safety = create_backup("before-restore")
+        copy_database(plain, database.DB_FILE)
     return safety
+
+def download(file_name):
+    """(bytes, file name) of a backup as a plain .db file, ready to upload on another PC."""
+    with plain_copy(backup_path(file_name)) as plain:
+        with open(plain, "rb") as f:
+            return f.read(), re.sub(r"\.gz$", "", file_name)
 
 def delete_backup(file_name):
     os.remove(backup_path(file_name))
 
 def save_upload(data):
-    """Stores an uploaded database file as a backup (it can then be restored like any other)."""
-    os.makedirs(BACKUP_DIR, exist_ok=True)
-    stamp = timestamp()
-    path = os.path.join(BACKUP_DIR, f"dynasty_{stamp}_uploaded.db")
-    with open(path, "wb") as f:
-        f.write(data)
+    """Stores an uploaded database (plain or gzip-compressed) as a backup; it can then be restored like any other."""
+    folder = tempfile.mkdtemp(prefix="basic_os_upload_")
     try:
-        check_database(path)
-    except Exception:
-        os.remove(path)
-        raise
-    return os.path.basename(path)
+        plain = os.path.join(folder, "upload.db")
+        if data[:2] == GZIP_MAGIC:
+            try:
+                data = gzip.decompress(data)
+            except OSError as e:
+                raise ValueError("That compressed file is damaged.") from e
+        with open(plain, "wb") as f:
+            f.write(data)
+        check_database(plain)
+        return store(plain, "uploaded")
+    finally:
+        shutil.rmtree(folder, ignore_errors=True)
+
+def compress_old_backups():
+    """Uncompressed .db backups from before compression -> .db.gz (housekeeping). Returns how many."""
+    count = 0
+    for b in list_backups():
+        if b['file'].endswith(".db"):
+            path = os.path.join(BACKUP_DIR, b['file'])
+            compress(path, path + ".gz")
+            os.remove(path)
+            count += 1
+    return count
