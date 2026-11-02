@@ -1,6 +1,7 @@
 // Hub generator button: writes the dispatch, tweets and storyline chapters, and renders the photos.
 
 import { postJSON, setStatus } from './utils.js';
+import { longJob } from './notify.js';
 
 const POLL_MS = 1500;
 
@@ -25,7 +26,7 @@ export function initGenerator(onResult) {
         }, POLL_MS);
         bar.hidden = false;
         try {
-            const data = await postJSON('/generate');
+            const data = await longJob('The hub generator', postJSON('/generate'));
             onResult(data);
             // /generate returns the new story on success, or an error message it didn't save
             const saved = (data.past_stories || []).some(story => story.generated_text === data.text);

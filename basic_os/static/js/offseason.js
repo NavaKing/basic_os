@@ -1,6 +1,7 @@
 // Offseason tab: the page is rendered by the server; this only writes the Signing Day / class report story.
 
 import { esc, setStatus, postJSON } from './utils.js';
+import { longJob } from './notify.js';
 
 export function initOffseason() {
     const button = document.getElementById('sd_generate');
@@ -10,7 +11,7 @@ export function initOffseason() {
         button.disabled = true;
         setStatus(status, 'Writing the story...');
         try {
-            const data = await postJSON('/offseason/signing-day/generate');
+            const data = await longJob('The recruiting story', postJSON('/offseason/signing-day/generate'));
             if (data.error) throw new Error(data.error);
             document.getElementById('sd_title').textContent = data.column.title;
             document.getElementById('sd_body').innerHTML = data.column.paragraphs

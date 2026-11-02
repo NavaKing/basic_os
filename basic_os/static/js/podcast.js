@@ -2,6 +2,7 @@
 // at full size), a review form for what was read, and the episode feed with a transcript-synced player.
 
 import { esc, postJSON, setStatus, staticUrl, applyTeamColors } from './utils.js';
+import { longJob } from './notify.js';
 
 const FULL_MAX_WIDTH = 1600;
 // Where the scoring list sits on College Football 27's post-game Scoring Summary screen (fractions of the screenshot)
@@ -155,7 +156,7 @@ function showReview(draft, onDone) {
             } catch { /* keep waiting */ }
         }, POLL_MS);
         try {
-            const data = await postJSON('/podcast/generate', { draft: collect(draft, root), hosts: currentHosts() });
+            const data = await longJob('Your podcast episode', postJSON('/podcast/generate', { draft: collect(draft, root), hosts: currentHosts() }));
             if (data.error) throw new Error(data.error);
             root.hidden = true;
             root.innerHTML = '';
@@ -322,7 +323,7 @@ function wireButtons(root) {
         b.disabled = true;
         setStatus(note, 'Recording the missing lines...');
         try {
-            const data = await postJSON('/podcast/' + b.dataset.id + '/record');
+            const data = await longJob('The podcast recording', postJSON('/podcast/' + b.dataset.id + '/record'));
             if (data.error) throw new Error(data.error);
             renderFeed(data.episodes);
             if (data.warning) setStatus(document.getElementById('pod_status'), data.warning, true);
@@ -395,7 +396,7 @@ export function initPodcast(episodes, uploads, draft) {
         e.target.disabled = true;
         setStatus(status, 'Reading the screenshots (about 10 seconds each)...');
         try {
-            const data = await postJSON('/events/read');
+            const data = await longJob('The screenshot reading', postJSON('/events/read'));
             if (data.error) throw new Error(data.error);
             setStatus(status, 'Check the plays below, fix anything that was misread, then record the episode.');
             showReview(data, done);
@@ -444,7 +445,7 @@ export function initPodcast(episodes, uploads, draft) {
             } catch { /* keep waiting */ }
         }, POLL_MS);
         try {
-            const data = await postJSON('/podcast/weekly/generate', { week: Number(week), hosts: currentHosts() });
+            const data = await longJob('Your weekly episode', postJSON('/podcast/weekly/generate', { week: Number(week), hosts: currentHosts() }));
             if (data.error) throw new Error(data.error);
             done(data.episodes, data.warning);
         } catch (err) {

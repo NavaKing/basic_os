@@ -1,0 +1,13 @@
+/* Finish notifications: toasts in the bottom-right corner */
+
+.toasts { position: fixed; right: 16px; bottom: 16px; z-index: 100; display: flex; flex-direction: column; gap: 8px; max-width: min(380px, calc(100vw - 32px)); }
+.toast { position: relative; padding: 12px 40px 12px 14px; border: 1px solid var(--gold); border-left-width: 4px; border-radius: 8px;
+         background: var(--panel); color: #fff; font-size: 14px; line-height: 1.4; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+         animation: toast-in 0.2s ease-out; }
+.toast--error { border-color: var(--loss); }
+.toast-close { position: absolute; top: 6px; right: 6px; width: 26px; height: 26px; padding: 0; border-radius: 50%;
+               background: transparent; color: var(--text-dim); font-size: 18px; line-height: 1; }
+.toast-close:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
+
+@keyframes toast-in { from { transform: translateY(8px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .toast { animation: none; } }

@@ -1,6 +1,7 @@
 // Rival watch (Game Day): the panel is rendered by the server; this only writes the rivalry-week issue.
 
 import { esc, setStatus, postJSON, applyTeamColors } from './utils.js';
+import { longJob } from './notify.js';
 
 export function initRivals() {
     document.querySelectorAll('.rival-watch').forEach(panel => applyTeamColors(panel));
@@ -11,7 +12,7 @@ export function initRivals() {
         button.disabled = true;
         setStatus(status, 'Writing the rivalry issue...');
         try {
-            const data = await postJSON('/rivals/issue/generate');
+            const data = await longJob('The rivalry issue', postJSON('/rivals/issue/generate'));
             if (data.error) throw new Error(data.error);
             document.getElementById('rivalry_title').textContent = data.column.title;
             document.getElementById('rivalry_body').innerHTML = data.column.paragraphs
