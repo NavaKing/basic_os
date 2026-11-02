@@ -4,6 +4,7 @@ import league
 import recap
 import team
 import team_page
+from request_cache import per_request
 
 # Rival watch: our rivals as the save tracks them (series, streak, last meeting) next to their season so far,
 # plus rivalry week: when the next game is against a rival, the hub generator and a rivalry-week issue lean into it.
@@ -75,6 +76,7 @@ def their_season(team_id, teams, ranks):
                         "opponent": recap.team_view(teams[opponent_id]) if opponent_id in teams else None}
     return view
 
+@per_request
 def build_rival_watch():
     us = team.user_team()
     teams = league.query_teams()

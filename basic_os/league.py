@@ -1,6 +1,7 @@
 import json
 import database
 import media
+from request_cache import per_request
 
 # League-wide data from the save (every team, game and player stat line) for the weekly recap.
 # Everything except the poll history is replaced on each sync; poll snapshots accumulate week by week.
@@ -372,6 +373,7 @@ def query_team_by_name(name):
     team['staff'] = json.loads(team.get('staff_json') or "{}")
     return team
 
+@per_request
 def query_players():
     return {p['player_id']: p for p in query_rows("SELECT * FROM league_players")}
 
