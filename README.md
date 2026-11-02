@@ -163,7 +163,8 @@ Created at runtime and kept out of git: `dynasty_data.db`, `static/generated/` (
 
 ## License and notices
 
-The BASIC_OS code is released under the [MIT License](LICENSE). That covers this repository's code only:
+The BASIC_OS code is public domain under [the Unlicense](LICENSE): use it however you like, no credit needed.
+That covers this repository's code only:
 
 * **No game content is included.** No EA files, save data, logos, portraits, generated images or audio are in this repository.
   You need your own copy of the game and your own save.
