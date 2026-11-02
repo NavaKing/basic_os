@@ -119,7 +119,7 @@ python app.py
 | `CFB_PORTRAIT_DIR` | `C:\Program Files (x86)\Steam\steamapps\common\SMG CFB27` | Folder holding the portrait packs. |
 | `BASIC_OS_DEBUG` | off | Set to `1` for Flask debug mode (auto-reload). Without it, restart the app after changing code. |
 | `BASIC_OS_DB` | `basic_os\dynasty_data.db` | The app's database (the tests point this at a throwaway copy). |
-| `BASIC_OS_BACKUPS` | `basic_osackups` | Where backups are kept. |
+| `BASIC_OS_BACKUPS` | `basic_os\backups` | Where backups are kept. |
 
 Per-team flavour for the AI (the program's identity line and hashtag) lives in `TEAM_FLAVOR` in `basic_os/team.py`.
 
