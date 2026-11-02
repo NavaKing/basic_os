@@ -182,28 +182,40 @@ function boxScore(game) {
             '<td class="box-num box-total">' + esc(t.final) + '</td></tr>').join('') + '</tbody></table>';
 }
 
+/** An episode as a printed magazine page (static/css/magazine.css): the transcript reads like a Q&A interview. */
 function episodeCard(ep) {
-    const lines = ep.script.map((line, i) => '<li class="pod-line pod-line--' + line.host + '" data-line="' + i + '"><b>' + esc(ep.hosts[line.host].name) + '</b> ' + esc(line.text) + '</li>').join('');
-    const plays = ep.game.plays.map(p => '<li><span class="pod-play-q">' + (p.quarter === 5 ? 'OT' : 'Q' + esc(p.quarter)) + ' ' + esc(p.clock) + '</span><b>' + esc(p.team) + '</b> ' + esc(p.text) + '</li>').join('');
+    const lines = ep.script.map((line, i) => '<li class="pod-line pod-line--' + line.host + '" data-line="' + i + '"><b>' + esc(ep.hosts[line.host].name) + ':</b> ' + esc(line.text) + '</li>').join('');
+    const plays = ep.game.plays.map(p => '<div class="mag-post"><b>' + (p.quarter === 5 ? 'OT' : 'Q' + esc(p.quarter)) + ' &middot; ' + esc(p.clock) + ' &middot; ' + esc(p.team) + '</b>' + esc(p.text) + '</div>').join('');
     const hasAudio = ep.script.some(l => l.audio);
-    return '<article class="panel pod-episode" data-episode="' + esc(ep.episode_id) + '">' +
-        '<div class="pod-episode-head">' +
-            (ep.cover_image ? '<img class="pod-cover" src="' + esc(staticUrl(ep.cover_image)) + '" alt="">' : '<div class="pod-cover pod-cover--blank">ON AIR</div>') +
-            '<div class="pod-episode-id">' +
-                '<div class="section-label">' + (ep.week_num !== null ? 'Week ' + esc(ep.week_num) + ' &middot; ' : '') + 'Weekly Podcast</div>' +
-                '<h2 class="pod-title">' + esc(ep.title) + '</h2>' +
-                (ep.summary ? '<p class="pod-summary">' + esc(ep.summary) + '</p>' : '') +
-                '<div class="pod-with">With ' + esc(ep.hosts[0].name) + ' and ' + esc(ep.hosts[1].name) + ' &middot; ' + ep.script.length + ' segments</div>' +
+    const [a, b] = ep.game.teams;
+    const winner = a.final >= b.final ? a : b, loser = winner === a ? b : a;
+    const week = ep.week_num !== null ? 'Week ' + esc(ep.week_num) : 'This week';
+    return '<article class="mag-issue pod-episode" data-episode="' + esc(ep.episode_id) + '">' +
+        '<div class="mag-folio"><span>The Weekly Podcast &middot; ' + week + '</span><span>Episode ' + esc(ep.episode_id) + ' &middot; ' + ep.script.length + ' segments</span></div>' +
+        '<div class="mag-top"><div class="mag-top-text">' +
+            '<h3 class="mag-kicker-headline">' + esc(a.name) + ' vs ' + esc(b.name) + ', by the numbers</h3>' +
+            '<p class="mag-byline">With ' + esc(ep.hosts[0].name) + ' and ' + esc(ep.hosts[1].name) + '</p></div>' +
+            '<div class="mag-badge"><span class="mag-badge-top">Final</span><span class="mag-badge-main">' + esc(winner.final) + '-' + esc(loser.final) + '</span>' +
+            '<span class="mag-badge-bottom">' + esc(winner.abbr) + ' wins</span></div></div>' +
+        '<div class="mag-grid">' +
+            '<div class="mag-col mag-col--left">' +
+                (ep.cover_image ? '<img class="pod-cover" src="' + esc(staticUrl(ep.cover_image)) + '" alt="">' : '<div class="pod-cover pod-cover--blank">ON AIR</div>') +
                 (hasAudio ? '<div class="pod-controls"><button type="button" class="pod-play">▶ Play episode</button>' +
                     '<div class="pod-progress"><progress class="pod-bar" max="' + ep.script.length + '" value="0"></progress><span class="pod-now">Ready</span></div>' +
-                    (ep.audio_file ? '<a class="pod-download" href="' + esc(staticUrl(ep.audio_file)) + '" download>⬇ Download MP3</a>' : '') + '</div>'
-                    : '<div class="pod-warning">The audio wasn\'t recorded (the voice service may have been offline). The script is below.</div>') +
+                    (ep.audio_file ? '<a class="pod-download" href="' + esc(staticUrl(ep.audio_file)) + '" download>Download MP3</a>' : '') + '</div>'
+                    : '<p class="mag-small">The audio wasn\'t recorded (the voice service may have been offline). The script is here.</p>') +
+                '<h4 class="mag-feature-title">The Scoring Summary</h4><div class="mag-bubble">' + plays + '</div>' +
             '</div>' +
-        '</div>' +
-        '<div class="pod-columns">' +
-            '<ol class="pod-transcript">' + lines + '</ol>' +
-            '<aside class="pod-side">' + boxScore(ep.game) + '<div class="section-label">Scoring summary</div><ul class="pod-plays-list">' + plays + '</ul>' +
-                '<button type="button" class="btn-secondary pod-delete" data-id="' + esc(ep.episode_id) + '">Delete this episode</button></aside>' +
+            '<div class="mag-col mag-col--center">' +
+                '<h2 class="mag-slab">' + esc(ep.title) + '</h2>' +
+                '<div class="mag-strap">' + (ep.summary ? esc(ep.summary) : 'Two hosts break the game down') + '</div>' +
+                '<ol class="pod-transcript">' + lines + '</ol>' +
+            '</div>' +
+            '<div class="mag-col mag-col--right">' +
+                '<h4 class="mag-feature-title">The Box Score</h4>' + boxScore(ep.game) +
+                '<p class="mag-small">Click any line of the transcript to hear it.</p>' +
+                '<button type="button" class="btn-secondary pod-delete" data-id="' + esc(ep.episode_id) + '">Delete this episode</button>' +
+            '</div>' +
         '</div></article>';
 }
 

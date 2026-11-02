@@ -22,6 +22,7 @@ DEFAULT_HOSTS = [{"name": "Andrew", "voice": "en-US-AndrewNeural", "role": "lead
                  {"name": "Ava", "voice": "en-US-AvaNeural", "role": "color analyst with strong opinions on effort and execution"}]
 VOICE_LOCALES = ("en-US", "en-GB", "en-AU", "en-CA")
 TTS_WORKERS = 4
+TTS_ATTEMPTS = 5
 COVER_SIZE = (1024, 1024)
 TARGET_LINES = 30
 
@@ -267,7 +268,7 @@ def write_script(selected_model, hosts, ours, theirs, week, facts):
             new_lines = []
             for line in data.get('lines') or []:
                 if isinstance(line, dict):
-                    text = speakable(spoken_names(ai_engine.strip_tags(str(line.get('text') or ""))))
+                    text = speakable(spoken_names(ai_engine.clean_text(str(line.get('text') or ""))))  # clean_text also restores name capitals
                     text = re.sub(rf"^(?:({re.escape(a['name'])}|{re.escape(b['name'])})\s*:\s*)+", "", text)  # "Ava: Ava: ..." prefixes
                     text = " ".join(re.split(r"(?<=[.!?])\s+", text)[:MAX_LINE_SENTENCES])
                     text = re.sub(r"\.{2,}$", ".", text)
@@ -303,12 +304,12 @@ def voice_lines(episode_dir, lines, hosts):
         async def one(index, line):
             async with gate:
                 path = os.path.join(episode_dir, f"line_{index:03d}.mp3")
-                for _attempt in range(3):
+                for attempt in range(TTS_ATTEMPTS):
                     try:
                         await edge_tts.Communicate(line['text'], hosts[line['host']]['voice'], rate="+4%").save(path)
                         return
                     except Exception:
-                        await asyncio.sleep(1.5)
+                        await asyncio.sleep(2 * (attempt + 1))  # the service sometimes drops requests for a few seconds
                 raise RuntimeError("Microsoft's voice service didn't answer. Check the internet connection and try again.")
         await asyncio.gather(*(one(i, line) for i, line in enumerate(lines)))
     asyncio.run(synth_all())
@@ -391,7 +392,11 @@ def generate_episode(selected_model, draft, request_hosts=None):
 
         episode_dir = os.path.join(PODCAST_DIR, str(episode_id))
         progress.step("Recording the voices", f"{len(lines)} lines")
-        audio_file = voice_lines(episode_dir, lines, hosts)
+        try:
+            audio_file = voice_lines(episode_dir, lines, hosts)
+        except Exception:
+            delete_episode(episode_id)  # don't leave a half-made episode; the screenshots stay so it can be retried
+            raise
         for index, line in enumerate(lines):
             line['audio'] = f"podcasts/{episode_id}/line_{index:03d}.mp3"
         progress.step("Rendering the cover art")

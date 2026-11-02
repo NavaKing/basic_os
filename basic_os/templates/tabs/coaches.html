@@ -5,18 +5,16 @@
         <div id="coach_plan"></div>
     </div>
 
-    <div class="panel news-panel">
-        <div class="news-head">
-            <div>
-                <div class="section-label">Around the league</div>
-                <h2 class="news-title">What the Coaches Are Saying</h2>
-                <div class="muted news-sub">Rankings from this season's results. Quotes are AI-written for your dynasty and aren't real.</div>
+    <article class="mag-issue news-panel">
+        <div class="mag-folio"><span>Around the League &middot; {{ season_year }} Season</span><span id="news_week">Coaches Edition</span></div>
+        <div class="mag-top">
+            <div class="mag-top-text">
+                <h3 class="mag-kicker-headline">Top ten, the hot seat and every coordinator in between</h3>
+                <p class="mag-byline">Rankings from this season's results &middot; quotes are AI-written for your dynasty and aren't real</p>
             </div>
-            <div class="news-actions">
-                <button type="button" id="news_generate">Write this week's quotes</button>
-                <div class="status-text" id="news_status"></div>
-            </div>
+            <div class="mag-badge"><span class="mag-badge-top">This week</span><span class="mag-badge-main">60</span><span class="mag-badge-bottom">coaches</span></div>
         </div>
+        <h2 class="mag-slab news-slab">What the Coaches Are Saying</h2>
         <div class="news-controls">
             <div class="news-roles" role="tablist">
                 <button type="button" class="news-role" data-role="hc">Head Coaches</button>
@@ -27,7 +25,11 @@
                 <button type="button" class="news-list" data-list="top">Top 10</button>
                 <button type="button" class="news-list" data-list="hot">Hot Seat</button>
             </div>
+            <div class="news-actions">
+                <button type="button" id="news_generate">Write this week's quotes</button>
+                <div class="status-text" id="news_status"></div>
+            </div>
         </div>
         <div class="news-grid" id="news_grid"></div>
-    </div>
+    </article>
 </section>

@@ -175,15 +175,17 @@ function render(root, p) {
 
 // ---------- News column ----------
 
-function newsCard(c, listName) {
-    return '<article class="news-card' + (listName === 'hot' ? ' news-card--hot' : '') + '" data-color="' + esc(c.color || '') + '">' +
+/** One coach as a magazine item: big rank numeral, headshot, headline and pull quote. The No. 1 coach is the lead feature. */
+function newsCard(c, listName, rank) {
+    return '<article class="news-card' + (rank === 1 ? ' news-card--lead' : '') + (listName === 'hot' ? ' news-card--hot' : '') + '">' +
+        '<div class="news-card-rank">' + rank + '</div>' +
         '<div class="news-card-head">' + headshot(c.portrait) +
             '<div class="news-card-id"><div class="news-card-name">' + esc(c.name) + '</div>' +
             '<div class="news-card-team team-link" data-team-id="' + esc(c.team_id) + '">' + (c.logo ? '<img class="team-logo team-logo--sm" src="' + esc(c.logo) + '" alt="">' : '') +
-                (c.rank ? '<span class="team-rank">#' + esc(c.rank) + '</span> ' : '') + esc(c.team) + ' &middot; ' + esc(c.record) + '</div>' +
-            '<div class="news-card-stat">' + esc(c.stat) + (c.scheme ? ' &middot; ' + esc(c.scheme) : '') + '</div></div></div>' +
+                (c.rank ? 'No. ' + esc(c.rank) + ' ' : '') + esc(c.team) + ' &middot; ' + esc(c.record) + '</div>' +
+            (c.stat !== c.record || c.scheme ? '<div class="news-card-stat">' + esc(c.stat === c.record ? '' : c.stat) + (c.scheme ? (c.stat === c.record ? '' : ' &middot; ') + esc(c.scheme) : '') + '</div>' : '') + '</div></div>' +
         (c.headline ? '<h4 class="news-card-headline">' + esc(c.headline) + '</h4>' : '') +
-        (c.quote ? '<blockquote class="news-card-quote">&ldquo;' + esc(c.quote) + '&rdquo;</blockquote>' : '<div class="plan-empty plan-empty--inline">No quote yet this week.</div>') +
+        (c.quote ? '<blockquote class="news-card-quote">&ldquo;' + esc(c.quote) + '&rdquo;</blockquote>' : '<p class="mag-empty">No quote yet this week.</p>') +
         '<div class="news-card-foot">' + (c.last ? 'Last: ' + esc(c.last) : '') + (c.next ? ' &middot; Next: ' + esc(c.next) : '') + '</div>' +
     '</article>';
 }
@@ -197,8 +199,8 @@ function initNews(news) {
         document.querySelectorAll('.news-role').forEach(b => b.setAttribute('aria-selected', String(b.dataset.role === state.role)));
         document.querySelectorAll('.news-list').forEach(b => b.setAttribute('aria-selected', String(b.dataset.list === state.list)));
         const cards = state.news ? state.news.lists[state.role][state.list] : [];
-        grid.innerHTML = cards.length ? cards.map(c => newsCard(c, state.list)).join('') : '<div class="empty-note">No games played yet.</div>';
-        applyTeamColors(grid);
+        grid.innerHTML = cards.length ? cards.map((c, i) => newsCard(c, state.list, i + 1)).join('') : '<p class="mag-empty">No games played yet.</p>';
+        if (state.news) document.getElementById('news_week').textContent = 'Week ' + state.news.week + ' Coaches Edition';
     };
     document.querySelectorAll('.news-role').forEach(b => b.addEventListener('click', () => { state.role = b.dataset.role; show(); }));
     document.querySelectorAll('.news-list').forEach(b => b.addEventListener('click', () => { state.list = b.dataset.list; show(); }));
