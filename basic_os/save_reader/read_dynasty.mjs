@@ -301,6 +301,75 @@ try {
     }
   }
 
+  // ---------- Scoring summaries (a rolling pool of about 60 recent games; older ones get overwritten) ----------
+  // Each score records the quarter, time left, score type and the running score, plus a stat snapshot of each team's
+  // featured passer, rusher and receiver. The snapshots aren't linked records: each is a packed list of up to ten
+  // references (table id in the top 15 bits, row in the low 17). The snapshot players identify the two teams.
+  // Several tables share these names; the real ones are the largest
+  const largest = async (name) => {
+    let best = null, bestCount = 0;
+    for (const table of franchise.tables.filter((t) => t.name === name)) {
+      if (!table.recordsRead) await table.readRecords();
+      const count = table.records.filter(live).length;
+      if (count > bestCount) { best = table; bestCount = count; }
+    }
+    return best;
+  };
+  const scoringPool = await largest('ScoringSummary');
+  const scoringLists = await largest('ScoringSummary[]');
+  const scoringSummaries = [];
+  if (scoringPool && scoringLists) {
+    const teamOfPlayer = new Map();
+    for (const team of teamTable.records.filter(live)) {
+      const teamRoster = recordFrom(rosterTable, ref(team, 'Roster'));
+      for (const key of teamRoster ? refFields(teamRoster) : []) {
+        const data = ref(teamRoster, key);
+        if (isValidRef(data)) teamOfPlayer.set(data.rowNumber, team.index);
+      }
+    }
+    const packedRefs = (record) => {
+      const field = record.fieldsArray[0];
+      const view = field && record[field.offset.name] && record[field.offset.name]._view;
+      if (!view) return [];
+      const bytes = new Uint8Array(view.buffer, view.byteOffset, view.byteLength);
+      const refs = [];
+      for (let i = 0; i + 4 <= bytes.length; i += 4) {
+        const value = ((bytes[i] << 24) | (bytes[i + 1] << 16) | (bytes[i + 2] << 8) | bytes[i + 3]) >>> 0;
+        if (value) refs.push({ tableId: value >>> 17, rowNumber: value & 0x1FFFF });
+      }
+      return refs;
+    };
+    const snapshots = async (row, side) => {
+      const list = await recordFromAny(ref(row, side));
+      const out = [];
+      for (const data of list ? packedRefs(list) : []) {
+        const snap = await recordFromAny(data);
+        const player = snap && recordFrom(playerTable, ref(snap, 'PlayerRef'));
+        if (!player) continue;
+        out.push({ playerId: playerId(player), name: `${player.FirstName || ''} ${player.LastName || ''}`.trim(), position: player.Position,
+                   teamId: teamOfPlayer.get(player.index) ?? null, touchdowns: snap.Touchdowns || 0, catches: snap.CompsRecs || 0,
+                   attempts: snap.Attempts || 0, yards: snap.Yards || 0 });
+      }
+      return out;
+    };
+    for (const list of scoringLists.records.filter(live)) {
+      const plays = [];
+      for (const key of refFields(list)) {
+        const row = recordFrom(scoringPool, ref(list, key));
+        if (!row) continue;
+        plays.push({ quarter: row.Quarter, secondsLeft: row.TimeStampInSec, type: clean(row.Conversion),
+                     homeBefore: row.HomePreviousScore, homeAfter: row.HomeCurrentScore, awayBefore: row.AwayPreviousScore, awayAfter: row.AwayCurrentScore,
+                     home: await snapshots(row, 'HomePlayerSnapshots'), away: await snapshots(row, 'AwayPlayerSnapshots') });
+      }
+      if (!plays.length) continue;
+      // Game order: by quarter, then the clock running down
+      plays.sort((a, b) => a.quarter - b.quarter || b.secondsLeft - a.secondsLeft);
+      const side = (key) => plays.flatMap((p) => p[key]).map((s) => s.teamId).find((id) => id !== null && id !== undefined) ?? null;
+      const last = plays[plays.length - 1];
+      scoringSummaries.push({ homeId: side('home'), awayId: side('away'), homeScore: last.homeAfter, awayScore: last.awayAfter, plays });
+    }
+  }
+
   // The game's own national awards and Heisman ranking
   const awardsTable = byName('Awards');
   const awardRoot = awardsTable ? (await awardsTable.readRecords(), awardsTable.records.find(live)) : null;
@@ -462,6 +531,7 @@ try {
     roster,
     depthChart,
     league: { userTeamId: userTeam.index, teams: leagueTeams, games: leagueGames, players: leaguePlayers, weeklyAwards, heisman },
+    scoringSummaries,
     recruiting: { board: recruitingBoard, commits, topProspects },
     planRosters
   }));

@@ -86,6 +86,15 @@ def initialize_league_tables():
         roster_json TEXT NOT NULL
     )
     """)
+    # Scoring summaries captured from the save's rolling pool (kept here after the save overwrites them)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS game_scoring (
+        game_id INTEGER PRIMARY KEY,
+        week INTEGER,
+        plays_json TEXT NOT NULL,
+        captured TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
     # Portrait columns added after the first release
     for table, column, col_type in (("league_teams", "coach_portrait", "TEXT"), ("league_teams", "staff_json", "TEXT"),
                                     ("league_teams", "color2", "TEXT"), ("league_teams", "is_user", "INTEGER DEFAULT 0"),
@@ -216,6 +225,39 @@ def sync_plan_rosters(rosters):
 def query_plan_roster(team_id):
     rows = query_rows("SELECT roster_json FROM plan_rosters WHERE team_id = ?", (team_id,))
     return json.loads(rows[0]['roster_json']) if rows else None
+
+def sync_scoring(summaries):
+    """Stores each scoring summary under its game (matched by the two teams; the save doesn't link them)."""
+    if not summaries:
+        return 0
+    played = query_rows("SELECT game_id, week, home_id, away_id, home_score, away_score FROM league_games WHERE played = 1")
+    rows = []
+    for summary in summaries:
+        candidates = [g for g in played if g['home_id'] == summary.get('homeId') and g['away_id'] == summary.get('awayId')]
+        if not candidates:
+            continue
+        # A rematch (conference title game) is possible: pick the game whose final the summary reaches
+        game = min(candidates, key=lambda g: abs(g['home_score'] - summary['homeScore']) + abs(g['away_score'] - summary['awayScore']))
+        rows.append((game['game_id'], game['week'], json.dumps(summary['plays'])))
+    conn = database.get_db_connection()
+    conn.executemany("INSERT OR REPLACE INTO game_scoring (game_id, week, plays_json) VALUES (?, ?, ?)", rows)
+    conn.commit()
+    conn.close()
+    return len(rows)
+
+def query_scoring_games(team_id=None):
+    """Games we have a scoring summary for, newest first (optionally only one team's)."""
+    sql = """SELECT s.game_id, s.week, g.home_id, g.away_id, g.home_score, g.away_score FROM game_scoring s
+             JOIN league_games g ON g.game_id = s.game_id"""
+    params = ()
+    if team_id is not None:
+        sql += " WHERE g.home_id = ? OR g.away_id = ?"
+        params = (team_id, team_id)
+    return query_rows(sql + " ORDER BY s.week DESC, s.game_id", params)
+
+def query_game_scoring(game_id):
+    rows = query_rows("SELECT plays_json FROM game_scoring WHERE game_id = ?", (game_id,))
+    return json.loads(rows[0]['plays_json']) if rows else None
 
 def query_team_by_name(name):
     # The schedule stores "Colorado State Rams" (school + nickname); the league table stores the two separately

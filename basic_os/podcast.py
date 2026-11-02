@@ -25,6 +25,7 @@ TTS_WORKERS = 4
 TTS_ATTEMPTS = 8
 COVER_SIZE = (1024, 1024)
 TARGET_LINES = 30
+ARCHIVE_SIZE = 5          # previous episodes kept in the Back Catalog; the oldest is dropped when a new one is made
 
 def initialize_podcast_tables():
     conn = database.get_db_connection()
@@ -453,6 +454,7 @@ def generate_episode(selected_model, draft, request_hosts=None):
         progress.finish()
     events.clear_uploads()
     events.clear_draft()
+    prune_episodes()
     return {"episodes": query_episodes(), "warning": None if recorded == total else recording_warning(recorded, total, error)}
 
 def query_episodes():
@@ -470,6 +472,14 @@ def query_episodes():
             t['logo'] = media.logo_url(row['short_name']) if row else None
             t['color'] = row['color'] if row else None
     return rows
+
+def prune_episodes():
+    """Keeps the newest episode plus ARCHIVE_SIZE earlier ones, deleting older episodes with their audio and art."""
+    conn = database.get_db_connection()
+    ids = [r['episode_id'] for r in conn.execute("SELECT episode_id FROM podcast_episodes ORDER BY episode_id DESC").fetchall()]
+    conn.close()
+    for episode_id in ids[ARCHIVE_SIZE + 1:]:
+        delete_episode(episode_id)
 
 def delete_episode(episode_id):
     """Removes an episode with its audio and cover art."""

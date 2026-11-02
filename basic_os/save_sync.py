@@ -62,6 +62,7 @@ def sync_if_changed():
         sync_roster(dynasty)
         league.sync_league(dynasty['league'], dynasty['currentWeek'])
         league.sync_plan_rosters(dynasty.get('planRosters'))
+        league.sync_scoring(dynasty.get('scoringSummaries'))
         recruiting.sync_recruiting(dynasty.get('recruiting'), dynasty['league']['userTeamId'], dynasty['currentWeek'])
     except Exception as e:
         # The version isn't stored, so the next page load tries again (e.g. if the game was mid-write)

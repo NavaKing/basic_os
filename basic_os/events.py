@@ -144,11 +144,31 @@ PLAY_PATTERN = re.compile(
     r"^(?P<player>.+?),?\s+(?P<yards>\d+)\s+Yd\s+(?P<kind>pass|run|interception return|fumble return|punt return|kickoff return|field goal|fg|blocked [a-z]+ return)"
     r"(?:\s+from\s+(?P<passer>[^(]+?))?\s*(?:\((?P<extra>[^)]*)\))?\s*,?\s*$", re.IGNORECASE)
 
+# Plays built from the save have no yardage: "Jackson Holman touchdown catch from Tyler Hughes (kick)", "Field goal", "Safety"
+SAVE_PLAY_PATTERN = re.compile(r"^(?:(?P<player>.+?)\s+)?touchdown(?:\s+(?P<kind>run|catch|pass))?(?:\s+from\s+(?P<passer>[^(]+?))?\s*(?:\((?P<extra>[^)]*)\))?$",
+                               re.IGNORECASE)
+
+def conversion_points(extra):
+    extra = (extra or "").lower()
+    if re.search(r"fail|miss|block|no good", extra):
+        return 0
+    if re.search(r"two.point|2.?pt|conversion", extra):
+        return 2
+    return 1 if "kick" in extra else 0
+
 def parse_play(text):
     """'Jackson Holman 1 Yd pass from Tyler Hughes (Erik Sandvik kick)' -> scorer, yards, kind, passer, points."""
     text = (text or "").strip().rstrip(",")
     match = PLAY_PATTERN.match(text)
     if not match:
+        lowered = text.lower()
+        if lowered.startswith("field goal"):
+            return {"player": None, "yards": None, "kind": "field goal", "passer": None, "points": 3}
+        save = SAVE_PLAY_PATTERN.match(text)
+        if save:
+            kind = {"catch": "pass", "pass": "pass", "run": "run"}.get((save.group('kind') or "").lower(), "touchdown")
+            return {"player": (save.group('player') or "").strip() or None, "yards": None, "kind": kind,
+                    "passer": (save.group('passer') or "").strip() or None, "points": 6 + conversion_points(save.group('extra'))}
         safety = "safety" in text.lower()
         return {"player": None, "yards": None, "kind": "safety" if safety else "score", "passer": None, "points": 2 if safety else 0}
     kind = match.group('kind').lower()
@@ -264,6 +284,77 @@ def clear_draft():
     conn.execute("DELETE FROM event_draft")
     conn.commit()
     conn.close()
+
+# ---------- Scoring summaries from the save ----------
+
+def clock_text(seconds):
+    seconds = max(0, int(seconds or 0))
+    return f"{seconds // 60}:{seconds % 60:02d}"
+
+def risen_players(earlier, later, side):
+    """The team's featured players whose touchdown count went up between two snapshots."""
+    before = {s['playerId']: s['touchdowns'] for s in (earlier or {}).get(side, [])}
+    return [s for s in (later or {}).get(side, []) if s['touchdowns'] > before.get(s['playerId'], 0)]
+
+def scorer_text(row, previous, side, points, next_other=None):
+    """Who scored, from the featured players' touchdown counts going up since that team's previous score.
+    The snapshot slots are the team's passer, rusher and receiver; a scorer outside those three can't be named.
+    About a fifth of the time the snapshot lags a score; then the other team's next score shows the rise."""
+    if points in (3,):
+        return "Field goal"
+    if points == 2:
+        return "Safety"
+    risen = risen_players(previous, row, side) or (risen_players(row, next_other, side) if next_other else [])
+    passer = next((s for s in risen if s['position'] == 'QB' and s['attempts']), None)
+    scorer = next((s for s in risen if s is not passer), None)
+    extra = {7: " (kick)", 8: " (two-point conversion)", 6: " (kick failed)"}.get(points, "")
+    if scorer and passer:
+        return f"{scorer['name']} touchdown catch from {passer['name']}{extra}"
+    if scorer:
+        kind = "catch" if scorer['position'] in ('WR', 'TE') else "run"
+        return f"{scorer['name']} touchdown {kind}{extra}"
+    if passer:
+        return f"Touchdown pass from {passer['name']}{extra}"
+    return f"Touchdown{extra}"
+
+def draft_from_save(game_id):
+    """A review draft (same shape as the screenshot reading) built from a scoring summary captured from the save."""
+    plays = league.query_game_scoring(game_id)
+    # The pool also logs moments where neither score changed (ends of halves, failed tries); only real scores count
+    plays = [p for p in plays or [] if p['homeAfter'] > p['homeBefore'] or p['awayAfter'] > p['awayBefore']]
+    game = next((g for g in league.query_rows("SELECT * FROM league_games WHERE game_id = ?", (game_id,))), None)
+    if not plays or not game:
+        raise ValueError("That game's scoring summary isn't saved.")
+    teams = league.query_teams()
+    home, away = teams[game['home_id']], teams[game['away_id']]
+    abbr = {game['home_id']: home['short_name'] or home['name'][:4].upper(), game['away_id']: away['short_name'] or away['name'][:4].upper()}
+    finals = {'home': game['home_score'], 'away': game['away_score']}
+    out, previous = [], {'home': None, 'away': None}
+    for index, row in enumerate(plays):
+        side = 'home' if row['homeAfter'] > row['homeBefore'] else 'away'
+        later = next((p for p in plays[index + 1:]), None)
+        # The extra point lands in the next score's "before" (or the final), not in this row
+        points = (later[f'{side}Before'] if later else finals[side]) - row[f'{side}Before']
+        team_id = game['home_id'] if side == 'home' else game['away_id']
+        # Only borrow the next row's rise when the other team scored next (a same-team rise could be its next touchdown)
+        next_other = later if later and (later['homeAfter'] > later['homeBefore']) != (side == 'home') else None
+        out.append({"quarter": min(row['quarter'], 5), "team": abbr[team_id], "text": scorer_text(row, previous[side], side, points, next_other),
+                    "clock": clock_text(row['secondsLeft'])})
+        previous[side] = row
+    draft_teams = [{"abbr": abbr[t['team_id']], "name": t['name'], "team_id": t['team_id']} for t in (away, home)]
+    draft = build_draft(draft_teams, out, {abbr[game['away_id']].upper(): game['away_score'], abbr[game['home_id']].upper(): game['home_score']})
+    save_draft(draft)
+    return draft
+
+def saved_games():
+    """Games with a captured scoring summary for the picker: ours first, newest week first."""
+    teams = league.query_teams()
+    user = next((tid for tid, t in teams.items() if t.get('is_user')), None)
+    games = league.query_scoring_games()
+    games.sort(key=lambda g: (user not in (g['home_id'], g['away_id']), -g['week']))
+    return [{"game_id": g['game_id'], "week": g['week'], "ours": user in (g['home_id'], g['away_id']),
+             "label": f"Week {g['week']}: {teams[g['away_id']]['name']} {g['away_score']} at {teams[g['home_id']]['name']} {g['home_score']}"}
+            for g in games if g['home_id'] in teams and g['away_id'] in teams]
 
 # Auto-initialize when events.py gets imported
 initialize_event_tables()

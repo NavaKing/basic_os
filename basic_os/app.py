@@ -248,6 +248,17 @@ def read_event_screenshots():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/podcast/save-games')
+def podcast_save_games():
+    return jsonify(events.saved_games())
+
+@app.route('/events/read-save', methods=['POST'])
+def read_save_scoring():
+    try:
+        return jsonify(events.draft_from_save(int(request.json.get('game_id'))))
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
 @app.route('/podcast/voices')
 def podcast_voices():
     try:

@@ -1,10 +1,11 @@
-{# Weekly podcast: upload post-game screenshots, review what was read, then two hosts break the game down. Rendered by static/js/podcast.js #}
+{# Weekly podcast: pick a game from the save (or upload post-game screenshots), review the scoring plays, then two hosts
+   break the game down. The newest episode is a magazine page; earlier ones sit in the Back Catalog. Rendered by static/js/podcast.js #}
 <section class="tab-panel" id="tab-podcast" role="tabpanel">
     <div class="panel pod-intake">
         <div class="section-label">Optional</div>
         <h2 class="news-title">Record This Week's Podcast</h2>
-        <div class="muted news-sub">Upload the post-game Scoring Summary screenshots (scroll down and take another if the list is long).
-            They're read, you check the result, and two hosts break the game down using the save's stats. The screenshots are deleted afterwards.</div>
+        <div class="muted news-sub">Pick a game the app saved from your dynasty file, or upload the post-game Scoring Summary screenshots
+            (scroll down and take another if the list is long). You check the scoring plays, then two hosts break the game down using the save's stats.</div>
 
         <div class="pod-hosts">
             {% for i in range(2) %}
@@ -17,19 +18,40 @@
             {% endfor %}
         </div>
 
-        <label class="pod-drop" id="pod_drop">
-            <input type="file" id="pod_files" accept="image/*" multiple hidden>
-            <span class="pod-drop-icon" aria-hidden="true">+</span>
-            <span>Drop screenshots here, or click to choose them</span>
-        </label>
-        <div class="pod-uploads" id="pod_uploads"></div>
-        <div class="pod-actions">
-            <button type="button" id="pod_read">Read the screenshots</button>
-            <button type="button" class="btn-secondary" id="pod_clear">Clear screenshots</button>
-            <div class="status-text" id="pod_status"></div>
+        <div class="pod-sources">
+            <div class="pod-source">
+                <div class="section-label">From your save</div>
+                <p class="muted pod-source-note">The save keeps scoring summaries for about 60 recent games, so the app copies them each time it syncs.
+                    Scores are exact; the scorer is named when he's one of the team's featured passer, rusher or receiver.</p>
+                <div class="pod-save-pick">
+                    <select id="pod_save_game" aria-label="Saved game"><option>Loading games...</option></select>
+                    <button type="button" id="pod_read_save">Use this game</button>
+                </div>
+            </div>
+            <div class="pod-source">
+                <div class="section-label">Or from screenshots</div>
+                <label class="pod-drop" id="pod_drop">
+                    <input type="file" id="pod_files" accept="image/*" multiple hidden>
+                    <span class="pod-drop-icon" aria-hidden="true">+</span>
+                    <span>Drop screenshots here, or click to choose them</span>
+                </label>
+                <div class="pod-uploads" id="pod_uploads"></div>
+                <div class="pod-actions">
+                    <button type="button" id="pod_read">Read the screenshots</button>
+                    <button type="button" class="btn-secondary" id="pod_clear">Clear screenshots</button>
+                </div>
+            </div>
         </div>
+        <div class="status-text" id="pod_status"></div>
         <div class="pod-review" id="pod_review" hidden></div>
     </div>
 
     <div id="pod_feed"></div>
+
+    <section class="mag-issue pod-archive" id="pod_archive" hidden>
+        <div class="mag-folio"><span>The Weekly Podcast</span><span>The last five episodes</span></div>
+        <h2 class="mag-slab pod-archive-title">Back Catalog</h2>
+        <div class="mag-strap">Listen again or read the write-ups &middot; the oldest episode drops off as new ones are recorded</div>
+        <ol class="pod-archive-list" id="pod_archive_list"></ol>
+    </section>
 </section>

@@ -70,3 +70,36 @@
 .pod-episode .pod-retry { width: 100%; margin-bottom: 6px; padding: 10px; border-radius: 0; background: #b3201e; color: #fff; }
 .pod-episode .pod-retry:hover { background: #8f1418; }
 .pod-episode .pod-retry-status { margin-bottom: 14px; color: var(--ink-soft); }
+
+/* Sources: save picker beside the screenshot drop zone */
+.pod-sources { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; margin-top: 14px; }
+.pod-source { padding: 12px; border-radius: 6px; background: var(--panel-inset); border: 1px solid var(--border-soft); min-width: 0; }
+.pod-source .pod-drop { margin: 8px 0 10px; padding: 18px; }
+.pod-source-note { font-size: 12px; line-height: 1.5; margin: 4px 0 10px; }
+.pod-save-pick { display: flex; gap: 8px; }
+.pod-save-pick select { margin: 0; flex: 1; min-width: 0; }
+.pod-save-pick button { width: auto; flex-shrink: 0; padding: 10px 14px; }
+#pod_status { margin-top: 10px; }
+
+/* Back Catalog: up to five earlier episodes on a magazine page */
+.pod-archive { margin-top: 26px; }
+.pod-archive-title { font-size: clamp(34px, 4vw, 58px); }
+.pod-archive-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 0 28px; }
+.pod-archive-item { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 16px; padding: 18px 0; border-top: 6px solid var(--rule); min-width: 0; }
+.pod-archive-cover { width: 120px; height: 120px; object-fit: cover; font-size: 20px; }
+.pod-archive-body { min-width: 0; }
+.pod-archive-audio { width: 100%; margin: 10px 0 6px; }
+.pod-archive-writeup summary { cursor: pointer; font-family: var(--font-text); font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--ink); margin: 6px 0; }
+.pod-archive-writeup[open] { max-height: 360px; overflow-y: auto; padding-right: 6px; }
+.pod-archive-line { margin: 0 0 8px; font-family: var(--font-serif); font-size: 14px; line-height: 1.5; color: var(--ink); }
+.pod-archive-line b { font-family: var(--font-text); font-size: 11px; text-transform: uppercase; }
+.pod-archive-actions { display: flex; align-items: center; gap: 14px; margin-top: 8px; }
+.pod-archive .pod-delete { color: var(--ink); border-color: var(--rule); }
+.pod-archive .pod-retry { width: auto; padding: 8px 12px; border-radius: 0; background: #b3201e; color: #fff; }
+
+@media (max-width: 900px) {
+    .pod-sources { grid-template-columns: minmax(0, 1fr); }
+    .pod-archive-list { grid-template-columns: minmax(0, 1fr); }
+    .pod-archive-item { grid-template-columns: 84px minmax(0, 1fr); }
+    .pod-archive-cover { width: 84px; height: 84px; }
+}

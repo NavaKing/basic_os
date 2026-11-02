@@ -252,12 +252,28 @@ function wirePlayer(card, ep) {
     card.querySelectorAll('.pod-line').forEach(li => li.addEventListener('click', () => playLine(Number(li.dataset.line))));
 }
 
-function renderFeed(episodes) {
-    const feed = document.getElementById('pod_feed');
-    feed.innerHTML = episodes.length ? episodes.map(episodeCard).join('') : '<div class="panel empty-note">No episodes yet. Upload a game\'s screenshots above to record one.</div>';
-    applyTeamColors(feed);
-    episodes.forEach(ep => wirePlayer(feed.querySelector('[data-episode="' + ep.episode_id + '"]'), ep));
-    feed.querySelectorAll('.pod-retry').forEach(b => b.addEventListener('click', async () => {
+/** A Back Catalog entry: cover, title, the episode's MP3 in a native player, and the write-up (summary and transcript). */
+function archiveItem(ep) {
+    const recorded = ep.script.filter(l => l.audio).length;
+    const [a, b] = ep.game.teams;
+    const transcript = ep.script.map(line => '<p class="pod-archive-line"><b>' + esc(ep.hosts[line.host].name) + ':</b> ' + esc(line.text) + '</p>').join('');
+    return '<li class="pod-archive-item">' +
+        (ep.cover_image ? '<img class="pod-archive-cover" src="' + esc(staticUrl(ep.cover_image)) + '" alt="" loading="lazy">' : '<div class="pod-archive-cover pod-cover--blank">ON AIR</div>') +
+        '<div class="pod-archive-body">' +
+            '<div class="mag-numbered-kicker">' + (ep.week_num !== null ? 'Week ' + esc(ep.week_num) + ' &middot; ' : '') + esc(a.name) + ' ' + esc(a.final) + ', ' + esc(b.name) + ' ' + esc(b.final) + '</div>' +
+            '<h3 class="mag-card-title">' + esc(ep.title) + '</h3>' +
+            (ep.summary ? '<p class="mag-card-text">' + esc(ep.summary) + '</p>' : '') +
+            (ep.audio_file ? '<audio class="pod-archive-audio" controls preload="none" src="' + esc(staticUrl(ep.audio_file)) + '"></audio>'
+                : '<p class="mag-small">' + recorded + ' of ' + ep.script.length + ' lines recorded.</p>' +
+                  '<button type="button" class="pod-retry" data-id="' + esc(ep.episode_id) + '">Retry recording</button><div class="status-text pod-retry-status"></div>') +
+            '<details class="pod-archive-writeup"><summary>Read the write-up</summary>' + transcript + '</details>' +
+            '<div class="pod-archive-actions">' + (ep.audio_file ? '<a class="pod-download" href="' + esc(staticUrl(ep.audio_file)) + '" download>Download MP3</a>' : '') +
+            '<button type="button" class="btn-secondary pod-delete" data-id="' + esc(ep.episode_id) + '">Delete</button></div>' +
+        '</div></li>';
+}
+
+function wireButtons(root) {
+    root.querySelectorAll('.pod-retry').forEach(b => b.addEventListener('click', async () => {
         const note = b.nextElementSibling;
         b.disabled = true;
         setStatus(note, 'Recording the missing lines...');
@@ -271,10 +287,24 @@ function renderFeed(episodes) {
             b.disabled = false;
         }
     }));
-    feed.querySelectorAll('.pod-delete').forEach(b => b.addEventListener('click', async () => {
+    root.querySelectorAll('.pod-delete').forEach(b => b.addEventListener('click', async () => {
         if (!confirm('Delete this episode, its audio and its cover art?')) return;
         renderFeed(await (await fetch('/podcast/' + b.dataset.id, { method: 'DELETE' })).json());
     }));
+}
+
+/** episodes are newest first: the newest is the full magazine page, the rest go to the Back Catalog. */
+function renderFeed(episodes) {
+    const feed = document.getElementById('pod_feed');
+    const archive = document.getElementById('pod_archive');
+    const [latest, ...older] = episodes || [];
+    feed.innerHTML = latest ? episodeCard(latest) : '<div class="panel empty-note">No episodes yet. Pick a game or upload its screenshots above to record one.</div>';
+    applyTeamColors(feed);
+    if (latest) wirePlayer(feed.querySelector('[data-episode="' + latest.episode_id + '"]'), latest);
+    archive.hidden = !older.length;
+    document.getElementById('pod_archive_list').innerHTML = older.map(archiveItem).join('');
+    wireButtons(feed);
+    wireButtons(archive);
 }
 
 // ---------- Entry point ----------
@@ -315,7 +345,7 @@ export function initPodcast(episodes, uploads, draft) {
     const done = (list, warning) => {
         renderFeed(list);
         refreshUploads();
-        setStatus(status, warning || 'Episode recorded. The screenshots were deleted.', Boolean(warning));
+        setStatus(status, warning || 'Episode recorded. Any screenshots were deleted.', Boolean(warning));
     };
     document.getElementById('pod_read').addEventListener('click', async e => {
         e.target.disabled = true;
@@ -332,8 +362,32 @@ export function initPodcast(episodes, uploads, draft) {
         }
     });
 
+    // Games whose scoring summary the app copied from the save
+    const picker = document.getElementById('pod_save_game');
+    const readSave = document.getElementById('pod_read_save');
+    fetch('/podcast/save-games').then(r => r.json()).then(games => {
+        picker.innerHTML = games.length
+            ? games.map(g => '<option value="' + esc(g.game_id) + '">' + (g.ours ? '★ ' : '') + esc(g.label) + '</option>').join('')
+            : '<option value="">No games captured yet: they appear after the next sync following a game</option>';
+        readSave.disabled = !games.length;
+    }).catch(() => { picker.innerHTML = '<option value="">Could not load the saved games</option>'; readSave.disabled = true; });
+    readSave.addEventListener('click', async () => {
+        if (!picker.value) return;
+        readSave.disabled = true;
+        try {
+            const data = await postJSON('/events/read-save', { game_id: Number(picker.value) });
+            if (data.error) throw new Error(data.error);
+            setStatus(status, 'Loaded from your save. Name any scorer shown as just "Touchdown", then record the episode.');
+            showReview(data, done);
+        } catch (err) {
+            setStatus(status, String(err.message || err), true);
+        } finally {
+            readSave.disabled = false;
+        }
+    });
+
     initHosts().catch(err => setStatus(status, 'Could not load the voices: ' + err, true));
     renderUploads(uploads || []);
     renderFeed(episodes || []);
-    if (draft && (uploads || []).length) showReview(draft, done);
+    if (draft) showReview(draft, done);
 }
