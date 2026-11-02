@@ -126,6 +126,20 @@ def initialize_league_tables():
         game_date TEXT
     )
     """)
+    # Our rivalries as the save tracks them (replaced each sync; the game updates them after every rivalry game)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS league_rivalries (
+        opponent_id INTEGER PRIMARY KEY,
+        name TEXT,
+        rival_rank INTEGER,             -- 1-3 for the team's named rivals, NULL for other rivalry games
+        our_wins INTEGER,
+        their_wins INTEGER,
+        streak_ours INTEGER,
+        streak_length INTEGER,
+        last_ours INTEGER,
+        last_theirs INTEGER
+    )
+    """)
     # Coaching carousel: a team's head coach or coordinator changed between two syncs
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS coaching_changes (
@@ -382,6 +396,22 @@ def query_season_awards():
 
 def query_bowls():
     return query_rows("SELECT * FROM league_bowls ORDER BY week, game_date, game_id")
+
+def sync_rivalries(rivalries):
+    if rivalries is None:
+        return
+    conn = database.get_db_connection()
+    conn.execute("DELETE FROM league_rivalries")
+    conn.executemany("""INSERT OR REPLACE INTO league_rivalries (opponent_id, name, rival_rank, our_wins, their_wins, streak_ours, streak_length,
+                                                                last_ours, last_theirs) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                     [(r['opponentId'], r.get('name') or None, r.get('rank'), r.get('ourWins'), r.get('theirWins'),
+                       None if r.get('streakOurs') is None else int(r['streakOurs']), r.get('streakLength'), r.get('lastOurs'), r.get('lastTheirs'))
+                      for r in rivalries])
+    conn.commit()
+    conn.close()
+
+def query_rivalries():
+    return query_rows("SELECT * FROM league_rivalries")
 
 def query_coaching_changes():
     return query_rows("SELECT * FROM coaching_changes ORDER BY change_id DESC")

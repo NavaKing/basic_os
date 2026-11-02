@@ -463,6 +463,33 @@ try {
     });
   }
 
+  // ---------- Rivals ----------
+  // The team's three named rivals (Rival1-3) and its rivalry records: name, all-time series, streak and last meeting,
+  // which the game updates after every rivalry game. StreakTeam 0 means Team1 holds the streak, 1 means Team2.
+  const rivalries = [];
+  const rivalRank = new Map(['Rival1TeamRef', 'Rival2TeamRef', 'Rival3TeamRef']
+    .map((key, i) => [recordFrom(teamTable, ref(userTeam, key))?.index, i + 1]).filter(([id]) => id !== undefined));
+  const rivalryList = await recordFromAny(ref(userTeam, 'Rivalries'));
+  for (const key of rivalryList ? refFields(rivalryList) : []) {
+    const row = await recordFromAny(ref(rivalryList, key));
+    const team1 = row && recordFrom(teamTable, ref(row, 'Team1'));
+    const team2 = row && recordFrom(teamTable, ref(row, 'Team2'));
+    if (!team1 || !team2) continue;
+    const weAreTeam1 = team1.index === userTeam.index;
+    const opponent = weAreTeam1 ? team2 : team1;
+    const [ours, theirs] = weAreTeam1 ? ['Team1', 'Team2'] : ['Team2', 'Team1'];
+    rivalries.push({
+      name: clean(row.Name), opponentId: opponent.index, rank: rivalRank.get(opponent.index) ?? null,
+      ourWins: row[`${ours}Wins`] ?? 0, theirWins: row[`${theirs}Wins`] ?? 0,
+      streakOurs: (row.StreakTeam === 0) === weAreTeam1, streakLength: row.StreakLength ?? 0,
+      lastOurs: row[`${ours}LastScore`] ?? null, lastTheirs: row[`${theirs}LastScore`] ?? null
+    });
+  }
+  // Named rivals without a rivalry record still count (e.g. a rival with no trophy game)
+  for (const [teamId, rank] of rivalRank) {
+    if (!rivalries.some((r) => r.opponentId === teamId)) rivalries.push({ name: '', opponentId: teamId, rank });
+  }
+
   // ---------- Game plan rosters: us and every opponent on our schedule ----------
   const RATING_FIELDS = {
     SPD: 'SpeedRating', ACC: 'AccelerationRating', AGI: 'AgilityRating', STR: 'StrengthRating', AWR: 'AwarenessRating',
@@ -632,6 +659,7 @@ try {
               conferences, seasonAwards, bowlGames },
     scoringSummaries,
     recruiting: { board: recruitingBoard, commits, topProspects },
+    rivalries,
     planRosters
   }));
 } finally {
