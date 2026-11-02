@@ -67,9 +67,12 @@ def fix_casing(text):
     letters = [c for c in text if c.isalpha()]
     if letters and sum(c.isupper() for c in letters) / len(letters) <= 0.02:
         text = re.sub(r"(^|[.!?]\s+|\n\s*)([a-z])", lambda m: m.group(1) + m.group(2).upper(), text)
-        text = re.sub(r"(?<![\w'’])i(?![\w'’])", "I", text)  # not the i in "hawai'i"
+    # A lone "i", and "i'm", "i'll", "i've", "i'd", are never right (but not the i in "hawai'i")
+    text = re.sub(r"(?<![\w'’])i(?![\w'’])|(?<![\w'’])i(?=['’](?:m|ll|ve|d)\b)", "I", text)
     for name in sorted(proper_names(), key=len, reverse=True):
-        text = re.sub(r"(?<![\w'’])" + re.escape(name.lower()) + r"(?![\w'’])", name, text)
+        # All-caps names (NDSU, BYU, SMU) are restored from any casing: "Ndsu" starts a sentence as often as "ndsu"
+        flags = re.IGNORECASE if len(name) > 1 and name.isupper() else 0
+        text = re.sub(r"(?<![\w'’])" + re.escape(name.lower()) + r"(?:(?![\w'’])|(?=['’]s\b))", name, text, flags=flags)  # possessives too
     # An older version capitalized the i after an apostrophe ("hawai'I"); undo that
     text = re.sub(r"(?<=[a-z]['’])I\b", "i", text)
     return text
