@@ -259,8 +259,11 @@ App-only: nothing is written to the save. The Care button in the tab bar opens t
   last week's result, and big wins over ranked teams or rivals. App-assigned birthdays give trust bonuses.
 - **Addition 3, mentorship pairs:** a good mentor slows the mentee's morale and focus drain and gains trust. An
   undisciplined or unfocused mentor makes focus drain faster.
-- **Addition 4, campus feed as a mood ring:** *not built yet.* It needs changes to the hub generator's tweet
-  prompts. Next iteration.
+- **Addition 4, campus feed as a mood ring (built in feature/care-mood-ring):** when you run the hub generator,
+  one campus-feed post hints at how a player seems. It picks the most worrying starter or Impact/Star/Elite player
+  with a need under 50 ("seems off and distracted lately"), plus one who is riding high (morale 85+ or a Player
+  of the Week award). Only outward signs are hinted at: no reasons, rumors, trouble or injuries. Backups aren't
+  hinted at, because fans wouldn't notice them.
 - **Tuning:** `basic_os/care_tuning.json` holds every dial. The simulator (12 made-up weeks, ignore vs care)
   currently reports, for the real roster:
 
