@@ -38,6 +38,7 @@ export function initTeamBoard(board) {
             if (data.error) throw new Error(data.error);
             render(list, data);
             setStatus(status, 'Done.');
+            setTimeout(() => setStatus(status, ''), 3000);
         } catch (err) {
             setStatus(status, String(err.message || err), true);
         } finally {

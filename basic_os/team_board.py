@@ -23,7 +23,8 @@ GUARDRAILS = ("Every player is a man on a men's college football team, so always
               "internal board, so posts are casual, like teammates texting a group chat: short, lowercase is fine, emojis are fine. "
               "Posts are only about football, the last game, practice, teammates, coaches and the next opponent. Never write about "
               "life off the field, relationships, parties, money, NIL deals, rumors, beefs, injuries the facts don't mention, or "
-              "anything negative about a named teammate. Only use numbers from the facts.")
+              "anything negative about a named teammate. Only use numbers from the facts. Each player's 'how he feels' note is private to "
+              "him: only his own post may hint at it, and nobody ever mentions another player's mood, health, school or personal life.")
 
 def initialize_tables():
     conn = database.get_db_connection()
@@ -119,8 +120,9 @@ def generate(selected_model):
               f"Write {POSTS} posts for the Wyoming team board, each by a different player from the list (use the exact name as author). "
               "Each post fits his own stat line and mood: a big game sounds proud and thanks teammates, a quiet or bench week sounds "
               "humble or hungry, a low mood shows a little in the tone without saying why. Never write the 'how he feels' words themselves. "
-              f"Exactly {POSTS // 2} posts, by players with a stat line, react to their own numbers from the facts (quote one stat, "
-              "like '177 yards' or '9 tackles'); the rest are about a teammate, a play, practice, the next opponent or just a vibe. Vary them: no two posts start or end the same way, and avoid 'felt good' and 'gotta keep'. "
+              f"Exactly {POSTS // 2} posts, by players with a stat line, react to their own numbers from the facts (quote exactly one stat as the facts "
+              "give it, like '177 rush yards' or '9 tackles'; never combine two stats into one claim, so '30 rec yds, 1 TD' is not "
+              "'a 30 yard TD'); the rest are about a teammate, a play, practice, the next opponent or just a vibe. Vary them: no two posts start or end the same way, and avoid 'felt good' and 'gotta keep'. "
               'Respond with ONLY JSON: {"posts": [{"author": "Exact Name", "text": "post text"}, ...]}')
     posts = []
     for _attempt in range(3):
