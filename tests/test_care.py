@@ -97,7 +97,9 @@ class Stored(unittest.TestCase):
     def test_dashboard_actions_council_mentor_and_preset(self):
         d = care.dashboard()
         self.assertEqual((d['week'], d['hours'], d['hours_total']), (2, care.load_tuning()['hours'], care.load_tuning()['hours']))
-        self.assertEqual({p['save_id'] for p in d['care_list']}, {"qb1", "qb2", "wr1"})
+        everyone = [p for g in d['groups'].values() for p in g]
+        self.assertEqual({p['save_id'] for p in everyone}, {"qb1", "qb2", "wr1"})
+        self.assertTrue(all(p['change'] is None for p in everyone))   # no weekly update yet, so no arrows
         with self.assertRaises(ValueError):
             care.act("qb2", "council", "focus")   # no captains yet
         d = care.set_council("qb1", True)
@@ -122,7 +124,19 @@ class Stored(unittest.TestCase):
         care.advance(4)
         d = care.dashboard()
         self.assertEqual((d['week'], d['hours']), (4, d['hours_total']))
-        self.assertTrue(all(p['needs']['morale'] < 100 for p in d['care_list']))
+        everyone = [p for g in d['groups'].values() for p in g]
+        self.assertTrue(all(p['needs']['morale'] < 100 for p in everyone))
+        self.assertTrue(all(set(p['change']) == set(care.NEEDS) for p in everyone))   # what the last weekly update did
+
+    def test_groups_by_urgency(self):
+        care.advance(2)
+        players = care.load_players()
+        for p in players:
+            p['needs'] = {n: 80 for n in care.NEEDS}
+            p['needs']['home'] = {"qb1": 20, "qb2": 45}.get(p['save_id'], 80)
+        care.save_players(players, 2)
+        groups = {name: [p['save_id'] for p in g] for name, g in care.dashboard()['groups'].items()}
+        self.assertEqual(groups, {"now": ["qb1"], "close": ["qb2"], "fine": ["wr1"]})
 
     def test_routes_and_simulator(self):
         from app import app

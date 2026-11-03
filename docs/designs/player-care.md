@@ -212,6 +212,32 @@ The balance will take tuning over time, so the system is built for it from day o
 6. Can incidents happen in the offseason (summer, spring break)?
 7. Should big-moment spikes also hit other teams (league news), or only us?
 
+## The Care window (UI)
+
+The first version showed ten identical cards (five green bars, a dropdown and six buttons each) and mixed the
+weekly work with one-time setup. It was hard to tell who needed help or why. The window now follows these rules:
+
+- **Lead with the week:** a summary line with hours left and chips for warning signs, how many players need
+  you now, how many are getting close, and calendar events (exam week, holidays, senior day).
+- **Group by urgency, not a ranked wall:**
+  - *Needs you now*: any need under 35, or a warning sign.
+  - *Getting close*: the lowest need is under 50.
+  - *Everyone else*: collapsed, unless nobody is in the first two groups.
+- **One line per player that says why:** the worst need and its value in its colour, how much the last weekly
+  update moved it (▼8), the latest warning sign, and flags (Captain, Birthday, Homesick, Injured).
+- **Details on demand:** click a row to open it. It shows all five bars (click a bar to pick the need), trust,
+  mentor, a profile link, and action buttons that spell out their effect: "Call · Morale +20 · 2h". Buttons you
+  can't use are disabled, with the reason on hover (no hours left, no captains named yet).
+- **Three colours:** green, yellow under 50 (`watch_need`), red under 35 (`low_need`).
+- **Four tabs:**
+  - *This week*: the daily work; a red badge shows how many need you now.
+  - *Captains & mentors*: setup you do once.
+  - *Log*
+  - *Balance*: the difficulty setting and the simulator. The simulator opens with a plain-English verdict
+    ("ignoring everyone, players spent 33 weeks in the red...") above its table.
+- **Arrows start after the first weekly update:** the "▼ this week" change (`change_json` per player) is stored
+  when the save advances, and there is no backfill.
+
 ## Iteration 1 (built on feature/player-care)
 
 App-only: nothing is written to the save. The Care button in the tab bar opens the care window.
