@@ -2,7 +2,7 @@
 // static/js/group-chat.js, the WYO Group Chat; Care is player care itself (rendered by static/js/care.js); Mail holds the
 // staff emails. Player care data travels as a 'care:update' event, so every app (and the badges) stays in step.
 
-import { esc, setStatus, headshot } from './utils.js';
+import { esc, setStatus, headshot, selectedModel } from './utils.js';
 import { showTab } from './tabs.js';
 import { unseenPosts, markFeedSeen } from './feed.js';
 
@@ -144,8 +144,9 @@ function renderDm(root, t) {
         if (m.week !== lastWeek) bubbles += '<div class="chat-time">Week ' + esc(m.week) + '</div>';
         lastWeek = m.week;
         bubbles += '<div class="bubble bubble--them">' + esc(m.text) + '</div>';
-        if (m.reply) bubbles += '<div class="bubble bubble--me">' + esc(m.reply) + '</div><div class="bubble-receipt">Delivered</div>';
+        if (m.reply) bubbles += '<div class="bubble bubble--me">' + esc(m.reply) + '</div><div class="bubble-receipt">' + (m.followup ? 'Read' : 'Delivered') + '</div>';
         else if (m.status === 'missed') bubbles += '<div class="bubble-receipt bubble-receipt--missed">Left on read</div>';
+        if (m.followup) bubbles += '<div class="bubble bubble--them">' + esc(m.followup) + '</div>';
     });
     const quick = t.waiting
         ? '<div class="quick-replies"><div class="quick-label">' + esc(care.hours) + ' coach hours left</div>' + t.waiting.replies.map(r => {
@@ -154,7 +155,9 @@ function renderDm(root, t) {
               return '<button type="button" class="quick-reply" data-reply="' + t.waiting.message_id + '" data-choice="' + r.key + '"' +
                   (hours > care.hours ? ' disabled title="Not enough hours left this week"' : '') + '>' + esc(r.label) +
                   '<span>' + (hours ? hours + 'h' : 'free, trust -1') + '</span></button>';
-          }).join('') + '</div>'
+          }).join('') + '</div>' +
+          '<form class="chat-compose" data-typed="' + t.waiting.message_id + '"><input maxlength="400" autocomplete="off" placeholder="Or type your own reply" aria-label="Your reply">' +
+              '<button type="submit" class="chat-send" aria-label="Send">&#8593;</button></form>'
         : '<div class="chat-compose chat-compose--off">He hasn\'t texted this week</div>';
     root.dataset.view = 'dm';
     root.innerHTML = threadHeader(t.name, headshot(t.portrait, 'thread-avatar thread-avatar--small')) +
@@ -218,6 +221,30 @@ export function initPhone(game) {
         updateBadges();
         if (ui.app === 'messages' && ui.thread !== 'group') renderMessages();
         if (ui.app === 'mail') renderMail();
+    });
+
+    // A typed reply: the model reads its tone into a care action and the player texts back
+    phone.addEventListener('submit', async event => {
+        const form = event.target.closest('[data-typed]');
+        if (!form) return;
+        event.preventDefault();
+        const input = form.querySelector('input');
+        const text = input.value.trim();
+        if (!text) return;
+        input.disabled = true;
+        form.querySelector('button').disabled = true;
+        setStatus(document.getElementById('dm_status'), 'Sending…');
+        const res = await fetch('/care/reply_text', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                                                      body: JSON.stringify({ message_id: Number(form.dataset.typed), text, model: selectedModel() }) });
+        const data = await res.json().catch(() => ({ error: 'HTTP ' + res.status }));
+        if (data.error) {
+            input.disabled = false;
+            form.querySelector('button').disabled = false;
+            setStatus(document.getElementById('dm_status'), data.error, true);
+            return;
+        }
+        document.dispatchEvent(new CustomEvent('care:update', { detail: data }));
+        setStatus(document.getElementById('dm_status'), 'Counted as: ' + data.typed.label);
     });
 
     phone.addEventListener('click', async event => {

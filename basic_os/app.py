@@ -512,6 +512,8 @@ def care_action(action):
             return jsonify(care.set_preset(body.get('preset')))
         if action == "reply":
             return jsonify(care_messages.reply(int(body.get('message_id') or 0), body.get('choice')))
+        if action == "reply_text":
+            return jsonify(care_messages.reply_text(int(body.get('message_id') or 0), body.get('text'), body.get('model') or 'gemma3:12b'))
         if action == "email":
             return jsonify(care_messages.email_action(int(body.get('email_id') or 0), body.get('action')))
         if action == "incident":
