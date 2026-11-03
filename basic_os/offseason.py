@@ -1,5 +1,6 @@
 import json
 import re
+import columns
 import database
 import league
 import media
@@ -166,10 +167,10 @@ def query_column():
     if not rows:
         return None
     return {"kind": rows[0]['kind'], "title": rows[0]['title'],
-            "paragraphs": [p.strip() for p in rows[0]['body'].split("\n\n") if p.strip()]}
+            "paragraphs": columns.split_paragraphs(rows[0]['body'])}
 
 def generate_signing_day(selected_model):
-    import ai_engine, awards, recruiting
+    import recruiting
     page = recruiting.build_recruiting_page()
     if not page:
         raise ValueError("Sync your save first: there's no recruiting data yet.")
@@ -180,21 +181,12 @@ def generate_signing_day(selected_model):
     task = ("Write the Signing Day story: who signed, what the class means, and who got away." if signing else
             f"Write a mid-season report on the Class of {year}: who has committed, the targets still on the board, and what Signing Day could look like.")
     prompt = (f"You are a college football recruiting writer covering {us['name']}. {task} Use only these facts and never invent "
-              f"recruits, rankings or quotes: {signing_facts(page, us['name'])} Group the targets by position or by where we stand instead of listing them one at a time. Write {awards.COLUMN_PARAGRAPHS} paragraphs separated by blank lines. "
+              f"recruits, rankings or quotes: {signing_facts(page, us['name'])} Group the targets by position or by where we stand instead of listing them one at a time. Write {columns.PARAGRAPHS} paragraphs separated by blank lines. "
               'Respond with ONLY JSON: {"title": "headline under 10 words", "body": "the story"}')
-    for _attempt in range(3):
-        try:
-            data = json.loads(ai_engine.call_ollama(selected_model, prompt, force_json=True))
-            body = awards.paragraphs(ai_engine.clean_text(str(data.get('body') or "")))
-            if len(body) > 200:
-                break
-        except Exception:
-            continue
-    else:
-        raise RuntimeError("The model didn't return a usable story. Is Ollama running?")
+    title, body = columns.write(selected_model, prompt, "Signing Day" if signing else f"The Class of {year}")
     conn = database.get_db_connection()
     conn.execute("INSERT INTO offseason_columns (kind, title, body) VALUES (?, ?, ?)",
-                 (kind, ai_engine.clean_text(str(data.get('title') or "")) or ("Signing Day" if signing else f"The Class of {year}"), body))
+                 (kind, title, body))
     conn.commit()
     conn.close()
     return query_column()

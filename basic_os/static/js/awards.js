@@ -1,7 +1,7 @@
 // Awards tab: All-America and All-Conference teams, the Heisman race and column, the playoff bracket and the bowl schedule.
 
-import { esc, setStatus, postJSON, applyTeamColors } from './utils.js';
-import { longJob } from './notify.js';
+import { esc, applyTeamColors } from './utils.js';
+import { wireColumn, columnParagraphs } from './columns.js';
 
 function teamMark(team) {
     if (!team) return '';
@@ -94,7 +94,7 @@ function renderColumn(column, ceremony) {
         ? (column.kind === 'heisman_ceremony' ? 'Ceremony Edition' : 'After Week ' + column.week) : (ceremony ? 'Ceremony Edition' : 'Heisman Watch');
     document.getElementById('aw_column_title').textContent = column ? column.title : (ceremony ? 'And the Heisman goes to...' : 'The Heisman Watch');
     document.getElementById('aw_column_body').innerHTML = column
-        ? column.paragraphs.map((p, i) => '<p' + (i === 0 ? ' class="mag-dropcap"' : '') + '>' + esc(p) + '</p>').join('')
+        ? columnParagraphs(column.paragraphs)
         : '<p class="mag-empty">' + (ceremony
             ? 'The regular season is over. Write the story of the ceremony, built from the finalists\' numbers.'
             : 'Write a column on the race so far, built from the contenders\' numbers.') + '</p>';
@@ -102,22 +102,8 @@ function renderColumn(column, ceremony) {
 
 function initColumn(column, ceremony) {
     renderColumn(column, ceremony);
-    const button = document.getElementById('aw_column_generate');
-    const status = document.getElementById('aw_column_status');
-    button.addEventListener('click', async () => {
-        button.disabled = true;
-        setStatus(status, 'Writing the column...');
-        try {
-            const data = await longJob('The Heisman column', postJSON('/awards/heisman/generate'));
-            if (data.error) throw new Error(data.error);
-            renderColumn(data.column, ceremony);
-            setStatus(status, '');
-        } catch (err) {
-            setStatus(status, String(err.message || err), true);
-        } finally {
-            button.disabled = false;
-        }
-    });
+    wireColumn({ buttonId: 'aw_column_generate', statusId: 'aw_column_status', url: '/awards/heisman/generate',
+                 label: 'The Heisman column', working: 'Writing the column...', render: written => renderColumn(written, ceremony) });
 }
 
 // ---------- Bowl season ----------

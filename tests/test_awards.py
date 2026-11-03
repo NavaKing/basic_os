@@ -3,6 +3,7 @@ import unittest
 
 import tests  # noqa: F401  (sets up the throwaway database first)
 import awards
+import columns
 import database
 import league
 
@@ -123,8 +124,22 @@ class Column(unittest.TestCase):
 
     def test_one_block_is_split_into_paragraphs(self):
         text = " ".join(f"Sentence {i}." for i in range(8))
-        self.assertEqual(awards.paragraphs(text).count("\n\n"), 3)
-        self.assertEqual(awards.paragraphs("One.\n\nTwo."), "One.\n\nTwo.")
+        self.assertEqual(columns.paragraphs(text).count("\n\n"), 3)
+        self.assertEqual(columns.paragraphs("One.\n\nTwo."), "One.\n\nTwo.")
+
+    def test_shared_writer_retries_and_checks_numbers(self):
+        import json as json_module
+        from unittest import mock
+        import ai_engine
+        body = ("Malachi Toney caught 36 passes. He scored 99 touchdowns somehow. "
+                "Every defense he faces knows exactly where he lines up, and it still doesn't matter. " * 3).strip()
+        replies = iter(["not json", json_module.dumps({"title": "", "body": body})])
+        with mock.patch.object(ai_engine, "call_ollama", side_effect=lambda *a, **k: next(replies)), \
+             mock.patch.object(ai_engine, "proper_names", return_value=set()):
+            title, text = columns.write("model", "Facts: Toney has 36 catches.", "The Heisman Race")
+        self.assertEqual(title, "The Heisman Race")
+        self.assertNotIn("99", text)
+        self.assertIn("36 passes", text)
 
     def test_stored_column(self):
         conn = database.get_db_connection()
