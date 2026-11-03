@@ -132,6 +132,12 @@ def pick_emoji(text, from_coach, rng):
     weights = {"❤️": 3, "👍": 2, "😂": 0.3, "‼️": 1, "❓": 0}
     if from_coach:
         weights.update({"👍": 4, "❤️": 3, "‼️": 1.5, "😂": 0})   # nobody laughs at the coach unless he's joking
+        tone = team_board.coach_tone(text)
+        if tone == "playful":
+            weights.update({"😂": 7, "❓": 1.5, "👍": 1, "‼️": 0.5, "❤️": 1})
+        elif tone == "question":
+            weights.update({"👍": 2, "❓": 0.3})
+        return rng.choices(list(weights), weights=list(weights.values()))[0]
     if any(w in lowered for w in KIND_WORDS["😂"]):
         weights["😂"] = 6
     if any(w in lowered for w in KIND_WORDS["‼️"]) or any(ch.isdigit() for ch in lowered):
