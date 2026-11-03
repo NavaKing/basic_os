@@ -134,6 +134,8 @@ class Stored(unittest.TestCase):
         sim = client.post("/care/simulate", json={"preset": "Normal", "weeks": 4}, headers=host).get_json()
         self.assertEqual((sim['ignore']['policy'], sim['care']['policy'], sim['care']['weeks']), ("ignore", "care", 4))
         self.assertGreaterEqual(sim['care']['average_need'], sim['ignore']['average_need'])
+        self.assertIsNone(sim['ignore']['trust_of_players_cared_for'])
+        self.assertGreater(sim['care']['trust_of_players_cared_for'], care.load_tuning()['start_trust'])   # texts, calls and sit-downs build trust
         self.assertEqual(client.post("/care/nope", json={}, headers=host).status_code, 404)
 
 

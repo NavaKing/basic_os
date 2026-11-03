@@ -411,8 +411,8 @@ def set_preset(name):
 
 def simulate(weeks=12, policy="care", preset=None):
     """Plays `weeks` fake weeks of the care rules on a copy of the roster (nothing is saved). policy 'ignore' never
-    acts; 'care' spends every hour each week on the care list (a sit-down for a warning sign, a call for a need that
-    is already low, the position coach for the rest)."""
+    acts; 'care' spends every hour each week on the care list the way a coach would: a sit-down for a warning sign,
+    a call for a need that is low or slipping, a text for the rest."""
     tuning = load_tuning()
     if preset:
         tuning = {**tuning, **tuning['presets'][preset], "preset": preset}
@@ -420,6 +420,7 @@ def simulate(weeks=12, policy="care", preset=None):
     council = [p['save_id'] for p in sorted(players, key=lambda p: (p['class'] != "Senior", -p['overall']))[:2]] if policy == "care" else []
     rng_seed = random.Random(7)
     warnings = low_weeks = 0
+    cared_for = set()
     for w in range(1, weeks + 1):
         ctx = {"week": w, "exam": w in tuning['calendar']['exam_weeks'], "away": w % 2 == 0, "week_of_year": (35 + w) % 52}
         ctx['won'] = rng_seed.random() < 0.6
@@ -435,18 +436,21 @@ def simulate(weeks=12, policy="care", preset=None):
             for save_id in care_list:
                 p = next(x for x in players if x['save_id'] == save_id)
                 lowest = min(p['needs'].values())
-                key = "sit_down" if p['warnings'] else "call" if lowest < tuning['low_need'] else "position_coach"
+                key = "sit_down" if p['warnings'] else "call" if lowest < tuning['low_need'] + tuning['sim_slipping_margin'] else "text"
                 cost = tuning['actions'][key]['hours']
                 if cost > hours:
-                    key, cost = "position_coach", tuning['actions']['position_coach']['hours']
+                    key, cost = "text", tuning['actions']['text']['hours']
                 if cost > hours:
                     break
                 apply_action(p, key, min(NEEDS, key=lambda n: p['needs'][n]), tuning, ctx)
                 hours -= cost
+                cared_for.add(save_id)
     lows = [p for p in players if min(p['needs'].values()) < tuning['low_need']]
     return {"preset": tuning['preset'], "policy": policy, "weeks": weeks, "warning_signs": warnings, "player_weeks_with_a_low_need": low_weeks,
             "players_with_a_low_need": len(lows), "average_need": round(sum(sum(p['needs'].values()) / len(NEEDS) for p in players) / len(players), 1),
-            "average_trust": round(sum(p['trust'] for p in players) / len(players), 1)}
+            "average_trust": round(sum(p['trust'] for p in players) / len(players), 1),
+            "players_cared_for": len(cared_for),
+            "trust_of_players_cared_for": round(sum(p['trust'] for p in players if p['save_id'] in cared_for) / len(cared_for), 1) if cared_for else None}
 
 # ---------- Page ----------
 
