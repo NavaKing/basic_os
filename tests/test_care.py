@@ -249,6 +249,28 @@ class Stored(unittest.TestCase):
         conn.commit()
         conn.close()
 
+    def test_texts_are_rewritten_in_the_players_voice(self):
+        import json, time
+        from unittest import mock
+        import team_board
+        care.advance(2)
+        self.slip({"qb2": {"home": 30}, "wr1": {"focus": 50}})
+        care.advance(3)
+        self.assertEqual(team_board.voice("qb2"), team_board.voice("qb2"))   # stable for the whole dynasty
+        rewrites = {"texts": [{"id": 1, "text": "miss my folks bad this week coach"}, {"id": 2, "text": "had 3 bad reps today"}]}
+        with mock.patch("ai_engine.call_ollama", return_value=json.dumps(rewrites)) as call:
+            self.assertTrue(care_messages.start_voicing("test-model"))
+            for _ in range(200):
+                if not care_messages._voicing['running']:
+                    break
+                time.sleep(0.02)
+        self.assertIn("how he texts:", call.call_args.args[1])
+        rows = league.query_rows("SELECT save_id, text, template, voiced FROM care_messages ORDER BY message_id")
+        self.assertEqual((rows[0]['text'], rows[0]['voiced']), ("miss my folks bad this week coach", 1))
+        self.assertEqual(rows[1]['voiced'], 2)                    # a rewrite with an invented number keeps the template
+        self.assertEqual(rows[1]['text'], rows[1]['template'] or rows[1]['text'])
+        self.assertFalse(care_messages.start_voicing("test-model"))   # nothing left to voice
+
     def test_not_now_is_free_but_costs_trust(self):
         care.advance(2)
         self.slip({"wr1": {"morale": 40}})

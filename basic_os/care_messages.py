@@ -3,9 +3,12 @@ moves on. A reply or an email action is a care action (it costs coach hours); a 
 week arrives drains that need and costs trust. App-only: nothing is written to the save."""
 import json
 import random
+import re
+import threading
 import care
 import database
 import league
+import roster
 
 # Texts by the need that's low, in two moods: "low" (under low_need) and "watch" (slipping). Mild and blameless:
 # they can be about any player, real or generated.
@@ -64,6 +67,11 @@ def initialize_tables():
         result TEXT
     )
     """)
+    # Columns added later: the template a text was written from (before it's voiced), and whether it has been
+    columns = [c[1] for c in conn.execute("PRAGMA table_info(care_messages)").fetchall()]
+    for col, col_type in (("template", "TEXT"), ("voiced", "INTEGER DEFAULT 0"), ("followup", "TEXT")):
+        if col not in columns:
+            conn.execute(f"ALTER TABLE care_messages ADD COLUMN {col} {col_type}")
     conn.commit()
     conn.close()
 
@@ -150,6 +158,52 @@ def staff_emails(players, week, ctx, tuning):
                        "body": "Coach, that's the kind of win that gets people talking. Enjoy it, and make sure the guys "
                                "don't get ahead of themselves.", "actions": []})
     return emails
+
+# ---------- Texts in the player's own voice ----------
+
+_voicing = {"running": False}
+MOODS = {"watch": "a little worried", "low": "really struggling"}
+
+def start_voicing(selected_model):
+    """Rewrites this week's template texts in each player's own voice, in the background (called from the page's poll,
+    so it happens soon after a sync without slowing the sync down). Texts keep their template if the model is away."""
+    if _voicing['running'] or not selected_model:
+        return False
+    pending = league.query_rows("SELECT * FROM care_messages WHERE status = 'open' AND COALESCE(voiced, 0) = 0")
+    if not pending:
+        return False
+    _voicing['running'] = True
+    threading.Thread(target=_voice, args=(selected_model, pending), daemon=True).start()
+    return True
+
+def _voice(selected_model, pending):
+    import ai_engine
+    import team_board
+    try:
+        people = {p['save_id']: p for p in roster.query_full_roster() if p.get('save_id')}
+        lines = []
+        for number, m in enumerate(pending, start=1):   # numbered 1, 2, 3 (the model copies real ids badly)
+            p = people.get(m['save_id']) or {}
+            lines.append(f"[{number}] {p.get('player_name', 'A player')} ({p.get('class_year') or ''} {p.get('position') or ''}"
+                         f"{', from ' + p['hometown'] if p.get('hometown') else ''}; how he texts: {team_board.voice(m['save_id'])}): \"{m['text']}\"")
+        prompt = (team_board.GUARDRAILS + " These are texts players are sending their head coach privately. Rewrite each one in that "
+                  "player's own voice (how he texts), so no two sound alike. Keep exactly what he's saying and how worried he is: the "
+                  "same problem, no new facts, events, names, injuries or numbers. One or two short sentences, like a real text to "
+                  "his coach. The texts: " + " ".join(lines) +
+                  ' Respond with ONLY JSON: {"texts": [{"id": 1, "text": "rewritten text"}, ...]}, one entry per numbered text')
+        data = json.loads(ai_engine.call_ollama(selected_model, prompt, force_json=True, temperature=0.9))
+        written = {int(t['id']): ai_engine.strip_tags(str(t.get('text') or "")).strip().strip('"')
+                   for t in (data.get('texts') or []) if isinstance(t, dict) and str(t.get('id', '')).isdigit()}
+        for number, m in enumerate(pending, start=1):
+            text = written.get(number, "")
+            ok = 0 < len(text) <= 240 and not re.search(r"\d", text)   # no invented numbers
+            execute("UPDATE care_messages SET template = text, text = ?, voiced = ? WHERE message_id = ? AND status = 'open'",
+                    (text if ok else m['text'], 1 if ok else 2, m['message_id']))
+    except Exception:
+        for m in pending:   # the model is away: keep the templates (2 = tried), so the poll doesn't retry forever
+            execute("UPDATE care_messages SET voiced = 2 WHERE message_id = ? AND COALESCE(voiced, 0) = 0", (m['message_id'],))
+    finally:
+        _voicing['running'] = False
 
 # ---------- The coach answers ----------
 

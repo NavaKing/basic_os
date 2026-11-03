@@ -434,6 +434,8 @@ def poll(selected_model, since=0):
     next message if it's due, and returns what's new."""
     if selected_model:
         start_postgame(selected_model)
+        import care_messages
+        care_messages.start_voicing(selected_model)   # this week's care texts, in each player's voice
     deliver()
     return view(since)
 
