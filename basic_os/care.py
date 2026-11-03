@@ -177,8 +177,34 @@ def drain_for(player, ctx, tuning):
     d['focus'] += m['disciplined_focus'] if "Disciplined" in player['traits'] else 0
     d['focus'] += m['star_focus'] if player['dev'] in ("Star", "Elite") else 0
     d['focus'] += m['big_win_focus'] if ctx.get('big_win') else 0
+    game = player.get('game')
+    if game and not game['played']:   # on the bench all game: no hits taken, and less to stew over
+        for need in ("morale", "focus"):
+            d[need] *= tuning['game']['bench_drain_factor']
+        d['health'] *= tuning['game']['bench_health_factor']
     trusting = 1 - tuning['trust_drain_relief'] * player['trust'] / 100  # a player who trusts the coach copes better
     return {need: max(0, d[need]) * tuning['drain_scale'] * player['temperament'][need] * trusting for need in NEEDS}
+
+def game_boost(player, tuning):
+    """What last week's game gives back: a standout game or a Player of the Week award lifts morale and focus (and an
+    award, trust). Returns ({need: points}, trust points, label or None)."""
+    game, g = player.get('game'), tuning['game']
+    if not game or not game['played']:
+        return {}, 0, None
+    boost = {"morale": g['played_morale']}
+    trust, label = 0, None
+    if game['standout']:
+        boost['morale'] += g['standout_morale']
+        boost['focus'] = g['standout_focus']
+        label = "standout game"
+    if game['award'] == "national":
+        boost['morale'] += g['player_of_week_morale']
+        boost['focus'] = boost.get('focus', 0) + g['player_of_week_focus']
+        trust, label = g['player_of_week_trust'], "Player of the Week"
+    elif game['award'] == "conference":
+        boost['morale'] += g['conference_player_of_week_morale']
+        trust, label = g['conference_player_of_week_trust'], "Conference Player of the Week"
+    return boost, trust, label
 
 def warning_chance(player, ctx, tuning):
     """This week's chance of a warning sign: a small base, plus each low need (Focus counts double), scaled by persona,
@@ -210,6 +236,7 @@ def run_week(players, ctx, tuning, council, mentors, rng):
     """Drains needs, gives the staff's weekly support, applies mentors, captains and the calendar, and rolls warning
     signs. Mutates players; returns [(save_id or None, kind, text)] events."""
     events = []
+    game_notes = []
     by_id = {p['save_id']: p for p in players}
     low_captains = [by_id[c] for c in council if c in by_id and by_id[c]['needs']['morale'] < tuning['council']['low_morale']]
     if low_captains:
@@ -229,13 +256,24 @@ def run_week(players, ctx, tuning, council, mentors, rng):
             drain['morale'] += tuning['council']['team_morale_drain']
         if ctx.get('senior_day') and p['class'] == "Senior":
             drain['morale'] -= tuning['senior_day_morale']
+        boost, trust, label = game_boost(p, tuning)
         for need in NEEDS:
-            p['needs'][need] = round(max(0, min(100, p['needs'][need] - drain[need] + tuning['staff_rate'] * (tuning['staff_target'] - p['needs'][need]))), 1)
+            pulled = p['needs'][need] - drain[need] + tuning['staff_rate'] * (tuning['staff_target'] - p['needs'][need])
+            p['needs'][need] = round(max(0, min(100, pulled + boost.get(need, 0))), 1)
+        p['trust'] = min(100, p['trust'] + trust)
+        if label:
+            game_notes.append((p, label, boost, trust))
         if rng(p['save_id']).random() < warning_chance(p, ctx, tuning):
             need = min(NEEDS, key=lambda n: p['needs'][n])
             text = rng(p['save_id'] + need).choice(WARNING_SIGNS[need])
             p.setdefault('warnings', []).append({"need": need, "text": text})
             events.append((p['save_id'], "warning", f"{p['name']}: {text} ({NEED_LABELS[need]} {round(p['needs'][need])})."))
+    for p, label, boost, trust in game_notes:
+        if label != "standout game":
+            events.append((p['save_id'], "game", f"{p['name']} was named {label}: morale +{boost['morale']}" + (f", trust +{trust}" if trust else "") + "."))
+    standouts = [p['name'] for p, label, _, _ in game_notes if label == "standout game"]
+    if standouts:
+        events.append((None, "game", f"Standout games lift morale and focus: {', '.join(standouts)}."))
     if ctx.get('senior_day'):
         events.append((None, "calendar", "Senior day: the seniors' morale gets a lift."))
     return events
@@ -284,6 +322,24 @@ def week_context(week):
     home_weeks = [w for w, g in schedule.items() if g.get('site') == "Home" and w <= 14]
     ctx['senior_day'] = bool(this and home_weeks and week == max(home_weeks))
     return ctx
+
+def game_results(week, tuning):
+    """{save_id: {"played", "standout", "award"}} for our game in `week`, or {} when there was no game (a bye, or
+    the save hasn't written the week's stat lines)."""
+    lines = league.query_rows("SELECT save_id, stats_json FROM player_game_stats WHERE week_num = ?", (week,))
+    if not lines:
+        return {}
+    awards = {}
+    for a in league.query_awards(week):
+        awards[a['player_id']] = "conference" if a['award_type'].endswith("_Conf") and awards.get(a['player_id']) != "national" else "national"
+    standout = tuning['game']['standout']
+    results = {}
+    for row in lines:
+        stats = json.loads(row['stats_json'])
+        results[row['save_id']] = {"played": (stats.get('DOWNSPLAYED') or 0) > 0,
+                                   "standout": any((stats.get(k) or 0) >= v for k, v in standout.items()),
+                                   "award": awards.get(row['save_id'])}
+    return results
 
 def load_players():
     tuning = load_tuning()
@@ -346,6 +402,9 @@ def advance(week):
         ctx = week_context(w)
         seed = season_seed()
         rng = lambda key, w=w: random.Random(f"{seed}-{w}-{key}")
+        games = game_results(w - 1, tuning)
+        for p in players:
+            p['game'] = games.get(p['save_id'], {"played": False, "standout": False, "award": None}) if games else None
         before = {p['save_id']: dict(p['needs']) for p in players}
         for save_id, kind, text in run_week(players, ctx, tuning, council_ids(), mentor_map(), rng):
             log(w, save_id, kind, text)
@@ -435,6 +494,10 @@ def simulate(weeks=12, policy="care", preset=None):
         ctx['lost'] = not ctx['won']
         ctx['big_win'] = ctx['won'] and rng_seed.random() < 0.2
         ctx['holiday'] = w == 12
+        for p in players:   # a made-up game: starters and some backups play, a few have a standout day
+            game_rng = random.Random(f"sim-game-{w}-{p['save_id']}")
+            played = p['starter'] or game_rng.random() < 0.4
+            p['game'] = {"played": played, "standout": played and game_rng.random() < 0.12, "award": None}
         care_list = pick_care_list(players, ctx, tuning, council)
         events = run_week(players, ctx, tuning, council, {}, lambda key, w=w: random.Random(f"sim-{w}-{key}"))
         warnings += sum(1 for _, kind, _ in events if kind == "warning")
@@ -485,8 +548,14 @@ def dashboard():
     def group(p):
         lowest = min(p['needs'].values())
         return "now" if p['warnings'] or lowest < tuning['low_need'] else "close" if lowest < tuning['watch_need'] else "fine"
+    games = game_results(week - 1, tuning)
     def view(p):
         flags = []
+        game = games.get(p['save_id'])
+        if game and game['award']:
+            flags.append("Player of the Week" if game['award'] == "national" else "Conference Player of the Week")
+        elif game and game['standout']:
+            flags.append("Standout game")
         if p['save_id'] in council:
             flags.append("Captain")
         if p['birthday_week'] == ctx.get('week_of_year'):
