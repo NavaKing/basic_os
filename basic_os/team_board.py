@@ -23,8 +23,21 @@ TEMPERATURE = 0.9
 
 # Each week every poster gets an angle, so a player doesn't say the same thing every week ("177 yards felt good, thanks
 # to the o-line" became "212 yards felt good, thanks to the o-line"). Players reacting to their stats get a STAT_ANGLE.
-STAT_ANGLES = ["proud of his numbers", "hard on himself: the numbers weren't enough", "gives the credit for his numbers to one teammate by name",
-               "jokes about his numbers"]
+# How a player reacts to his numbers depends on how good they were: nobody calls a 212-yard game "not enough".
+STAT_ANGLES = {
+    "great": ["proud of a big game, and he knows it", "gives the credit for his big game to one teammate by name", "jokes about his big game"],
+    "good": ["happy with a good game", "gives the credit for his numbers to one teammate by name", "jokes about his numbers"],
+    "solid": ["a solid game, and he wants more", "gives the credit for his numbers to one teammate by name"],
+    "rough": ["hard on himself after a rough game, owns it", "says he'll bounce back after a rough game"],
+}
+
+# One game's stat line against college football benchmarks: (stat, good, great). Hitting "great" on any line makes it a
+# great game; turnovers pull it down. The words go into the prompt so the model knows what the numbers mean.
+BENCHMARKS = [("RUSHYARDS", 100, 150), ("RECEIVEYARDS", 100, 150), ("PASSYARDS", 250, 350), ("RUSHTDS", 1, 2), ("RECEIVETDS", 1, 2),
+              ("PASSTDS", 2, 3), ("DEFTACKLES", 8, 12), ("DLINESACKS", 1, 2), ("DSECINTS", 1, 2), ("DLINEFORCEDFUMBLES", 1, 2),
+              ("KICKFGMADE", 2, 4)]
+GRADE_WORDS = {"great": "a great game by college football standards", "good": "a good game", "solid": "a solid, ordinary game",
+               "rough": "a rough game"}
 ANGLES = ["shouts out one teammate by name for something specific", "talks about one play from the game", "looks ahead to the next opponent",
           "talks about practice or film this week", "something funny from the locker room or the bus ride", "how the crowd or the road trip felt",
           "a quick hype post", "his goal for this week"]
@@ -77,6 +90,7 @@ def cast(week):
         mood = mood_words(p, tuning)
         out.append({"save_id": p['save_id'], "name": p['name'], "position": p['position'], "class": p['class'], "jersey": jerseys.get(p['save_id']),
                     "portrait": p['portrait'], "line": roster.format_stat_line(stats) if stats else "", "impact": impact(stats),
+                    "grade": grade(stats) if stats and stats.get('DOWNSPLAYED') else None,
                     "starter": p['starter'], "played": bool(stats and stats.get('DOWNSPLAYED')), "mood": mood,
                     "stands_out": mood != "in a good place"})
     out.sort(key=lambda c: (-c['impact'], not c['stands_out'], not c['starter'], c['name']))
@@ -89,16 +103,39 @@ def impact(stats):
     production = (s('RUSHYARDS') + s('RECEIVEYARDS')) / 10 + s('PASSYARDS') / 25 + 6 * (s('RUSHTDS') + s('RECEIVETDS') + s('PASSTDS'))
     return max(storylines.impact_score(stats), production)
 
+def grade(stats):
+    """'great', 'good', 'solid' or 'rough' for one game's stat line (None without one)."""
+    if not stats:
+        return None
+    s = lambda key: stats.get(key, 0) or 0
+    level = 1   # solid
+    for stat, good, great in BENCHMARKS:
+        if s(stat) >= great:
+            level = max(level, 3)
+        elif s(stat) >= good:
+            level = max(level, 2)
+    turnovers = s('PASSINTS') + s('RUSHFUMBLES')
+    if turnovers >= 2:
+        level -= 1
+    if s('PASSATTEMPTS') >= 20 and s('PASSYARDS') < 150 and not s('PASSTDS'):
+        level = min(level, 0)
+    if s('RUSHATTEMPTS') >= 12 and s('RUSHYARDS') < 40:
+        level = min(level, 0)
+    return ["rough", "solid", "good", "great"][max(0, min(3, level))]
+
 def assign_angles(people, week):
     """The players with the biggest stat lines react to them (each a different way); everyone else gets another angle."""
     rng = random.Random(f"board-{week}")
-    stat_angles, angles = STAT_ANGLES[:], ANGLES[:]
-    rng.shuffle(stat_angles)
+    angles = ANGLES[:]
     rng.shuffle(angles)
     stat_posters = [c for c in people if c['line']][:POSTS // 2]
     others = [c for c in people if c not in stat_posters]
-    for i, c in enumerate(stat_posters):
-        c['angle'] = stat_angles[i % len(stat_angles)]
+    decks = {g: rng.sample(options, len(options)) for g, options in STAT_ANGLES.items()}   # rotate, so two good games react differently
+    used = {g: 0 for g in STAT_ANGLES}
+    for c in stat_posters:
+        g = c['grade'] or "solid"
+        c['angle'] = decks[g][used[g] % len(decks[g])]
+        used[g] += 1
     for i, c in enumerate(others):
         c['angle'] = angles[i % len(angles)]
 
@@ -110,7 +147,8 @@ def previous_posts(week):
     return {r['save_id']: r['text'] for r in rows}
 
 def describe(c):
-    played = f"last game: {c['line']}" if c['line'] else ("played but had no stats" if c['played'] else "didn't play last game (bench)")
+    played = (f"last game: {c['line']}" + (f", {GRADE_WORDS[c['grade']]}" if c.get('grade') else "") if c['line']
+              else ("played but had no stats" if c['played'] else "didn't play last game (bench)"))
     text = f"{c['name']} ({c['class']} {c['position']}{', #' + str(c['jersey']) if c['jersey'] else ''}; {played}; how he feels, for tone only: {c['mood']}"
     if c.get('angle'):
         text += f"; his post this week: {c['angle']}"

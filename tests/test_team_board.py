@@ -77,6 +77,18 @@ class TeamBoard(unittest.TestCase):
         self.assertIn("his post this week:", prompts[0])
         self.assertEqual([(p['author']['name'], p['text']) for p in board['posts']], [("Eric Richardson", "bus ride was loud.")])
 
+    def test_stat_lines_are_graded_like_college_football(self):
+        self.assertEqual(team_board.grade({"RUSHATTEMPTS": 32, "RUSHYARDS": 212}), "great")
+        self.assertEqual(team_board.grade({"RECEIVECATCHES": 6, "RECEIVEYARDS": 105}), "good")
+        self.assertEqual(team_board.grade({"DEFTACKLES": 5}), "solid")
+        self.assertEqual(team_board.grade({"PASSATTEMPTS": 25, "PASSYARDS": 121, "PASSTDS": 0, "PASSINTS": 2}), "rough")
+        self.assertEqual(team_board.grade({"PASSYARDS": 280, "PASSTDS": 2, "PASSINTS": 2}), "solid")   # two picks take the shine off
+        self.assertEqual(team_board.grade({"RUSHATTEMPTS": 14, "RUSHYARDS": 31}), "rough")
+        harris = next(c for c in team_board.cast(1) if c['name'] == "Samuel Harris")
+        self.assertIn("a great game by college football standards", team_board.describe(harris))
+        team_board.assign_angles([harris], 1)
+        self.assertIn(harris['angle'], team_board.STAT_ANGLES['great'])   # never "the numbers weren't enough"
+
     def test_no_model_answer_is_an_error(self):
         with mock.patch.object(ai_engine, "call_ollama", side_effect=RuntimeError("down")):
             with self.assertRaises(RuntimeError):
