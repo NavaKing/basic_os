@@ -7,6 +7,7 @@ import tests  # noqa: F401  (sets up the throwaway database first)
 import care
 import care_messages
 import database
+import league
 import roster
 
 
@@ -228,6 +229,25 @@ class Stored(unittest.TestCase):
         self.assertEqual(wr1['trust'], trust - care.load_tuning()['phone']['unanswered_trust'])
         thread = next(t for t in care.dashboard()['phone'] if t['save_id'] == "wr1")
         self.assertEqual(thread['messages'][0]['status'], "missed")
+
+    def test_a_bye_week_catch_up_is_fair(self):
+        care.advance(2)
+        self.slip({"wr1": {"focus": 40}})
+        trust = {p['save_id']: p['trust'] for p in care.load_players()}
+        conn = database.get_db_connection()
+        conn.execute("INSERT INTO player_game_stats (save_id, week_num, stats_json) VALUES ('wr1', 2, '{\"DOWNSPLAYED\": 50, \"RECEIVEYARDS\": 150}')")
+        conn.commit()
+        conn.close()
+        care.advance(4)   # week 3 was a bye: one sync covers weeks 3 and 4
+        texts = league.query_rows("SELECT week, status FROM care_messages")
+        self.assertTrue(texts and all(t['week'] == 4 and t['status'] == "open" for t in texts))   # nothing made, and missed, in week 3
+        self.assertEqual({p['save_id']: p['trust'] for p in care.load_players()}, trust)           # so nobody was left on read
+        wr1 = next(p for g in care.dashboard()['groups'].values() for p in g if p['save_id'] == "wr1")
+        self.assertGreater(wr1['change']['focus'], 0)   # week 2's big game still shows, though week 4's update came after the bye
+        conn = database.get_db_connection()
+        conn.execute("DELETE FROM player_game_stats")
+        conn.commit()
+        conn.close()
 
     def test_not_now_is_free_but_costs_trust(self):
         care.advance(2)

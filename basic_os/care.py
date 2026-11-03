@@ -398,6 +398,9 @@ def advance(week):
         return
     import care_incidents, care_messages
     last = int(last)
+    # Arrows show everything since the coach last looked, even when a sync covers two weeks (a bye week): the
+    # game's lift happens in the first of them and would vanish if only the last week counted
+    start = {p['save_id']: dict(p['needs']) for p in load_players()}
     for w in range(last + 1, week + 1):
         players = load_players()
         ctx = week_context(w)
@@ -406,16 +409,21 @@ def advance(week):
         games = game_results(w - 1, tuning)
         for p in players:
             p['game'] = games.get(p['save_id'], {"played": False, "standout": False, "award": None}) if games else None
-        before = {p['save_id']: dict(p['needs']) for p in players}
         events = care_messages.close_week(players, w, tuning)   # texts left on read
         events += care_incidents.close_week(players, w, tuning)   # incidents nobody answered
         events += run_week(players, ctx, tuning, council_ids(), mentor_map(), rng)
-        events += care_incidents.roll(players, w, ctx, tuning, rng)
+        # Texts, emails and incidents only arrive in the week the coach will actually see: one made in a week the
+        # sync skips past would expire, and count against him, before he could answer it
+        seen = w == week
+        if seen:
+            events += care_incidents.roll(players, w, ctx, tuning, rng)
         for save_id, kind, text in events:
             log(w, save_id, kind, text)
-        for p in players:   # what the week did to each need, before the coach steps in ("Morale 31, down 8")
-            p['change'] = {n: round(p['needs'][n] - before[p['save_id']][n]) for n in NEEDS}
-        care_messages.new_week(players, w, ctx, tuning, rng)
+        for p in players:   # what the update did to each need, before the coach steps in ("Morale 31, down 8")
+            before = start.get(p['save_id'], p['needs'])
+            p['change'] = {n: round(p['needs'][n] - before[n]) for n in NEEDS}
+        if seen:
+            care_messages.new_week(players, w, ctx, tuning, rng)
         save_players(players, w)
         set_state("week", w)
         set_state("hours", tuning['hours'])
