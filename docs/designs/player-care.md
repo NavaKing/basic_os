@@ -275,6 +275,17 @@ App-only: nothing is written to the save. The Care button in the tab bar opens t
   roughly 30 players it reaches end the 12 weeks at trust 38-40 instead of 30. Relaxed was retuned (staff
   target 70 to 64) after its first version left nothing to do: now a handful of players slip each season. One coach can't reach 85 players, which is the
   point: the council, mentors and the position coach extend reach.
+- **Game performance (added after the first real week):** the weekly update only drained, so even Samuel
+  Harris, Player of the Week with a 100 game rating, went down. Now last week's game comes in from the save's stat
+  lines and awards, and its lifts are added after the drain, so a need can go up:
+  - Every player who took a snap: morale +1.
+  - A standout game (100 rush or receiving yards, 250 passing, 2 rush or receiving TDs, 3 passing TDs, 8 tackles,
+    a sack, an interception, a forced fumble, 3 field goals, or a 60+ game rating): morale +7, focus +3.
+  - Player of the Week: morale +19, focus +7, trust +3. Conference Player of the Week: morale +9, trust +2.
+  - **Bench players are treated gently:** a player who didn't take a snap drains 30% less morale and focus and
+    60% less health. Academics drains the same for everyone. A backup rated like a starter now loses 2 morale a
+    week instead of 4.
+  - A bye, or a week whose stat lines haven't synced yet, counts as no game: no lifts, and nobody is benched.
 - **Save facts found along the way:** none of Wyoming's 85 players currently carry the Disciplined/Undisciplined
   persona traits (about 430 players league-wide do), so those rules wait until one joins. Hot/Cold today:
   1 Hot, 2 Cold.

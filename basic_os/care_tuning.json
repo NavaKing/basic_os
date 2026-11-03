@@ -38,7 +38,7 @@
   "drain_modifiers": {
     "loss_morale": 4,
     "win_morale": -3,
-    "backup_rated_like_a_starter_morale": 4,
+    "backup_rated_like_a_starter_morale": 2,
     "starter_health": 3,
     "injured_health": 6,
     "injured_morale": 3,
@@ -141,5 +141,32 @@
   "trust_drain_relief": 0.5,
   "homesick_below": 50,
   "sim_slipping_margin": 15,
-  "watch_need": 50
+  "watch_need": 50,
+  "game": {
+    "_about": "Last week's game, from the save's stat lines and Player of the Week awards. Boosts are added after the weekly drain, so a big game can raise a need. Bench drain factors apply to players who didn't take a snap.",
+    "standout": {
+      "RUSHYARDS": 100,
+      "RECEIVEYARDS": 100,
+      "PASSYARDS": 250,
+      "RUSHTDS": 2,
+      "RECEIVETDS": 2,
+      "PASSTDS": 3,
+      "DEFTACKLES": 8,
+      "DLINESACKS": 1,
+      "DSECINTS": 1,
+      "DLINEFORCEDFUMBLES": 1,
+      "KICKFGMADE": 3,
+      "GAMERATING": 60
+    },
+    "standout_morale": 6,
+    "standout_focus": 3,
+    "player_of_week_morale": 12,
+    "player_of_week_focus": 4,
+    "player_of_week_trust": 3,
+    "conference_player_of_week_morale": 8,
+    "conference_player_of_week_trust": 2,
+    "played_morale": 1,
+    "bench_drain_factor": 0.7,
+    "bench_health_factor": 0.4
+  }
 }

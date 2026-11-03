@@ -78,6 +78,28 @@ class Rules(unittest.TestCase):
         self.assertEqual(care.pick_care_list(players, {}, t, []), ["low", "warned"])
 
 
+class GamePerformance(unittest.TestCase):
+    def test_big_games_lift_needs_and_awards_build_trust(self):
+        t = tuning()
+        quiet = player("quiet", game={"played": True, "standout": False, "award": None})
+        star = player("star", game={"played": True, "standout": True, "award": None})
+        potw = player("potw", game={"played": True, "standout": True, "award": "national"})
+        care.run_week([quiet, star, potw], {"week": 1}, t, [], {}, NO_RNG)
+        self.assertGreater(star['needs']['morale'], quiet['needs']['morale'])
+        self.assertGreater(potw['needs']['morale'], 70)   # a Player of the Week award can raise a need
+        self.assertEqual(potw['trust'], 30 + t['game']['player_of_week_trust'])
+
+    def test_bench_players_drain_less(self):
+        t = tuning()
+        played = player("played", game={"played": True, "standout": False, "award": None})
+        bench = player("bench", game={"played": False, "standout": False, "award": None})
+        on, off = care.drain_for(played, {}, t), care.drain_for(bench, {}, t)
+        self.assertLess(off['health'], on['health'])
+        self.assertLess(off['morale'], on['morale'])
+        self.assertEqual(off['academics'], on['academics'])   # class is class
+        self.assertEqual(care.drain_for(player(game=None), {}, t), on)   # no game that week (a bye): nobody counts as benched
+
+
 class Stored(unittest.TestCase):
     def setUp(self):
         conn = database.get_db_connection()
@@ -137,6 +159,27 @@ class Stored(unittest.TestCase):
         care.save_players(players, 2)
         groups = {name: [p['save_id'] for p in g] for name, g in care.dashboard()['groups'].items()}
         self.assertEqual(groups, {"now": ["qb1"], "close": ["qb2"], "fine": ["wr1"]})
+
+    def test_game_results_from_stat_lines_and_awards(self):
+        conn = database.get_db_connection()
+        conn.execute("DELETE FROM player_game_stats")
+        conn.execute("DELETE FROM league_awards")
+        conn.executemany("INSERT INTO player_game_stats (save_id, week_num, stats_json) VALUES (?, 1, ?)",
+                         [("qb1", '{"DOWNSPLAYED": 60, "PASSYARDS": 310}'), ("wr1", '{"DOWNSPLAYED": 40, "RECEIVEYARDS": 30}'), ("qb2", '{"DOWNSPLAYED": 0}')])
+        conn.executemany("INSERT INTO league_awards (award_type, week, player_id, team_id) VALUES (?, 1, 'qb1', 1)",
+                         [("Offensive_Player_of_Week_Conf",), ("Offensive_Player_of_Week",)])
+        conn.commit()
+        conn.close()
+        results = care.game_results(1, care.load_tuning())
+        self.assertEqual(results['qb1'], {"played": True, "standout": True, "award": "national"})
+        self.assertEqual(results['wr1'], {"played": True, "standout": False, "award": None})
+        self.assertFalse(results['qb2']['played'])
+        self.assertEqual(care.game_results(2, care.load_tuning()), {})   # no stat lines: a bye or not synced yet
+        care.advance(2)
+        care.advance(3)   # week 2's game has no stat lines: no lifts, nobody benched
+        care.save_players(care.load_players(), 3)
+        flags = {p['save_id']: p['flags'] for g in care.dashboard()['groups'].values() for p in g}
+        self.assertNotIn("Player of the Week", flags['qb1'])
 
     def test_routes_and_simulator(self):
         from app import app

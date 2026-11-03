@@ -93,7 +93,7 @@ function weekTab(data) {
                '<div class="care-chips">' + chips.join('') + '</div>' +
            '</div>' +
            '<p class="muted care-note">Click a player to see all five needs and help. Hours refill when the save moves to the next week. ' +
-               '&#9660; shows how much a need dropped in the last weekly update.</p>' +
+               '&#9660; and &#9650; show how the last weekly update moved a need: the weekly drain, plus any lift from a big game.</p>' +
            '<h3 class="care-section care-section--low">Needs you now</h3>' +
            '<p class="muted care-note">A need under ' + data.low_need + ', or a warning sign.</p>' +
            list(g.now, 'Nobody is in the red.') +
