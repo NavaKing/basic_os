@@ -278,6 +278,35 @@ def _write_postgame(selected_model, week, force):
 def first_names(players):
     return {p['save_id']: p['name'].split()[0].lower() for p in players}
 
+# Words for a position group, mapped to the depth chart spots that answer for it
+GROUP_WORDS = [
+    (r"\b(qb|qbs|quarterbacks?)\b", ("QB1",)),
+    (r"\b(rbs?|running ?backs?|backfield)\b", ("HB1", "HB2")),
+    (r"\b(wrs?|wide ?outs?|receivers?)\b", ("WR1", "WR2")),
+    (r"\b(tes?|tight ?ends?)\b", ("TE1",)),
+    (r"\b(o-?line|oline|offensive line|linemen|big uglies)\b", ("LT1", "C1", "RG1")),
+    (r"\b(d-?line|dline|defensive line|pass rush)\b", ("LE1", "DT1", "RE1")),
+    (r"\b(linebackers?|lbs)\b", ("MLB1", "ROLB1")),
+    (r"\b(secondary|dbs|corners?|cbs|safet(y|ies))\b", ("CB1", "FS1", "SS1")),
+    (r"\b(kickers?|special teams)\b", ("K1",)),
+]
+SPOT = re.compile(r"\b(qb|hb|rb|fb|wr|te|lt|lg|c|rg|rt|le|re|dt|lolb|mlb|rolb|cb|fs|ss|k|p)\s?(\d)\b", re.IGNORECASE)
+
+def addressed(text, players):
+    """Save ids of players the coach addressed by depth chart spot ("QB1") or position group ("the o-line")."""
+    by_slot = {(p.get('slot') or "").upper(): p['save_id'] for p in players if p.get('slot')}
+    lowered = text.lower()
+    out = []
+    for pos, number in SPOT.findall(text):
+        slot = ("HB" if pos.lower() == "rb" else pos.upper()) + number
+        if slot in by_slot:
+            out.append(by_slot[slot])
+    if not out:   # "QB1" already says which one; a plain "QB" means the starter
+        for pattern, slots in GROUP_WORDS:
+            if re.search(pattern, lowered):
+                out += [by_slot[s] for s in slots if s in by_slot]
+    return list(dict.fromkeys(out))
+
 def pick_responders(text, players, council, now=None, rng=None):
     """Who answers: anyone he named first, then a few others (captains likelier, players who are down less likely).
     Fewer when he's posting fast (the cooldown)."""
@@ -288,6 +317,7 @@ def pick_responders(text, players, council, now=None, rng=None):
     named = [p['save_id'] for p in players
              if re.search(r"\b" + re.escape(p['name'].lower()) + r"\b", lowered) or re.search(r"\b" + re.escape(p['name'].split()[-1].lower()) + r"\b", lowered)
              or (len(p['name'].split()[0]) > 3 and re.search(r"\b" + re.escape(p['name'].split()[0].lower()) + r"\b", lowered))]
+    named = list(dict.fromkeys(named + addressed(text, players)))
     last = float(get_state("coach_last_at") or 0)
     low, high = t['responders']
     count = 1 if now - last < t['cooldown_seconds'] else rng.randint(low, high)

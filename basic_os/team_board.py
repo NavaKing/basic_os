@@ -56,7 +56,9 @@ TONE_STYLES = {
 TONE_NOTES = {
     "playful": "He's being playful or joking around (look at the winky face, emoji or wording), so the team reacts to THAT: they "
                "laugh, tease him back, play along, or ask if he's joking. Nobody pivots to football or the next opponent.",
-    "question": "He asked the team a question, so they answer it.",
+    "question": "He asked the team a question, so they answer it, with the real names from the depth chart. Once one player has "
+                "given the answer, the others don't just repeat it: they add something of their own (hype for the guy, a joke, a "
+                "promise). A player asked about himself answers as himself ('that's me, coach'), not in the third person.",
     "plain": "",
 }
 
@@ -121,7 +123,7 @@ def cast(week, everyone=False):
         out.append({"save_id": p['save_id'], "name": p['name'], "position": p['position'], "class": p['class'], "jersey": jerseys.get(p['save_id']),
                     "portrait": p['portrait'], "line": roster.format_stat_line(stats) if stats else "", "impact": impact(stats),
                     "grade": grade(stats) if stats and stats.get('DOWNSPLAYED') else None,
-                    "starter": p['starter'], "played": bool(stats and stats.get('DOWNSPLAYED')), "mood": mood,
+                    "starter": p['starter'], "slot": p.get('slot'), "played": bool(stats and stats.get('DOWNSPLAYED')), "mood": mood,
                     "stands_out": mood != "in a good place"})
     out.sort(key=lambda c: (-c['impact'], not c['stands_out'], not c['starter'], c['name']))
     if everyone:
@@ -182,12 +184,19 @@ def previous_posts(week):
 def describe(c):
     played = (f"last game: {c['line']}" + (f", {GRADE_WORDS[c['grade']]}" if c.get('grade') else "") if c['line']
               else ("played but had no stats" if c['played'] else "didn't play last game (bench)"))
-    text = f"{c['name']} ({c['class']} {c['position']}{', #' + str(c['jersey']) if c['jersey'] else ''}; {played}; how he feels, for tone only: {c['mood']}"
+    slot = f", {c['slot']} on the depth chart" if c.get('slot') else ""
+    text = f"{c['name']} ({c['class']} {c['position']}{', #' + str(c['jersey']) if c['jersey'] else ''}{slot}; {played}; how he feels, for tone only: {c['mood']}"
     if c.get('angle'):
         text += f"; his post this week: {c['angle']}"
     if c.get('previous'):
         text += f"; his last post, never repeat it or reuse its wording: \"{c['previous']}\""
     return text + ")"
+
+def starters_fact():
+    """The real depth chart starters, so nobody guesses who QB1 is."""
+    rows = [p for p in roster.query_full_roster() if (p.get('depth_slot') or "").endswith("1") and not (p.get('depth_slot') or "")[-2:-1].isdigit()]
+    rows.sort(key=lambda p: p['depth_slot'])
+    return ("Depth chart starters (use these exact names, never guess one): " + "; ".join(f"{p['depth_slot']} {p['player_name']}" for p in rows) + ".") if rows else ""
 
 def game_facts():
     import ai_engine
@@ -303,10 +312,12 @@ def answer(selected_model, coach_text, responder_ids, history):
         c['previous'] = None
     roster_text = "; ".join(describe(c) for c in people)
     prompt = (f"{GUARDRAILS} Facts: {game_facts()} Recent group chat: {' | '.join(history[-12:]) or '(quiet)'} "
-              f"Coach just wrote to the whole team: \"{coach_text}\" {TONE_NOTES[tone]} "
+              f"{starters_fact()} Coach just wrote to the whole team: \"{coach_text}\" {TONE_NOTES[tone]} "
               f"The players answering, in this order: {roster_text}. Write one short reply from each of them to the coach, in order. "
               "They answer what he actually said, in their own voice and mood, respectfully but casually (it's still the head coach). "
-              "If he called someone out by name, that player answers first. Each reply follows that player's 'his post this week' style "
+              "If he called someone out by name or by depth chart spot or position (like 'QB1' or 'the o-line'), that player answers "
+              "first. If the coach is correcting someone (fewer turnovers, missed blocks), that player owns it seriously and nobody "
+              "laughs at it. Each reply follows that player's 'his post this week' style "
               "and picks up something specific the coach said. No two replies start the same way, and none repeats a line or joke "
               "already in the recent chat; never 'got it', 'will do' or 'appreciate it'. Replies never mention stats or numbers. "
               'Respond with ONLY JSON: {"replies": [{"author": "Exact Name", "text": "reply text"}, ...]}')

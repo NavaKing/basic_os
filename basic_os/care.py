@@ -148,6 +148,7 @@ def roster_players():
         for index, p in enumerate(group):
             out.append({
                 "save_id": p['save_id'], "name": p['player_name'], "position": p['position'], "class": p.get('class_year') or "",
+                "slot": p.get('depth_slot'),
                 "overall": p.get('overall') or 0, "portrait": media.portrait_url("player", p.get('portrait_file')),
                 "starter": index < spots, "blocked": index >= spots and (p.get('overall') or 0) >= weakest - 2,
                 "injured": p.get('health_status') not in ("Healthy", None),

@@ -137,6 +137,17 @@ class GroupChat(unittest.TestCase):
         self.assertIn("He's being playful", prompts[0])
         self.assertEqual(out, [{"save_id": "wr1", "text": "did you mean text coach?"}])   # the copied joke is dropped
 
+    def test_depth_chart_spots_and_position_groups_pick_who_answers(self):
+        group_chat.execute("UPDATE team_roster SET depth_slot = CASE save_id WHEN 'hb1' THEN 'HB1' WHEN 'wr1' THEN 'WR1' ELSE 'CB1' END")
+        players = care.load_players()
+        self.assertEqual(group_chat.addressed("no more fumbles ok? HB1?", players), ["hb1"])
+        self.assertEqual(group_chat.addressed("rb1 you good?", players), ["hb1"])
+        self.assertEqual(group_chat.addressed("receivers, catch the ball", players), ["wr1"])
+        self.assertEqual(group_chat.addressed("great practice everyone", players), [])
+        picked, named = group_chat.pick_responders("Secondary was great", players, [], now=1000.0, rng=random.Random(2))
+        self.assertEqual((picked[0], named), ("cb1", ["cb1"]))
+        self.assertIn("HB1 Samuel Harris", team_board.starters_fact())
+
     def test_the_coach_reacts_toggles_and_lifts_morale_a_little(self):
         msg = group_chat.execute("INSERT INTO chat_messages (week, save_id, kind, text, delivered_at) VALUES (1, 'hb1', 'postgame', 'big win', 1000)")
         morale = next(p for p in care.load_players() if p['save_id'] == 'hb1')['needs']['morale']
