@@ -227,6 +227,79 @@ def reply(message_id, choice):
         execute("UPDATE care_messages SET status = 'answered', reply = ? WHERE message_id = ?", (options[choice][1], message_id))
     return care.dashboard()
 
+# A typed reply counts as the care action its tone matches; when the hours run short it steps down to a cheaper one
+TYPED_ACTIONS = {"sit_down": "an invitation to come by in person, sit down or meet", "call": "an offer to call or talk on the phone",
+                 "text": "a supportive or encouraging message", "not_now": "brushing him off, putting him off until later, or being harsh"}
+STEP_DOWN = {"sit_down": "call", "call": "text"}
+
+def guess_action(text):
+    """The tone of a typed reply without the model (when Ollama is away)."""
+    lowered = text.lower()
+    if re.search(r"\b(office|come by|stop by|sit down|meet|in person|swing by|my door)\b", lowered):
+        return "sit_down"
+    if re.search(r"\b(call|ring|facetime|phone)\b", lowered):
+        return "call"
+    if re.search(r"\b(busy|later|not now|deal with it|man up|toughen|stop complaining|whatever|figure it out yourself)\b", lowered):
+        return "not_now"
+    return "text"
+
+def reply_text(message_id, text, selected_model):
+    """The coach types his own answer to a player's text. The model reads its tone into a care action (text, call,
+    sit-down or not now) and writes the player's answer back. Returns the dashboard plus what it counted as."""
+    import ai_engine
+    import team_board
+    text = (text or "").strip()
+    if not text:
+        raise ValueError("Write a reply first.")
+    if len(text) > 400:
+        raise ValueError("Keep it under 400 characters.")
+    m = next(iter(league.query_rows("SELECT * FROM care_messages WHERE message_id = ?", (message_id,))), None)
+    if not m or m['status'] != "open":
+        raise ValueError("That text has already been answered.")
+    tuning = care.load_tuning()
+    player = next((p for p in care.load_players() if p['save_id'] == m['save_id']), None)
+    if not player:
+        raise ValueError("That player isn't on the roster anymore.")
+    # Clear words decide it ("come by my office", "call you", "deal with it"); the model only judges the rest
+    action, followup = guess_action(text), ""
+    choices = "; ".join(f"{k}: {v}" for k, v in TYPED_ACTIONS.items())
+    decide = (f"The coach's reply is {TYPED_ACTIONS[action]}, so action is \"{action}\"." if action != "text" else
+              f"First decide what the coach's reply amounts to, one of: {choices}.")
+    prompt = (team_board.GUARDRAILS + f" {player['name']} ({player['class']} {player['position']}; how he texts: {team_board.voice(m['save_id'])}) "
+              f"texted his head coach: \"{m['text']}\" The coach replied: \"{text}\" {decide} "
+              "Then write the player's short text back, in his own voice, reacting to how the coach treated him: grateful if "
+              "supportive, glad to meet or talk if invited, deflated and short if brushed off. No numbers. "
+              'Respond with ONLY JSON: {"action": "text", "followup": "his text back"}')
+    guessed = action
+    try:
+        data = json.loads(ai_engine.call_ollama(selected_model, prompt, force_json=True, temperature=0.7))
+        if guessed == "text" and data.get('action') in TYPED_ACTIONS:
+            action = data['action']
+        followup = ai_engine.strip_tags(str(data.get('followup') or "")).strip().strip('"')
+        if len(followup) > 240 or re.search(r"\d", followup):
+            followup = ""
+    except Exception:
+        pass   # the tone is read from keywords; he just doesn't text back
+    hours = int(float(care.get_state("hours") or 0))
+    costs = {k: a['hours'] for k, a in tuning['actions'].items()}
+    while action in STEP_DOWN and costs[action] > hours:
+        action = STEP_DOWN[action]
+    if action != "not_now" and costs[action] > hours:
+        raise ValueError(f"No coach hours left this week (a text takes {costs['text']}). You can still brush him off, but it costs trust.")
+    if action == "not_now":
+        players = care.load_players()
+        p = next(p for p in players if p['save_id'] == m['save_id'])
+        p['trust'] = max(0, p['trust'] - tuning['phone']['not_now_trust'])
+        care.save_players(players, int(care.get_state("week")))
+        care.log(int(care.get_state("week")), p['save_id'], "phone", f"Brushed off {p['name']}'s text: trust -{tuning['phone']['not_now_trust']}.")
+        status = "ignored"
+    else:
+        care.act(m['save_id'], action, m['need'])
+        status = "answered"
+    execute("UPDATE care_messages SET status = ?, reply = ?, followup = ? WHERE message_id = ?", (status, text, followup or None, message_id))
+    labels = {"not_now": "Not now (trust -1)", **{k: f"{a['label']} ({a['hours']}h)" for k, a in tuning['actions'].items()}}
+    return {**care.dashboard(), "typed": {"action": action, "label": labels[action]}}
+
 def email_action(email_id, key):
     e = next(iter(league.query_rows("SELECT * FROM care_emails WHERE email_id = ?", (email_id,))), None)
     if not e or e['status'] != "open":
@@ -275,7 +348,7 @@ def phone_view(week, by_id):
             continue
         thread = threads.setdefault(m['save_id'], {"save_id": m['save_id'], "name": p['name'], "position": p['position'],
                                                     "portrait": p['portrait'], "messages": [], "waiting": None, "last": 0})
-        thread['messages'].append({"week": m['week'], "text": m['text'], "reply": m['reply'], "status": m['status']})
+        thread['messages'].append({"week": m['week'], "text": m['text'], "reply": m['reply'], "status": m['status'], "followup": m.get('followup')})
         thread['last'] = m['message_id']
         if m['status'] == "open":
             thread['waiting'] = {"message_id": m['message_id'], "replies": [{"key": k, "label": label} for k, label, _ in REPLIES[m['kind']]]}

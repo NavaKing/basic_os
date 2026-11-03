@@ -271,6 +271,28 @@ class Stored(unittest.TestCase):
         self.assertEqual(rows[1]['text'], rows[1]['template'] or rows[1]['text'])
         self.assertFalse(care_messages.start_voicing("test-model"))   # nothing left to voice
 
+    def test_typed_replies_count_as_the_action_their_tone_matches(self):
+        import json
+        from unittest import mock
+        self.assertEqual([care_messages.guess_action(t) for t in ("come by my office tomorrow", "I'll call you tonight",
+                                                                  "deal with it", "proud of you, hang in there")],
+                         ["sit_down", "call", "not_now", "text"])
+        care.advance(2)
+        self.slip({"qb2": {"home": 30}, "wr1": {"focus": 50}})
+        care.advance(3)
+        waiting = {t['save_id']: t['waiting']['message_id'] for t in care.dashboard()['phone'] if t['waiting']}
+        with mock.patch("ai_engine.call_ollama", return_value=json.dumps({"action": "text", "followup": "see you tomorrow coach"})):
+            d = care_messages.reply_text(waiting['qb2'], "come by my office tomorrow", "test-model")
+        self.assertEqual((d['typed']['action'], d['hours']), ("sit_down", d['hours_total'] - 3))   # the words win over the model
+        thread = next(t for t in d['phone'] if t['save_id'] == "qb2")
+        self.assertEqual((thread['messages'][-1]['reply'], thread['messages'][-1]['followup']), ("come by my office tomorrow", "see you tomorrow coach"))
+        care.set_state("hours", 1)
+        with mock.patch("ai_engine.call_ollama", side_effect=RuntimeError("down")):
+            d = care_messages.reply_text(waiting['wr1'], "give me a call later", "test-model")
+        self.assertEqual(d['typed']['action'], "text")   # a call steps down to a text when the hours run short
+        with self.assertRaises(ValueError):
+            care_messages.reply_text(waiting['wr1'], "again", "test-model")
+
     def test_not_now_is_free_but_costs_trust(self):
         care.advance(2)
         self.slip({"wr1": {"morale": 40}})
