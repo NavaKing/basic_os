@@ -364,6 +364,13 @@ App-only. The code is in `basic_os/care_incidents.py`, and the dials are under `
   "typing…" indicator first. A message lifts everyone's morale +2 once a care week, and naming a player gives him
   +5, once a week each.
 - **Old Team Boards** moved into the chat history. The Locker Room panel is gone.
+- **Reactions (tapbacks):** tap a bubble for ❤️ 👍 😂 ‼️ ❓; tap the same one again to take it back.
+  - Teammates react on their own, with no model call: 70% of player messages get 1-4 reactions, and each of the
+    coach's gets 2-5. They show 3-40 s after the message, and the choice fits it: a laugh for a joke (never at the
+    coach unless he's joking), an exclamation or heart for a big moment, a thumbs up for the coach.
+  - The coach's warm reaction on a player's message is +1 morale for him, up to 5 a week.
+  - Teammates reacting to the coach's message sends a notification.
+- **Home bar:** the bar at the bottom of the phone goes back to the home screen from any app.
 - **Still to come:** free-text replies in the one-on-one threads, and players starting new conversations midweek.
 
 ## Build order (when un-tabled)

@@ -35,6 +35,14 @@ def initialize_tables():
     )
     """)
     conn.execute("CREATE TABLE IF NOT EXISTS chat_state (state_key TEXT PRIMARY KEY, state_value TEXT)")
+    conn.execute("""
+    CREATE TABLE IF NOT EXISTS chat_reactions (
+        msg_id INTEGER, who TEXT,    -- who: 'coach' or a player's save id
+        emoji TEXT,
+        delay REAL DEFAULT 0,        -- seconds after the message arrives before it shows
+        PRIMARY KEY (msg_id, who)
+    )
+    """)
     conn.commit()
     conn.close()
     migrate_team_board()
@@ -112,6 +120,94 @@ def schedule(rows, first, rest, burst_max=None, burst_pause=None):
         out.append({**row, "delay": round(delay, 1)})
     return out
 
+# ---------- Reactions (tapbacks) ----------
+
+REACTIONS = ["❤️", "👍", "😂", "‼️", "❓"]
+KIND_WORDS = {"😂": ("lol", "haha", "lmao", "😂", "🤣", "joke", "bus"), "‼️": ("🔥", "td", "yards", "tackles", "sack", "win", "w ", "let's go", "lets go")}
+
+def pick_emoji(text, from_coach, rng):
+    """What a teammate would tap: a laugh for a joke, an exclamation or heart for a big moment, a thumbs up or heart for
+    the coach, now and then a question mark for a question."""
+    lowered = f" {text.lower()} "
+    weights = {"❤️": 3, "👍": 2, "😂": 0.3, "‼️": 1, "❓": 0}
+    if from_coach:
+        weights.update({"👍": 4, "❤️": 3, "‼️": 1.5, "😂": 0})   # nobody laughs at the coach unless he's joking
+    if any(w in lowered for w in KIND_WORDS["😂"]):
+        weights["😂"] = 6
+    if any(w in lowered for w in KIND_WORDS["‼️"]) or any(ch.isdigit() for ch in lowered):
+        weights["‼️"] += 3
+    if lowered.strip().endswith("?"):
+        weights["❓"] = 0.6
+    return rng.choices(list(weights), weights=list(weights.values()))[0]
+
+def schedule_reactions(msg_id, text, author_id, rng=None):
+    """Teammates' tapbacks on a message, shown a little while after it arrives (no model needed)."""
+    t = tuning()['reactions']
+    rng = rng or random.Random()
+    players = care.load_players() if care.get_state("week") is not None else []
+    others = [p for p in players if p['save_id'] != author_id]
+    if not others:
+        return
+    if author_id is None:
+        count = rng.randint(*t['coach_reactors'])
+    else:
+        if rng.random() > t['post_chance']:
+            return
+        count = rng.randint(1, t['max_per_message'])
+    weights = [1.5 if p['starter'] else 1.0 for p in others]
+    picked = set()
+    while len(picked) < min(count, len(others)):
+        picked.add(rng.choices(others, weights=weights)[0]['save_id'])
+    conn = database.get_db_connection()
+    conn.executemany("INSERT OR IGNORE INTO chat_reactions (msg_id, who, emoji, delay) VALUES (?, ?, ?, ?)",
+                     [(msg_id, who, pick_emoji(text, author_id is None, rng), round(rng.uniform(*t['delay']), 1)) for who in sorted(picked)])
+    conn.commit()
+    conn.close()
+
+def react(msg_id, emoji):
+    """The coach taps a reaction: the same one again takes it back. A warm one on a player's message lifts his morale a
+    little (capped per week)."""
+    if emoji not in REACTIONS:
+        raise ValueError("Unknown reaction.")
+    msg = next(iter(league.query_rows("SELECT * FROM chat_messages WHERE msg_id = ? AND delivered_at IS NOT NULL", (msg_id,))), None)
+    if not msg:
+        raise ValueError("That message isn't here.")
+    mine = league.query_rows("SELECT emoji FROM chat_reactions WHERE msg_id = ? AND who = 'coach'", (msg_id,))
+    if mine and mine[0]['emoji'] == emoji:
+        execute("DELETE FROM chat_reactions WHERE msg_id = ? AND who = 'coach'", (msg_id,))
+        return view()
+    execute("INSERT OR REPLACE INTO chat_reactions (msg_id, who, emoji, delay) VALUES (?, 'coach', ?, 0)", (msg_id, emoji))
+    if msg['save_id'] and emoji != "❓" and not mine and care.get_state("week") is not None:
+        t = tuning()['reactions']
+        week = int(care.get_state("week"))
+        used = int(get_state(f"reaction_lift_{week}") or 0)
+        if used < t['coach_weekly_cap']:
+            players = care.load_players()
+            p = next((p for p in players if p['save_id'] == msg['save_id']), None)
+            if p:
+                p['needs']['morale'] = min(100, p['needs']['morale'] + t['coach_morale'])
+                care.save_players(players, week)
+                set_state(f"reaction_lift_{week}", used + 1)
+                care.log(week, p['save_id'], "chat", f"Coach reacted {emoji} to {p['name']}'s message: morale +{t['coach_morale']}.")
+    return view()
+
+def reactions(now=None, limit=200):
+    """{msg_id: [{emoji, count, mine, names}]} for recent messages, counting only tapbacks whose delay has passed."""
+    now = now or time.time()
+    people = authors()
+    rows = league.query_rows("""SELECT r.msg_id, r.who, r.emoji FROM chat_reactions r JOIN chat_messages m ON m.msg_id = r.msg_id
+                                WHERE m.delivered_at IS NOT NULL AND m.delivered_at + r.delay <= ?
+                                AND m.msg_id IN (SELECT msg_id FROM chat_messages WHERE delivered_at IS NOT NULL ORDER BY delivered_at DESC LIMIT ?)
+                                ORDER BY r.msg_id, r.rowid""", (now, limit))
+    out = {}
+    for r in rows:
+        groups = out.setdefault(r['msg_id'], {})
+        g = groups.setdefault(r['emoji'], {"emoji": r['emoji'], "count": 0, "mine": False, "names": []})
+        g['count'] += 1
+        g['mine'] = g['mine'] or r['who'] == "coach"
+        g['names'].append("You" if r['who'] == "coach" else (people.get(r['who']) or {}).get('name', "A teammate"))
+    return {msg_id: list(groups.values()) for msg_id, groups in out.items()}
+
 # ---------- After a game ----------
 
 def last_played():
@@ -162,6 +258,7 @@ def _write_postgame(selected_model, week, force):
         for row in schedule(ordered, t['first_delay'], t['delay'], t['burst_max'], t['burst_pause']):
             msg_id = execute("INSERT INTO chat_messages (week, save_id, kind, text, reply_to, delay) VALUES (?, ?, ?, ?, ?, ?)",
                              (week, row['save_id'], row['kind'], row['text'], ids.get(row.get('reply_to')), row['delay']))
+            schedule_reactions(msg_id, row['text'], row['save_id'])
             if row['index'] is not None:
                 ids[row['index']] = msg_id
         set_state("postgame_week", week)
@@ -207,7 +304,8 @@ def send(text, selected_model):
         raise ValueError("Keep it under 500 characters.")
     week = int(care.get_state("week") or last_played() or 0)
     now = time.time()
-    execute("INSERT INTO chat_messages (week, save_id, kind, text, delivered_at, read) VALUES (?, NULL, 'coach', ?, ?, 1)", (week, text, now))
+    coach_msg = execute("INSERT INTO chat_messages (week, save_id, kind, text, delivered_at, read) VALUES (?, NULL, 'coach', ?, ?, 1)", (week, text, now))
+    schedule_reactions(coach_msg, text, None)
     players = care.load_players() if care.get_state("week") is not None else []
     responders, named = pick_responders(text, players, care.council_ids(), now) if players else ([], [])
     set_state("coach_last_at", now)
@@ -223,7 +321,8 @@ def _write_answers(selected_model, text, responders, history, week):
     try:
         answers = team_board.answer(selected_model, text, responders, history)
         for row in schedule(answers, t['answer_first_delay'], t['answer_delay']):
-            execute("INSERT INTO chat_messages (week, save_id, kind, text, delay) VALUES (?, ?, 'answer', ?, ?)", (week, row['save_id'], row['text'], row['delay']))
+            msg_id = execute("INSERT INTO chat_messages (week, save_id, kind, text, delay) VALUES (?, ?, 'answer', ?, ?)", (week, row['save_id'], row['text'], row['delay']))
+            schedule_reactions(msg_id, row['text'], row['save_id'])
         _jobs['answer'] = {"done": True}
     except Exception as e:
         _jobs['answer'] = {"done": True, "error": str(e)}
@@ -285,7 +384,7 @@ def view(since=0):
     unread = league.query_rows("SELECT COUNT(*) AS n FROM chat_messages WHERE delivered_at IS NOT NULL AND read = 0")[0]['n']
     waiting = league.query_rows("SELECT COUNT(*) AS n FROM chat_messages WHERE delivered_at IS NULL")[0]['n']
     job = _jobs['postgame'] or {}
-    return {"messages": [shape(m) for m in rows], "members": len(people), "unread": unread, "waiting": waiting,
+    return {"messages": [shape(m) for m in rows], "reactions": reactions(), "members": len(people), "unread": unread, "waiting": waiting,
             "typing": None if not who else ("Someone" if who == "someone" else (people.get(who) or {}).get('name', "Someone")),
             "writing": bool(job and not job.get('done')), "error": None, "job_error": job.get('error')}
 
