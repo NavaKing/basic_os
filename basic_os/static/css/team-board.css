@@ -1,6 +1,7 @@
 /* Team Board: the players-only feed in the Locker Room */
 
 .team-board { margin-bottom: 18px; }
+.team-board .status-text:not(:empty) { margin-bottom: 10px; }
 .board-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; align-items: start; }
 .board-week { grid-column: 1 / -1; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: var(--text-dim); }
 .board-post { padding: 12px 14px; border: 1px solid var(--border-soft); border-radius: 10px; background: rgba(255, 255, 255, 0.02); }
