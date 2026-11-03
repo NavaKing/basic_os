@@ -591,4 +591,37 @@ def dashboard():
         "log": league.query_rows("SELECT week, kind, text FROM care_log ORDER BY log_id DESC LIMIT 40"),
     }
 
+# ---------- Campus feed mood ring ----------
+
+# How campus chatter would notice each empty need: outward signs only, never a reason or a rumor
+MOOD_SIGNS = {"morale": "seems down lately", "academics": "has looked stressed and buried in the books",
+              "home": "seems a little homesick", "focus": "seems off and distracted lately", "health": "looks worn down"}
+
+def mood_hints(limit=2):
+    """Up to `limit` players for the campus feed to hint about: the most worrying low need first, then one player
+    riding high (a top morale or an award). Returns [(player, sign)]; empty before care starts."""
+    if get_state("week") is None:
+        return []
+    tuning = load_tuning()
+    players = [p for p in load_players() if p['starter'] or p['dev'] in ("Impact", "Star", "Elite")]  # players fans would notice
+    hints = []
+    worried = sorted((p for p in players if min(p['needs'].values()) < tuning['watch_need']), key=lambda p: min(p['needs'].values()))
+    for p in worried[:max(1, limit - 1)]:   # leave room for someone riding high
+        hints.append((p, MOOD_SIGNS[min(NEEDS, key=lambda n: p['needs'][n])]))
+    games = game_results(int(get_state("week")) - 1, tuning)
+    high = sorted((p for p in players if p not in worried and (p['needs']['morale'] >= 85 or (games.get(p['save_id']) or {}).get('award'))),
+                  key=lambda p: -p['needs']['morale'])
+    if high and len(hints) < limit:
+        hints.append((high[0], "is all smiles and riding high"))
+    return hints[:limit]
+
+def mood_context():
+    """A plan line for the hub generator's campus feed, or "" when nobody stands out."""
+    hints = mood_hints()
+    if not hints:
+        return ""
+    lines = "; ".join(f"{p['name']} ({p['position']}) {sign}" for p, sign in hints)
+    return (f"Campus mood (what people around the team have noticed off the field): {lines}. "
+            "Keep it to light, vague chatter about how he seems: no rumors, no reasons, no trouble, no injuries.")
+
 initialize_care_tables()

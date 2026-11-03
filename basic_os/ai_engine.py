@@ -254,6 +254,10 @@ def generate_dynasty_content(selected_model, storyline_context="", player_lines=
         plan.append("One of the remaining posts reacts to a quote from the press conference, quoting it exactly." + presser_quotes)
     if rivalry:
         plan.append("At least two of the remaining posts are rivalry trash talk aimed at the other side's fans, built on the rivalry facts." + rivalry)
+    import care
+    mood = care.mood_context()
+    if mood:
+        plan.append("One of the remaining posts is campus chatter, from a student or campus account, about how a player seems lately. " + mood)
     plan.append(f"The remaining posts hype the upcoming Week {active_stats['week_id']} game vs {active_stats['opponent_name']}.")
     plan.append(f"Exactly {PHOTO_TWEETS} posts include a photo: give only those posts a \"photo\" field with one vivid sentence describing what the photo shows (the scene, people, action and setting). The other posts have no photo field.")
     tweet_prompt = (

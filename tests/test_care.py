@@ -181,6 +181,22 @@ class Stored(unittest.TestCase):
         flags = {p['save_id']: p['flags'] for g in care.dashboard()['groups'].values() for p in g}
         self.assertNotIn("Player of the Week", flags['qb1'])
 
+    def test_mood_ring_hints_for_the_campus_feed(self):
+        care.advance(2)
+        players = care.load_players()
+        for p in players:
+            p['needs'] = {n: 70 for n in care.NEEDS}
+        by_id = {p['save_id']: p for p in players}
+        by_id['qb1']['needs']['focus'] = 20      # a starter in the red
+        by_id['wr1']['needs']['morale'] = 95     # a starter riding high
+        by_id['qb2']['needs']['home'] = 10       # a backup: fans wouldn't notice
+        care.save_players(players, 2)
+        self.assertEqual([(p['save_id'], sign) for p, sign in care.mood_hints()],
+                         [("qb1", care.MOOD_SIGNS['focus']), ("wr1", "is all smiles and riding high")])
+        context = care.mood_context()
+        self.assertIn("Senior Quarterback (QB) seems off and distracted lately", context)
+        self.assertIn("no rumors", context)
+
     def test_routes_and_simulator(self):
         from app import app
         client = app.test_client()
