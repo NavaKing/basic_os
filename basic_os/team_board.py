@@ -70,7 +70,8 @@ def coach_tone(text):
 
 REPLY_STYLES = ["fired up and ready", "hypes up a teammate the coach mentioned (or another one by name)", "a little joke or some banter",
                 "short and serious, all business", "looks ahead to the next opponent", "promises something specific for practice this week"]
-TOO_SIMILAR = 0.6   # a post this close to his previous one is dropped
+TOO_SIMILAR = 0.6
+COPY_MIN_LENGTH = 20   # "on it coach" and "yes coach" look alike letter by letter; only judge replies long enough to be a copied line   # a post this close to his previous one is dropped
 
 GUARDRAILS = ("Every player is a man on a men's college football team, so always use he/him/his. This is the team's private "
               "group chat, so messages are casual, like teammates texting: short, lowercase is fine, emojis are fine. "
@@ -314,7 +315,7 @@ def answer(selected_model, coach_text, responder_ids, history):
     for r in ask(selected_model, prompt, by_name, "replies"):
         text = scrub(ai_engine.strip_tags(r['text']), people)
         if (text and not re.search(r"\d", text) and r['author'] not in [o['author'] for o in out]
-                and not any(repeats(text, line) for line in said + [o['text'] for o in out])):   # no copied jokes
+                and not (len(text) >= COPY_MIN_LENGTH and any(repeats(text, line) for line in said + [o['text'] for o in out]))):   # no copied jokes
             out.append({"author": r['author'], "text": text})
     return [{"save_id": by_name[o['author']]['save_id'], "text": o['text']} for o in out[:len(people)]]
 
