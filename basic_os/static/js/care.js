@@ -4,7 +4,7 @@
 
 import { esc, setStatus, headshot } from './utils.js';
 
-const TABS = [['week', 'This week'], ['team', 'Captains & mentors'], ['log', 'Log'], ['balance', 'Balance']];
+const TABS = [['week', 'This week'], ['phone', 'Phone'], ['inbox', 'Inbox'], ['team', 'Captains & mentors'], ['log', 'Log'], ['balance', 'Balance']];
 
 // What the window remembers between refreshes (each action re-renders it)
 const ui = { tab: 'week', open: new Set(), need: {}, sim: null };
@@ -136,6 +136,47 @@ function teamTab(data) {
         '</form>';
 }
 
+function phoneTab(data) {
+    if (!data.phone.length) return '<p class="muted care-note">No texts yet. Players text you when a need starts slipping; new texts arrive when the save moves to the next week.</p>';
+    return '<p class="muted care-note">Answer before the next game: a text still waiting when the week moves on drains that need and costs trust. ' +
+        'A reply costs the same hours as the matching care action.</p>' +
+        '<ol class="care-threads">' + data.phone.map(t =>
+            '<li class="care-thread' + (t.waiting ? ' is-waiting' : '') + '">' +
+                '<div class="care-thread-head">' + headshot(t.portrait, 'care-headshot') +
+                    '<button type="button" class="care-name" data-player-id="' + esc(t.save_id) + '">' + esc(t.name) + '</button>' +
+                    '<span class="care-meta">' + esc(t.position) + '</span>' + (t.waiting ? '<span class="care-chip care-chip--low">Waiting</span>' : '') + '</div>' +
+                '<div class="care-bubbles">' + t.messages.map(m =>
+                    '<div class="care-bubble care-bubble--them"><span class="care-meta">Week ' + esc(m.week) + '</span> ' + esc(m.text) + '</div>' +
+                    (m.reply ? '<div class="care-bubble care-bubble--me">' + esc(m.reply) + '</div>' :
+                     m.status === 'missed' ? '<div class="care-meta care-missed">Left on read</div>' : '')).join('') + '</div>' +
+                (t.waiting ? '<div class="care-act-row">' + t.waiting.replies.map(r => {
+                    const action = data.actions.find(a => a.key === r.key);
+                    const hours = action ? action.hours : 0;
+                    return '<button type="button" class="btn-secondary care-action" data-reply="' + t.waiting.message_id + '" data-choice="' + r.key + '"' +
+                        (hours > data.hours ? ' disabled title="Not enough hours left this week"' : '') + '>' +
+                        '<span class="care-action-name">' + esc(r.label) + '</span><span class="care-action-effect">' + (hours ? hours + 'h' : 'free, trust -1') + '</span></button>';
+                }).join('') + '</div>' : '') +
+            '</li>').join('') + '</ol>';
+}
+
+function inboxTab(data) {
+    if (!data.inbox.length) return '<p class="muted care-note">No email yet. The staff write when the save moves to the next week.</p>';
+    return '<p class="muted care-note">Emails from the school staff. Actions cost coach hours; an email left open expires when the week moves on.</p>' +
+        '<ol class="care-emails">' + data.inbox.map(e =>
+            '<li class="care-email' + (e.status === 'open' ? ' is-open' : '') + '">' +
+                '<div class="care-email-head"><strong>' + esc(e.subject) + '</strong><span class="care-meta">' + esc(e.sender) + ' &middot; Week ' + esc(e.week) +
+                    (e.status !== 'open' ? ' &middot; ' + esc(e.status) : '') + '</span></div>' +
+                '<p class="care-email-body">' + esc(e.body) + '</p>' +
+                (e.result ? '<p class="care-meta">Done: ' + esc(e.result) + '</p>' : '') +
+                (e.status === 'open' ? '<div class="care-act-row">' + e.actions.map(a =>
+                    '<button type="button" class="btn-secondary care-action" data-email="' + e.email_id + '" data-email-act="' + esc(a.key) + '"' +
+                        (a.hours > data.hours ? ' disabled title="Not enough hours left this week"' : '') + '>' +
+                        '<span class="care-action-name">' + esc(a.label) + '</span><span class="care-action-effect">' + esc(a.effect) + ' &middot; ' + (a.hours ? a.hours + 'h' : 'free') + '</span></button>').join('') +
+                    '<button type="button" class="btn-secondary care-action" data-email="' + e.email_id + '" data-email-act="read"><span class="care-action-name">' +
+                        (e.actions.length ? 'Done' : 'Mark read') + '</span></button></div>' : '') +
+            '</li>').join('') + '</ol>';
+}
+
 function logTab(data) {
     return '<ol class="care-log">' + (data.log.map(l => '<li><span class="care-meta">Week ' + esc(l.week) + '</span> ' + esc(l.text) + '</li>').join('') ||
         '<li class="muted">Nothing yet.</li>') + '</ol>';
@@ -175,10 +216,11 @@ function render(body, data) {
         return;
     }
     const count = data.groups.now.length;
+    const badges = { week: count, phone: data.unread.texts, inbox: data.unread.emails };
     const tabs = '<div class="care-tabs" role="tablist">' + TABS.map(([key, label]) =>
         '<button type="button" role="tab" class="care-tab' + (ui.tab === key ? ' is-active' : '') + '" data-care-tab="' + key + '" aria-selected="' + (ui.tab === key) + '">' +
-            esc(label) + (key === 'week' && count ? ' <span class="care-badge">' + count + '</span>' : '') + '</button>').join('') + '</div>';
-    const content = { week: weekTab, team: teamTab, log: logTab, balance: balanceTab }[ui.tab](data);
+            esc(label) + (badges[key] ? ' <span class="care-badge">' + badges[key] + '</span>' : '') + '</button>').join('') + '</div>';
+    const content = { week: weekTab, phone: phoneTab, inbox: inboxTab, team: teamTab, log: logTab, balance: balanceTab }[ui.tab](data);
     body.innerHTML = tabs + '<div class="care-panel">' + content + '</div>';
     // Bar widths are set here, not in the markup: the page's content security policy blocks inline styles
     body.querySelectorAll('[data-fill]').forEach(el => { el.style.width = el.dataset.fill + '%'; });
@@ -196,9 +238,18 @@ export function initCare() {
     const body = document.getElementById('care_body');
     const status = document.getElementById('care_status');
     let data = null;
+    const button = document.getElementById('care_open');
+    // Texts and emails waiting, on the tab bar's Care button
+    const badge = unread => {
+        const total = unread.texts + unread.emails;
+        button.innerHTML = 'Care' + (total ? ' <span class="care-badge">' + total + '</span>' : '');
+        button.title = total ? unread.texts + ' text(s) and ' + unread.emails + ' email(s) waiting' : '';
+    };
+    fetch('/care/unread').then(res => res.json()).then(badge).catch(() => {});
     const show = next => {
         if (next.error) return;
         data = next;
+        if (data.unread) badge(data.unread);
         document.getElementById('care_kicker').textContent = data.started ? 'Player care · Week ' + data.week + ' · ' + data.preset : 'Player care';
         render(body, data);
     };
@@ -216,8 +267,12 @@ export function initCare() {
         show(await call('/care', undefined, status));
     };
     document.getElementById('care_open').addEventListener('click', open);
-    // ?care opens the window directly
-    if (new URLSearchParams(location.search).has('care')) open();
+    // ?care opens the window directly; ?care=phone (or another tab) opens it on that tab
+    const linked = new URLSearchParams(location.search).get('care');
+    if (linked !== null) {
+        if (TABS.some(([key]) => key === linked)) ui.tab = linked;
+        open();
+    }
     document.getElementById('care_close').addEventListener('click', () => dialog.close());
     dialog.addEventListener('click', event => { if (event.target === dialog) dialog.close(); });
 
@@ -229,6 +284,8 @@ export function initCare() {
         const on = event.target.closest('[data-council-on]');
         const off = event.target.closest('[data-council-off]');
         const unpair = event.target.closest('[data-mentor-off]');
+        const answer = event.target.closest('[data-reply]');
+        const email = event.target.closest('[data-email]');
         if (tab) {
             ui.tab = tab.dataset.careTab;
             setStatus(status, '');
@@ -248,6 +305,10 @@ export function initCare() {
             await post('council', { save_id: on.dataset.councilOn, on: true });
         } else if (off) {
             await post('council', { save_id: off.dataset.councilOff, on: false });
+        } else if (answer) {
+            await post('reply', { message_id: Number(answer.dataset.reply), choice: answer.dataset.choice });
+        } else if (email) {
+            await post('email', { email_id: Number(email.dataset.email), action: email.dataset.emailAct });
         } else if (unpair) {
             await post('mentor', { mentee: unpair.dataset.mentorOff, mentor: null });
         } else if (event.target.id === 'care_simulate') {

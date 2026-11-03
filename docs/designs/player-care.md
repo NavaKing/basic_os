@@ -293,6 +293,29 @@ App-only: nothing is written to the save. The Care button in the tab bar opens t
   persona traits (about 430 players league-wide do), so those rules wait until one joins. Hot/Cold today:
   1 Hot, 2 Cold.
 
+## Iteration 2: Phone and Inbox (built on feature/care-phone-inbox)
+
+These are the Phone and Inbox tabs in the Care window, plus an unread badge on the tab bar's Care button. Both
+fill when the save moves to a new week. Every number is in `care_tuning.json` under `phone` and `inbox`.
+
+- **Texts:** up to 3 a week, from players whose lowest need is under 58, lowest first with a little luck.
+  Wording comes from templates by need, in two moods ("slipping" and "in the red"). They are mild and
+  blameless, so they work for any player. No two players send the same text in one week. A Player of the Week
+  texts too ("COACH!! did you see that??").
+- **Replies:** Text back (1h), Call him (2h) and Bring him in (3h) count as the matching care action: the same
+  fill, trust and hours. Not now is free but costs 1 trust.
+- **Left on read:** a text still waiting when the next week arrives drains that need by 6 and costs 3 trust.
+  The thread shows "Left on read".
+- **Emails:**
+  - Academic advisor: up to 4 players with academics under 50, with a Tutor button for each (1h, +15) and
+    Study hall for all of them (2h, +10 academics, -3 morale).
+  - Head trainer: injured players and anyone with health under 45, with a Rest button for each (free,
+    +20 health, -2 focus; it doesn't change the depth chart).
+  - Athletic director: after a loss or a big win. Context only, no actions.
+  - An email stays open until you press Done, and expires when the week moves on.
+- **Not yet:** texts written by gemma in the player's own voice, and free-text replies (open question 3).
+  Generating them at sync time would slow every sync, so templates come first.
+
 ## Build order (when un-tabled)
 
 1. **In-game test:** one edited Hot/Cold, ability, injury and heal, loaded in CFB27 to see what the game honours.

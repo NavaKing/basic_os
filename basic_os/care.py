@@ -396,6 +396,7 @@ def advance(week):
         set_state("hours", tuning['hours'])
         log(week, None, "start", f"Player care starts in Week {week}: every player begins with needs around {tuning['start_need']}.")
         return
+    import care_messages
     last = int(last)
     for w in range(last + 1, week + 1):
         players = load_players()
@@ -406,10 +407,13 @@ def advance(week):
         for p in players:
             p['game'] = games.get(p['save_id'], {"played": False, "standout": False, "award": None}) if games else None
         before = {p['save_id']: dict(p['needs']) for p in players}
-        for save_id, kind, text in run_week(players, ctx, tuning, council_ids(), mentor_map(), rng):
+        events = care_messages.close_week(players, w, tuning)   # texts left on read
+        events += run_week(players, ctx, tuning, council_ids(), mentor_map(), rng)
+        for save_id, kind, text in events:
             log(w, save_id, kind, text)
         for p in players:   # what the week did to each need, before the coach steps in ("Morale 31, down 8")
             p['change'] = {n: round(p['needs'][n] - before[p['save_id']][n]) for n in NEEDS}
+        care_messages.new_week(players, w, ctx, tuning, rng)
         save_players(players, w)
         set_state("week", w)
         set_state("hours", tuning['hours'])
@@ -531,6 +535,7 @@ def current_week():
     return game['week_id'] if game else None
 
 def dashboard():
+    import care_messages
     tuning = load_tuning()
     if get_state("week") is None:
         advance(current_week())  # first look: set the roster up
@@ -589,6 +594,8 @@ def dashboard():
         "roster": sorted(({"save_id": p['save_id'], "name": p['name'], "position": p['position'], "class": p['class']} for p in players),
                          key=lambda p: (p['position'], p['name'])),
         "log": league.query_rows("SELECT week, kind, text FROM care_log ORDER BY log_id DESC LIMIT 40"),
+        "phone": care_messages.phone_view(week, by_id), "inbox": care_messages.inbox_view(),
+        "unread": dict(zip(("texts", "emails"), care_messages.unread())),
     }
 
 # ---------- Campus feed mood ring ----------
