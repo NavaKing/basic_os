@@ -358,13 +358,20 @@ def name_remaining_scorers(plays, touchdowns):
         key = next((k for k in mine if k[1] == scored_kind(parsed)), mine[0] if mine else None)
         if key:
             left[key] -= 1
+    pending_passes = sum(1 for _, parsed in unnamed if parsed['passer'])
     for p, parsed in unnamed:
-        # "Touchdown pass from X" was a catch; a plain "Touchdown" could be anything
-        candidates = [key for key, count in left.items() if count > 0 and (not parsed['passer'] or key[1] == "catch")]
+        # "Touchdown pass from X" was a catch; a plain "Touchdown" could be anything, except a catch when every catch
+        # left is already spoken for by an unnamed "pass from" play
+        catches_left = sum(count for key, count in left.items() if key[1] == "catch")
+        no_catch = not parsed['passer'] and catches_left <= pending_passes
+        candidates = [key for key, count in left.items() if count > 0 and
+                      (key[1] == "catch" if parsed['passer'] else not (no_catch and key[1] == "catch"))]
         if len(candidates) != 1:
             continue
         name, kind = candidates[0]
         left[(name, kind)] -= 1
+        if parsed['passer']:
+            pending_passes -= 1
         extra = re.search(r"\s*\([^)]*\)$", p['text'])
         extra = extra.group(0) if extra else ""
         if kind == "catch":
