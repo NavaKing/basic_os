@@ -371,6 +371,13 @@ App-only. The code is in `basic_os/care_incidents.py`, and the dials are under `
   - The coach's warm reaction on a player's message is +1 morale for him, up to 5 a week.
   - Teammates reacting to the coach's message sends a notification.
 - **Home bar:** the bar at the bottom of the phone goes back to the home screen from any app.
+- **Reading the coach's tone:** a message is playful (a winky face or other emoji, lol, haha, jk), a question (a
+  question mark, or opening with how, hows, what, who, sup, wyd...), or plain.
+  - Playful: players laugh, tease him back, play along, point out a typo, or ask if he's joking, and nobody pivots
+    to football. Tapbacks lean to 😂, with an occasional ❓.
+  - Question: they answer it.
+  - Plain: the usual styles.
+  - A reply that copies a line or joke already in the recent chat is dropped.
 - **Still to come:** free-text replies in the one-on-one threads, and players starting new conversations midweek.
 
 ## Build order (when un-tabled)

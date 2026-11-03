@@ -119,6 +119,24 @@ class GroupChat(unittest.TestCase):
         rows = group_chat.league.query_rows("SELECT who FROM chat_reactions WHERE msg_id = ?", (coach,))
         self.assertTrue(rows and all(r['who'] != 'coach' for r in rows))       # teammates react to the coach
 
+    def test_the_team_reads_the_coachs_tone(self):
+        self.assertEqual([team_board.coach_tone(x) for x in ("tesxt me ;)", "lol nice", "great job 😉")], ["playful"] * 3)
+        self.assertEqual([team_board.coach_tone(x) for x in ("hows everyone feeling", "who is ready for UNLV?")], ["question"] * 2)
+        self.assertEqual(team_board.coach_tone("Practice at 3 tomorrow."), "plain")
+        laughs = [group_chat.pick_emoji("tesxt me ;)", True, random.Random(i)) for i in range(300)]
+        self.assertEqual(max(set(laughs), key=laughs.count), "😂")             # a joke gets laughs
+        plain = [group_chat.pick_emoji("Practice at 3 tomorrow.", True, random.Random(i)) for i in range(300)]
+        self.assertNotIn("😂", plain)                                           # a plain message never does
+        prompts = []
+        def answer(model, prompt, **kwargs):
+            prompts.append(prompt)
+            return json.dumps({"replies": [{"author": "Samuel Harris", "text": "pretty sure that's how my grandma texts 😂"},
+                                           {"author": "Eric Richardson", "text": "did you mean text coach?"}]})
+        with mock.patch("ai_engine.call_ollama", side_effect=answer):
+            out = team_board.answer("test-model", "tesxt me ;)", ["hb1", "wr1"], ["Bench Corner: pretty sure that's how my grandma texts 😂"])
+        self.assertIn("He's being playful", prompts[0])
+        self.assertEqual(out, [{"save_id": "wr1", "text": "did you mean text coach?"}])   # the copied joke is dropped
+
     def test_the_coach_reacts_toggles_and_lifts_morale_a_little(self):
         msg = group_chat.execute("INSERT INTO chat_messages (week, save_id, kind, text, delivered_at) VALUES (1, 'hb1', 'postgame', 'big win', 1000)")
         morale = next(p for p in care.load_players() if p['save_id'] == 'hb1')['needs']['morale']

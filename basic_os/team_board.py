@@ -43,6 +43,31 @@ ANGLES = ["shouts out one teammate by name for something specific", "talks about
           "talks about practice or film this week", "something funny from the locker room or the bus ride", "how the crowd or the road trip felt",
           "a quick hype post", "his goal for this week"]
 # How players answer the coach: one style each, so four answers don't all read "got it, coach"
+# How the coach's message reads decides how the team answers it: nobody pivots to the next opponent when he sends "text me ;)"
+PLAYFUL = re.compile(r"(;\)|;-\)|:\)|:-\)|;p|:p|:d|xd|\blol\b|\blmao\b|\bha(ha)+\b|\bjk\b|[😉😜😏😂🤣😎🙃😝😛🤪👀😅])", re.IGNORECASE)
+QUESTION = re.compile(r"\?\s*$|^(how|hows|how's|what|whats|what's|who|whos|who's|why|when|where|wheres|anyone|any|are|is|do|does|did|can|could|would|should|will|sup|wyd)\b", re.IGNORECASE)
+TONE_STYLES = {
+    "playful": ["laughs at it", "teases the coach back, respectfully", "asks if he's joking or if someone stole his phone", "plays along with the joke",
+                "points out the typo or the weird wording, if there is one, with a laugh"],
+    "question": ["answers his question honestly in his own mood", "answers for the position group", "answers and adds a little joke",
+                 "answers short and direct"],
+}
+
+TONE_NOTES = {
+    "playful": "He's being playful or joking around (look at the winky face, emoji or wording), so the team reacts to THAT: they "
+               "laugh, tease him back, play along, or ask if he's joking. Nobody pivots to football or the next opponent.",
+    "question": "He asked the team a question, so they answer it.",
+    "plain": "",
+}
+
+def coach_tone(text):
+    """'playful' (a winky face, lol, a joke), 'question', or 'plain'."""
+    if PLAYFUL.search(text or ""):
+        return "playful"
+    if QUESTION.search((text or "").strip()):
+        return "question"
+    return "plain"
+
 REPLY_STYLES = ["fired up and ready", "hypes up a teammate the coach mentioned (or another one by name)", "a little joke or some banter",
                 "short and serious, all business", "looks ahead to the next opponent", "promises something specific for practice this week"]
 TOO_SIMILAR = 0.6   # a post this close to his previous one is dropped
@@ -269,23 +294,27 @@ def answer(selected_model, coach_text, responder_ids, history):
     if not people:
         return []
     by_name = {c['name']: c for c in people}
-    styles = random.Random(coach_text).sample(REPLY_STYLES, len(REPLY_STYLES))
+    tone = coach_tone(coach_text)
+    pool = TONE_STYLES.get(tone, REPLY_STYLES)
+    styles = random.Random(coach_text).sample(pool, len(pool))
     for i, c in enumerate(people):
         c['angle'] = styles[i % len(styles)]   # each answer a different way, so it isn't "got it coach" four times
         c['previous'] = None
     roster_text = "; ".join(describe(c) for c in people)
     prompt = (f"{GUARDRAILS} Facts: {game_facts()} Recent group chat: {' | '.join(history[-12:]) or '(quiet)'} "
-              f"Coach just wrote to the whole team: \"{coach_text}\" "
+              f"Coach just wrote to the whole team: \"{coach_text}\" {TONE_NOTES[tone]} "
               f"The players answering, in this order: {roster_text}. Write one short reply from each of them to the coach, in order. "
               "They answer what he actually said, in their own voice and mood, respectfully but casually (it's still the head coach). "
               "If he called someone out by name, that player answers first. Each reply follows that player's 'his post this week' style "
-              "and picks up something specific the coach said (a name, the opponent, the plan). No two replies start the same way; "
-              "never 'got it', 'will do' or 'appreciate it'. Replies never mention stats or numbers. "
+              "and picks up something specific the coach said. No two replies start the same way, and none repeats a line or joke "
+              "already in the recent chat; never 'got it', 'will do' or 'appreciate it'. Replies never mention stats or numbers. "
               'Respond with ONLY JSON: {"replies": [{"author": "Exact Name", "text": "reply text"}, ...]}')
     out = []
+    said = [line.split(": ", 1)[-1] for line in history[-12:]]
     for r in ask(selected_model, prompt, by_name, "replies"):
         text = scrub(ai_engine.strip_tags(r['text']), people)
-        if text and not re.search(r"\d", text) and r['author'] not in [o['author'] for o in out]:
+        if (text and not re.search(r"\d", text) and r['author'] not in [o['author'] for o in out]
+                and not any(repeats(text, line) for line in said + [o['text'] for o in out])):   # no copied jokes
             out.append({"author": r['author'], "text": text})
     return [{"save_id": by_name[o['author']]['save_id'], "text": o['text']} for o in out[:len(people)]]
 
