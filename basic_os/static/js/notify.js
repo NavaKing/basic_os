@@ -51,6 +51,12 @@ function finish(label, error) {
     flagTitle(error ? 'Failed' : 'Ready');
 }
 
+/** A quick notification (a new chat message): a toast, plus a desktop notification when the page isn't visible. */
+export function notify(title, body) {
+    toast(title + ': ' + body, false);
+    desktop(title, body);
+}
+
 /**
  * Awaits a long job's request and announces the outcome. Call it straight from the click handler, so the browser
  * can ask (once) whether desktop notifications are allowed. Returns the job's data, or rethrows its error.

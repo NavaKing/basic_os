@@ -1,7 +1,7 @@
 {# Phone: a home screen with the Messages, Care and Mail apps; driven by static/js/phone.js (Care by static/js/care.js) #}
 <section class="tab-panel" id="tab-phone" role="tabpanel">
     <div class="phone-stage">
-        <div class="phone" id="phone">
+        <div class="phone" id="phone" data-team-logo="{{ us.logo or '' }}" data-team-name="{{ us.short or us.name }}">
             <div class="phone-screen">
                 <div class="phone-status" aria-hidden="true">
                     <span class="phone-time" id="phone_time"></span>
