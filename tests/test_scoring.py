@@ -131,6 +131,13 @@ class NameRemainingScorers(unittest.TestCase):
         self.assertEqual(plays[0]['text'], "KJ Duff touchdown catch from AJ Surace (kick)")
         self.assertEqual(plays[1]['text'], "Tyler Cross touchdown run (kick)")
 
+    def test_plain_touchdown_isnt_a_catch_when_the_passes_use_them_all(self):
+        # Week 5 vs NDSU: two unnamed passes, two catches left (can't tell which is which), and one rushing TD
+        plays = self.plays("Touchdown pass from Tyler Hughes (kick)", "Touchdown (kick)", "Touchdown pass from Tyler Hughes (kick)")
+        events.name_remaining_scorers(plays, {("Deion Deblanc", "catch"): 1, ("Nathan Curry", "catch"): 1, ("Diore Hubbard", "run"): 1})
+        self.assertEqual([p['text'] for p in plays], ["Touchdown pass from Tyler Hughes (kick)", "Diore Hubbard touchdown run (kick)",
+                                                     "Touchdown pass from Tyler Hughes (kick)"])
+
     def test_return_touchdown(self):
         plays = self.plays("Touchdown (kick)")
         events.name_remaining_scorers(plays, {("Jo Smith", "interception return"): 1})
