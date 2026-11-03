@@ -8,7 +8,6 @@ import unittest
 
 from tests import APP_DIR
 import database
-import league
 import players
 import roster
 

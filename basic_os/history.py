@@ -17,7 +17,6 @@ RECORD_STATS = {
 }
 SCOPES = ("game", "season", "career")
 REGULAR_SEASON_GAMES = 12
-TOP_PERFORMANCES = 5
 
 def initialize_history_tables():
     conn = database.get_db_connection()

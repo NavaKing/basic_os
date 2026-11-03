@@ -439,9 +439,6 @@ def query_rivalries():
 def query_coaching_changes():
     return query_rows("SELECT * FROM coaching_changes ORDER BY change_id DESC")
 
-def query_conferences():
-    return query_rows("SELECT * FROM league_conferences ORDER BY name")
-
 def query_awards(week):
     return query_rows("SELECT * FROM league_awards WHERE week = ?", (week,))
 

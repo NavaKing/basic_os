@@ -106,7 +106,7 @@ class Bowls(unittest.TestCase):
                                "played": False, "homeScore": None, "awayScore": None, "date": "2026-12-27"}]}
         league.sync_league(data, 5)
         self.assertEqual(league.query_teams()[1]['conference'], "MW")
-        self.assertEqual([c['name'] for c in league.query_conferences()], ["MW"])
+        self.assertEqual([c['name'] for c in league.query_rows("SELECT name FROM league_conferences")], ["MW"])
         self.assertEqual(league.query_season_awards()[0]['name'], "Kaleb Vance")
         self.assertEqual(league.query_bowls()[0]['name'], "Arizona Bowl")
 

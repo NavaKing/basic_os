@@ -26,7 +26,6 @@ VOICE_LOCALES = ("en-US", "en-GB", "en-AU", "en-CA")
 TTS_WORKERS = 4
 TTS_ATTEMPTS = 8
 COVER_SIZE = (1024, 1024)
-TARGET_LINES = 30
 ARCHIVE_SIZE = 5          # previous episodes kept in the Back Catalog; the oldest is dropped when a new one is made
 
 def initialize_podcast_tables():
