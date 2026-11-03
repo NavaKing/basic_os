@@ -30,6 +30,7 @@ import games
 import care
 import care_messages
 import care_incidents
+import team_board
 import os
 from urllib.parse import urlsplit
 from flask import Flask, Response, render_template, request, jsonify, send_from_directory, abort, url_for
@@ -195,6 +196,7 @@ def home():
         positions=positions,
         storylines=storylines.query_storylines(),
         off_field=care_incidents.locker_room(),
+        team_board=team_board.build_page(),
         recap_weeks=recap.available_weeks(),
         recap=recap.build_recap(recap.default_week()) if recap.default_week() is not None else None,
         sync_status=sync_status,
@@ -291,6 +293,13 @@ def coach_plan(week):
 def generate_coach_plan(week):
     try:
         return jsonify(gameplan.generate_plan(request.json.get('model', 'gemma3:12b'), week))
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/team-board/generate', methods=['POST'])
+def generate_team_board():
+    try:
+        return jsonify(team_board.generate(request.json.get('model', 'gemma3:12b')))
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

@@ -65,6 +65,11 @@ class Stored(unittest.TestCase):
         conn.commit()
         conn.close()
 
+    def tearDown(self):
+        # Later test modules (the podcast, the press room) would otherwise pick these up as this week's off-field news
+        care_incidents.execute("DELETE FROM care_incidents")
+        care_incidents.execute("DELETE FROM care_state")
+
     def test_an_incident_then_a_response(self):
         care.advance(2)
         with mock.patch.object(care, "load_tuning", always()):
