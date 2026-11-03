@@ -4,8 +4,10 @@
 
 import { esc, setStatus, headshot } from './utils.js';
 import { showTab } from './tabs.js';
+import { unseenPosts, markFeedSeen } from './feed.js';
 
 const ui = { app: 'home', thread: null, email: null };
+let tweets = [];
 let care = null;
 const extraThreads = [];   // conversation rows other modules add to the Messages list (the group chat)
 
@@ -14,6 +16,10 @@ export function openApp(name) {
     document.querySelectorAll('#phone .phone-app').forEach(app => app.classList.toggle('is-active', app.dataset.app === name));
     if (name === 'messages') renderMessages();
     if (name === 'mail') renderMail();
+    if (name === 'feed') {
+        markFeedSeen(tweets);
+        updateBadges();
+    }
 }
 
 /** Opens the Phone tab on an app (the tab bar's Care button opens Care). */
@@ -59,7 +65,7 @@ export function refreshMessages() {
 function counts() {
     const extra = extraThreads.reduce((n, t) => n + (t.unread() || 0), 0);
     const texts = care && care.unread ? care.unread.texts : 0;
-    return { messages: texts + extra, mail: care && care.unread ? care.unread.emails : 0,
+    return { messages: texts + extra, mail: care && care.unread ? care.unread.emails : 0, feed: unseenPosts(),
              care: care && care.started ? care.groups.now.length + care.incidents.length : 0 };
 }
 
@@ -70,7 +76,7 @@ function updateBadges() {
         b.textContent = n || '';
         b.classList.toggle('is-shown', n > 0);
     });
-    const total = c.messages + c.mail + c.care;
+    const total = c.messages + c.mail + c.care + c.feed;
     const careButton = document.getElementById('care_open');
     if (careButton) careButton.innerHTML = 'Care' + (c.care ? ' <span class="care-badge">' + c.care + '</span>' : '');
     const tab = document.querySelector('.tab[data-tab="phone"]');
@@ -201,6 +207,11 @@ export function initPhone(game) {
     setInterval(tick, 15000);
     renderWidgets(game);
 
+    document.addEventListener('feed:update', event => {
+        tweets = event.detail;
+        if (ui.app === 'feed') markFeedSeen(tweets);
+        updateBadges();
+    });
     document.addEventListener('care:update', event => {
         care = event.detail;
         renderWidgets(game);
