@@ -43,10 +43,14 @@ export async function careAction(action, payload) {
 /** Lets another module list a conversation in Messages: {id, title, preview, time, unread, portrait, render(root)}. */
 export function addThread(thread) {
     extraThreads.push(thread);
+    if (ui.linked === thread.id && ui.app === 'messages') {   // a ?thread= link waiting for this conversation
+        ui.thread = thread.id;
+        renderMessages();
+    }
 }
 
 export function refreshMessages() {
-    if (ui.app === 'messages') renderMessages();
+    if (ui.app === 'messages' && ui.thread !== 'group') renderMessages();
     updateBadges();
 }
 
@@ -109,6 +113,7 @@ function renderMessages() {
         return;
     }
     ui.thread = null;
+    root.dataset.view = 'list';
     root.innerHTML = '<div class="phone-nav"><button type="button" class="phone-back" data-open-app="home">&#8249; Home</button><span class="phone-nav-title">Messages</span></div>' +
         '<div class="phone-scroll"><ol class="thread-list">' + (threads.map(t =>
             '<li><button type="button" class="thread-row" data-thread="' + esc(t.id) + '">' +
@@ -145,6 +150,7 @@ function renderDm(root, t) {
                   '<span>' + (hours ? hours + 'h' : 'free, trust -1') + '</span></button>';
           }).join('') + '</div>'
         : '<div class="chat-compose chat-compose--off">He hasn\'t texted this week</div>';
+    root.dataset.view = 'dm';
     root.innerHTML = threadHeader(t.name, headshot(t.portrait, 'thread-avatar thread-avatar--small')) +
         '<div class="phone-scroll chat-scroll"><div class="chat">' + bubbles + '</div><div class="status-text phone-status-text" id="dm_status"></div></div>' + quick;
     const scroll = root.querySelector('.chat-scroll');
@@ -199,7 +205,7 @@ export function initPhone(game) {
         care = event.detail;
         renderWidgets(game);
         updateBadges();
-        if (ui.app === 'messages') renderMessages();
+        if (ui.app === 'messages' && ui.thread !== 'group') renderMessages();
         if (ui.app === 'mail') renderMail();
     });
 
@@ -248,6 +254,7 @@ export function initPhone(game) {
     document.querySelector('.tab[data-tab="phone"]').addEventListener('click', () => { if (!care) loadCare(); });
     // ?care opens the Care app directly; #phone opens the phone; ?app=messages (or mail) opens that app
     const params = new URLSearchParams(location.search);
+    if (params.get('thread')) ui.thread = ui.linked = params.get('thread') === 'group' ? 'group' : 'dm-' + params.get('thread');
     if (params.has('care')) showPhone('care');
     else if (params.get('app')) showPhone(params.get('app'));
     else loadCare();

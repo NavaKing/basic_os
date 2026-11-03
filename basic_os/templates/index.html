@@ -53,6 +53,6 @@
 
 {% block scripts %}
     {# Data for the JavaScript components; rendered client-side so first load and live updates share one code path #}
-    <script type="application/json" id="page_data">{{ {"team_name": us.name, "storylines": storylines, "tweets": tweets, "stories": past_stories, "depth_chart": depth_chart, "game": game, "recap": recap, "recap_weeks": recap_weeks, "coach_plan": coach_plan, "plan_weeks": plan_weeks, "coach_news": coach_news, "podcast_episodes": podcast_episodes, "event_uploads": event_uploads, "event_draft": event_draft, "awards": awards_page, "team_board": team_board}|tojson }}</script>
+    <script type="application/json" id="page_data">{{ {"team_name": us.name, "storylines": storylines, "tweets": tweets, "stories": past_stories, "depth_chart": depth_chart, "game": game, "recap": recap, "recap_weeks": recap_weeks, "coach_plan": coach_plan, "plan_weeks": plan_weeks, "coach_news": coach_news, "podcast_episodes": podcast_episodes, "event_uploads": event_uploads, "event_draft": event_draft, "awards": awards_page}|tojson }}</script>
     <script type="module" src="{{ url_for('static', filename='js/main.js') }}"></script>
 {% endblock %}

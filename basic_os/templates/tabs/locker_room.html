@@ -1,18 +1,6 @@
 {# Locker Room: storyline cards are rendered by static/js/storylines.js #}
 {% from "macros/ui.html" import section_head %}
 <section class="tab-panel" id="tab-locker" role="tabpanel">
-    {# Team Board: players-only posts about the last game; filled in by static/js/team-board.js #}
-    <div class="panel team-board">
-        <div class="tracker-header">
-            {{ section_head("Inside the locker room", "Team Board") }}
-            <div class="tracker-controls">
-                <button class="btn-secondary" id="team_board_btn" type="button">Generate</button>
-            </div>
-        </div>
-        <p class="muted">The players' own feed, for the team only: how they felt about the last game, and teammates hyping each other up.</p>
-        <div class="status-text" id="team_board_status"></div>
-        <div class="board-list" id="team_board_list"></div>
-    </div>
     <div class="panel tracker">
         <div class="tracker-header">
             {{ section_head("Locker room", "Storyline Tracker") }}

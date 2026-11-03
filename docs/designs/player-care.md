@@ -345,6 +345,27 @@ App-only. The code is in `basic_os/care_incidents.py`, and the dials are under `
   details, charges or blame. A story kept quiet stays out until it breaks.
 - **Still to come:** the save writer (Hot/Cold, confidence, injuries), after an in-game test on a throwaway save.
 
+## Iteration 4: the phone and the WYO Group Chat (feature/phone, feature/group-chat)
+
+- **Phone tab:** a home screen with Next game and Care widgets, and three apps with badges:
+  - *Messages:* the WYO Group Chat plus the one-on-one care texts.
+  - *Care:* the old Care window.
+  - *Mail:* the staff emails.
+
+  The tab bar's Care button opens the Care app.
+- **Post-game chat:** after a game syncs, the first poll from the page starts writing it in the background
+  (team_board.compose). That's the old Team Board, now in the chat: stat grades, angles, no repeats, guardrails.
+  - Counts: 12 messages after a win, 8 after a loss, 15 after a big win, plus about half as many teammate replies.
+  - Messages are stored undelivered, and each poll releases at most one, once its delay since the last delivery
+    has passed: the first after 2-6 s, then every 15-45 s, with a 75 s pause after every 5. So nothing floods in,
+    and nothing piles up while the app is closed.
+- **The coach writes:** 2-4 players answer; anyone named goes first, captains are likelier, and players who are
+  down are less likely. During the 30 s cooldown only one player answers. Each answer gets a different style and a
+  "typing…" indicator first. A message lifts everyone's morale +2 once a care week, and naming a player gives him
+  +5, once a week each.
+- **Old Team Boards** moved into the chat history. The Locker Room panel is gone.
+- **Still to come:** free-text replies in the one-on-one threads, and players starting new conversations midweek.
+
 ## Build order (when un-tabled)
 
 1. **In-game test:** one edited Hot/Cold, ability, injury and heal, loaded in CFB27 to see what the game honours.

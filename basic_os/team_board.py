@@ -1,5 +1,6 @@
-"""Team Board: an internal, players-only feed in the Locker Room. About 20 posts a week by our own players about the
-last game and how they're feeling, with teammates replying to each other. Separate from the public campus feed.
+"""The players' voices for the WYO Group Chat (group_chat.py stores and paces them): the post-game messages our own
+players send after each game, teammates replying to each other, and their answers when the coach writes to the chat.
+Separate from the public campus feed.
 
 Each player's post is grounded in his real stat line from the last game and his player care mood. Guardrails, because
 most players are real college athletes: football and team topics only (no off-field life, beefs or drama), no made-up
@@ -16,8 +17,8 @@ import roster
 import sentences
 import storylines
 
-POSTS = 12      # first pass: players posting
-REPLIES = 8     # second pass: teammates replying to those posts
+POSTS = 12      # post-game messages (group_chat.py picks the count per game; this is the default)
+REPLIES = 8     # teammates replying to those
 CAST_SIZE = 16
 TEMPERATURE = 0.9
 
@@ -41,10 +42,13 @@ GRADE_WORDS = {"great": "a great game by college football standards", "good": "a
 ANGLES = ["shouts out one teammate by name for something specific", "talks about one play from the game", "looks ahead to the next opponent",
           "talks about practice or film this week", "something funny from the locker room or the bus ride", "how the crowd or the road trip felt",
           "a quick hype post", "his goal for this week"]
+# How players answer the coach: one style each, so four answers don't all read "got it, coach"
+REPLY_STYLES = ["fired up and ready", "hypes up a teammate the coach mentioned (or another one by name)", "a little joke or some banter",
+                "short and serious, all business", "looks ahead to the next opponent", "promises something specific for practice this week"]
 TOO_SIMILAR = 0.6   # a post this close to his previous one is dropped
 
-GUARDRAILS = ("Every player is a man on a men's college football team, so always use he/him/his. This is the team's private, "
-              "internal board, so posts are casual, like teammates texting a group chat: short, lowercase is fine, emojis are fine. "
+GUARDRAILS = ("Every player is a man on a men's college football team, so always use he/him/his. This is the team's private "
+              "group chat, so messages are casual, like teammates texting: short, lowercase is fine, emojis are fine. "
               "Posts are only about football, the last game, practice, teammates, coaches and the next opponent. Never write about "
               "life off the field, relationships, parties, money, NIL deals, rumors, beefs, injuries the facts don't mention, or "
               "anything negative about a named teammate. Only use numbers from the facts. Each player's 'how he feels' note is private to "
@@ -77,7 +81,7 @@ def mood_words(p, tuning):
                 "focus": "a little scattered", "health": "banged up"}[lowest]
     return "in a good place"
 
-def cast(week):
+def cast(week, everyone=False):
     """Who posts: last game's biggest impact players first, then starters and anyone whose mood stands out."""
     tuning = care.load_tuning()
     players = care.load_players() if care.get_state("week") is not None else []
@@ -94,6 +98,8 @@ def cast(week):
                     "starter": p['starter'], "played": bool(stats and stats.get('DOWNSPLAYED')), "mood": mood,
                     "stands_out": mood != "in a good place"})
     out.sort(key=lambda c: (-c['impact'], not c['stands_out'], not c['starter'], c['name']))
+    if everyone:
+        return out
     picked = out[:CAST_SIZE - 4] + [c for c in out[CAST_SIZE - 4:] if c['stands_out'] or not c['played']][:4]  # a few bench and mood voices
     return picked
 
@@ -140,9 +146,10 @@ def assign_angles(people, week):
         c['angle'] = angles[i % len(angles)]
 
 def previous_posts(week):
-    """{save_id: his most recent post from an earlier week}."""
+    """{save_id: his most recent post-game message from an earlier week}."""
     conn = database.get_db_connection()
-    rows = conn.execute("SELECT save_id, text FROM team_board_posts WHERE reply_to IS NULL AND week < ? ORDER BY week, post_id", (week or 0,)).fetchall()
+    rows = conn.execute("SELECT save_id, text FROM chat_messages WHERE kind = 'postgame' AND save_id IS NOT NULL AND week < ? ORDER BY msg_id",
+                        (week or 0,)).fetchall()
     conn.close()
     return {r['save_id']: r['text'] for r in rows}
 
@@ -188,10 +195,24 @@ def parse(raw, names, key="posts"):
     items = data.get(key, []) if isinstance(data, dict) else data
     return [i for i in items if isinstance(i, dict) and i.get('author') in names and (i.get('text') or "").strip()]
 
-def generate(selected_model):
+def clean(text, people, allowed):
     import ai_engine
-    last = database.query_last_played_week()
-    week = last['week_id'] if last else None
+    return drop_td_lengths(scrub(fact_check.drop_invented(ai_engine.strip_tags(text), allowed), people))
+
+def ask(selected_model, prompt, names, key):
+    import ai_engine
+    for _attempt in range(3):
+        try:
+            items = parse(ai_engine.call_ollama(selected_model, prompt, force_json=True, temperature=TEMPERATURE), names, key)
+            if items:
+                return items
+        except Exception:
+            continue
+    return []
+
+def compose(selected_model, week, posts_count=POSTS, replies_count=REPLIES):
+    """The post-game chat for `week`: ([{save_id, text}], [{save_id, text, reply_to: index into the posts}]). Raises
+    RuntimeError when there's nobody to post or the model doesn't answer."""
     people = cast(week)
     if not people:
         raise RuntimeError("No players to post yet: player care starts once the schedule has synced.")
@@ -204,76 +225,68 @@ def generate(selected_model):
     facts = game_facts()
 
     prompt = (f"{GUARDRAILS} Facts: {facts} The players: {roster_text}. "
-              f"Write {POSTS} posts for the Wyoming team board, each by a different player from the list (use the exact name as author). "
-              "Each post fits his own stat line and mood: a big game sounds proud and thanks teammates, a quiet or bench week sounds "
+              f"Write {posts_count} messages for the Wyoming team group chat after the game, each by a different player from the list "
+              "(use the exact name as author). "
+              "Each message fits his own stat line and mood: a big game sounds proud and thanks teammates, a quiet or bench week sounds "
               "humble or hungry, a low mood shows a little in the tone without saying why. Never write the 'how he feels' words themselves. "
-              "Each post follows that player's 'his post this week' angle. A post about his numbers quotes exactly one stat as the "
+              "Each message follows that player's 'his post this week' angle. A message about his numbers quotes exactly one stat as the "
               "facts give it, like '177 rush yards' or '9 tackles'; never combine two stats into one claim, so '30 rec yds, 1 TD' is "
-              "not 'a 30 yard TD'. Vary them: no two posts start or end the same way, never repeat a player's last post, and avoid "
+              "not 'a 30 yard TD'. Vary them: no two start or end the same way, never repeat a player's last post, and avoid "
               "'felt good', 'gotta keep' and thanking the o-line for holes. "
-              'Respond with ONLY JSON: {"posts": [{"author": "Exact Name", "text": "post text"}, ...]}')
-    posts = []
-    for _attempt in range(3):
-        try:
-            posts = parse(ai_engine.call_ollama(selected_model, prompt, force_json=True, temperature=TEMPERATURE), by_name)
-            if posts:
-                break
-        except Exception:
-            continue
-    if not posts:
-        raise RuntimeError("The model didn't return any team board posts. Is Ollama running?")
+              'Respond with ONLY JSON: {"posts": [{"author": "Exact Name", "text": "message text"}, ...]}')
+    raw = ask(selected_model, prompt, by_name, "posts")
+    if not raw:
+        raise RuntimeError("The model didn't return any group chat messages. Is Ollama running?")
     allowed = fact_check.spoken_numbers(prompt)
-    posts = [{"author": p['author'], "text": drop_td_lengths(scrub(fact_check.drop_invented(ai_engine.strip_tags(p['text']), allowed), people))} for p in posts[:POSTS]]
+    posts = [{"author": r['author'], "text": clean(r['text'], people, allowed)} for r in raw[:posts_count]]
     posts = [p for p in posts if p['text'] and not repeats(p['text'], by_name[p['author']].get('previous'))]
 
-    numbered = " ".join(f"[{i}] {p['author']}: {p['text']}" for i, p in enumerate(posts))
-    reply_prompt = (f"{GUARDRAILS} Facts: {facts} The players: {roster_text}. These posts are on the team board: {numbered} "
-                    f"Write {REPLIES} short replies from teammates (a different player than the post's author; any player from the list): "
-                    "hype, jokes, encouragement, the kind of thing teammates say to each other. Replies never mention stats or numbers. "
-                    'Respond with ONLY JSON: {"replies": [{"author": "Exact Name", "reply_to": 0, "text": "reply text"}, ...]}')
     replies = []
-    try:
-        raw = parse(ai_engine.call_ollama(selected_model, reply_prompt, force_json=True, temperature=TEMPERATURE), by_name, "replies")
+    if posts and replies_count:
+        numbered = " ".join(f"[{i}] {p['author']}: {p['text']}" for i, p in enumerate(posts))
+        reply_prompt = (f"{GUARDRAILS} Facts: {facts} The players: {roster_text}. These messages are in the group chat: {numbered} "
+                        f"Write {replies_count} short replies from teammates (a different player than the message's author; any player from the list): "
+                        "hype, jokes, encouragement, the kind of thing teammates say to each other. Replies never mention stats or numbers. "
+                        'Respond with ONLY JSON: {"replies": [{"author": "Exact Name", "reply_to": 0, "text": "reply text"}, ...]}')
         allowed = fact_check.spoken_numbers(reply_prompt)
-        for r in raw:
+        for r in ask(selected_model, reply_prompt, by_name, "replies"):
             target = r.get('reply_to')
             if isinstance(target, int) and 0 <= target < len(posts) and posts[target]['author'] != r['author']:
-                text = scrub(fact_check.drop_invented(ai_engine.strip_tags(r['text']), allowed), people)
+                text = scrub(fact_check.drop_invented(r['text'], allowed), people)
                 if text and not re.search(r"\d", text):   # a reply quoting stats tends to give them to the wrong player
                     replies.append({"author": r['author'], "text": text, "reply_to": target})
-    except Exception:
-        pass   # the posts stand on their own
+    sid = lambda name: by_name[name]['save_id']
+    return ([{"save_id": sid(p['author']), "text": p['text']} for p in posts],
+            [{"save_id": sid(r['author']), "text": r['text'], "reply_to": r['reply_to']} for r in replies[:replies_count]])
 
-    conn = database.get_db_connection()
-    conn.execute("DELETE FROM team_board_posts WHERE week = ?", (week,))
-    ids = []
-    for p in posts:
-        cursor = conn.execute("INSERT INTO team_board_posts (week, save_id, text) VALUES (?, ?, ?)", (week, by_name[p['author']]['save_id'], p['text']))
-        ids.append(cursor.lastrowid)
-    for r in replies[:REPLIES]:
-        conn.execute("INSERT INTO team_board_posts (week, save_id, text, reply_to) VALUES (?, ?, ?, ?)",
-                     (week, by_name[r['author']]['save_id'], r['text'], ids[r['reply_to']]))
-    conn.commit()
-    conn.close()
-    return build_page()
-
-def build_page():
-    """The newest week's board: posts in order, each with its replies."""
-    conn = database.get_db_connection()
-    row = conn.execute("SELECT MAX(week) AS week FROM team_board_posts").fetchone()
-    week = row['week'] if row else None
-    rows = [dict(r) for r in conn.execute("SELECT * FROM team_board_posts WHERE week IS ? ORDER BY post_id", (week,)).fetchall()] if week is not None else []
-    conn.close()
-    people = {p['save_id']: p for p in roster.query_full_roster() if p.get('save_id')}
-    def author(save_id):
-        p = people.get(save_id) or {}
-        return {"save_id": save_id, "name": p.get('player_name', "A teammate"), "position": p.get('position', ""),
-                "jersey": p.get('jersey_num'), "portrait": media.portrait_url("player", p.get('portrait_file'))}
-    posts = [{"id": r['post_id'], "author": author(r['save_id']), "text": r['text'], "replies": []} for r in rows if not r['reply_to']]
-    by_id = {p['id']: p for p in posts}
-    for r in rows:
-        if r['reply_to'] in by_id:
-            by_id[r['reply_to']]['replies'].append({"author": author(r['save_id']), "text": r['text']})
-    return {"week": week, "posts": posts, "count": len(rows)}
+def answer(selected_model, coach_text, responder_ids, history):
+    """Replies from `responder_ids` (in that order) to the coach's message. history: recent chat lines, oldest first.
+    Returns [{save_id, text}]."""
+    import ai_engine
+    last = database.query_last_played_week()
+    people = [c for c in cast(last['week_id'] if last else None, everyone=True) if c['save_id'] in responder_ids]
+    people.sort(key=lambda c: responder_ids.index(c['save_id']))
+    if not people:
+        return []
+    by_name = {c['name']: c for c in people}
+    styles = random.Random(coach_text).sample(REPLY_STYLES, len(REPLY_STYLES))
+    for i, c in enumerate(people):
+        c['angle'] = styles[i % len(styles)]   # each answer a different way, so it isn't "got it coach" four times
+        c['previous'] = None
+    roster_text = "; ".join(describe(c) for c in people)
+    prompt = (f"{GUARDRAILS} Facts: {game_facts()} Recent group chat: {' | '.join(history[-12:]) or '(quiet)'} "
+              f"Coach just wrote to the whole team: \"{coach_text}\" "
+              f"The players answering, in this order: {roster_text}. Write one short reply from each of them to the coach, in order. "
+              "They answer what he actually said, in their own voice and mood, respectfully but casually (it's still the head coach). "
+              "If he called someone out by name, that player answers first. Each reply follows that player's 'his post this week' style "
+              "and picks up something specific the coach said (a name, the opponent, the plan). No two replies start the same way; "
+              "never 'got it', 'will do' or 'appreciate it'. Replies never mention stats or numbers. "
+              'Respond with ONLY JSON: {"replies": [{"author": "Exact Name", "text": "reply text"}, ...]}')
+    out = []
+    for r in ask(selected_model, prompt, by_name, "replies"):
+        text = scrub(ai_engine.strip_tags(r['text']), people)
+        if text and not re.search(r"\d", text) and r['author'] not in [o['author'] for o in out]:
+            out.append({"author": r['author'], "text": text})
+    return [{"save_id": by_name[o['author']]['save_id'], "text": o['text']} for o in out[:len(people)]]
 
 initialize_tables()

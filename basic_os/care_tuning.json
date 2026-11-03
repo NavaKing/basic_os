@@ -293,5 +293,39 @@
         "press": "the program has declined to comment"
       }
     }
+  },
+  "chat": {
+    "_about": "The WYO Group Chat on the phone. After a game the players' messages arrive one at a time: the first after first_delay seconds, the rest every delay seconds (random in the range), with a burst_pause after every burst_max. When the coach writes, responders players answer (one while he posts faster than cooldown_seconds). rally_morale lifts everyone once a week when he writes; shoutout_morale lifts a player he names (once a week each).",
+    "postgame_messages": 12,
+    "postgame_after_loss": 8,
+    "postgame_after_big_win": 15,
+    "replies_per_message": 0.5,
+    "first_delay": [
+      2,
+      6
+    ],
+    "delay": [
+      15,
+      45
+    ],
+    "burst_max": 5,
+    "burst_pause": 75,
+    "typing_seconds": 4,
+    "responders": [
+      2,
+      4
+    ],
+    "cooldown_seconds": 30,
+    "answer_first_delay": [
+      3,
+      7
+    ],
+    "answer_delay": [
+      5,
+      14
+    ],
+    "rally_morale": 2,
+    "shoutout_morale": 5,
+    "retry_seconds": 120
   }
 }
