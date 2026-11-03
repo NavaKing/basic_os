@@ -79,10 +79,28 @@ function row(p, data) {
            '</li>';
 }
 
+function incidentCards(data) {
+    if (!data.incidents.length) return '';
+    return '<h3 class="care-section care-section--low">Off the field: respond this week</h3>' +
+        '<p class="muted care-note">If the week moves on without a response, he loses trust and morale.</p>' +
+        '<ol class="care-incidents">' + data.incidents.map(i =>
+            '<li class="care-incident">' +
+                '<div class="care-email-head"><strong>' + esc(i.title) + ': ' + esc(i.name) + ' <span class="care-meta">' + esc(i.position) + '</span></strong>' +
+                    '<span class="care-meta">Week ' + esc(i.week) + '</span></div>' +
+                '<p class="care-email-body">' + esc(i.text) + '</p>' +
+                '<div class="care-act-row">' + i.responses.map(r =>
+                    '<button type="button" class="btn-secondary care-action" data-incident="' + i.incident_id + '" data-response="' + r.key + '"' +
+                        (r.hours > data.hours ? ' disabled title="Not enough hours left this week"' : '') + '>' +
+                        '<span class="care-action-name">' + esc(r.label) + '</span><span class="care-action-effect">' + esc(r.effect) + ' &middot; ' +
+                        (r.hours ? r.hours + 'h' : 'free') + '</span></button>').join('') + '</div>' +
+            '</li>').join('') + '</ol>';
+}
+
 function weekTab(data) {
     const g = data.groups;
     const warnings = [...g.now, ...g.close, ...g.fine].reduce((n, p) => n + p.warnings.length, 0);
     const chips = [];
+    if (data.incidents.length) chips.push('<span class="care-chip care-chip--low">' + data.incidents.length + ' incident' + (data.incidents.length > 1 ? 's' : '') + ' to handle</span>');
     if (warnings) chips.push('<span class="care-chip care-chip--low">&#9888; ' + warnings + ' warning sign' + (warnings > 1 ? 's' : '') + '</span>');
     chips.push('<span class="care-chip' + (g.now.length ? ' care-chip--low' : '') + '">' + g.now.length + ' need you now</span>');
     chips.push('<span class="care-chip' + (g.close.length ? ' care-chip--watch' : '') + '">' + g.close.length + ' getting close</span>');
@@ -94,6 +112,7 @@ function weekTab(data) {
            '</div>' +
            '<p class="muted care-note">Click a player to see all five needs and help. Hours refill when the save moves to the next week. ' +
                '&#9660; and &#9650; show how the last weekly update moved a need: the weekly drain, plus any lift from a big game.</p>' +
+           incidentCards(data) +
            '<h3 class="care-section care-section--low">Needs you now</h3>' +
            '<p class="muted care-note">A need under ' + data.low_need + ', or a warning sign.</p>' +
            list(g.now, 'Nobody is in the red.') +
@@ -191,7 +210,7 @@ function verdict(r) {
 }
 
 function simTable(r) {
-    const rows = [['Warning signs shown', 'warning_signs'], ['Weeks players spent in the red, added up', 'player_weeks_with_a_low_need'],
+    const rows = [['Warning signs shown', 'warning_signs'], ['Incidents expected', 'incidents_expected'], ['Weeks players spent in the red, added up', 'player_weeks_with_a_low_need'],
                   ['Players in the red at the end', 'players_with_a_low_need'], ['Average need', 'average_need'],
                   ['Players you cared for', 'players_cared_for'], ['Their average trust', 'trust_of_players_cared_for']];
     return '<table class="care-sim"><thead><tr><th></th><th>Ignore</th><th>Care</th></tr></thead><tbody>' +
@@ -216,7 +235,7 @@ function render(body, data) {
         return;
     }
     const count = data.groups.now.length;
-    const badges = { week: count, phone: data.unread.texts, inbox: data.unread.emails };
+    const badges = { week: count + data.incidents.length, phone: data.unread.texts, inbox: data.unread.emails };
     const tabs = '<div class="care-tabs" role="tablist">' + TABS.map(([key, label]) =>
         '<button type="button" role="tab" class="care-tab' + (ui.tab === key ? ' is-active' : '') + '" data-care-tab="' + key + '" aria-selected="' + (ui.tab === key) + '">' +
             esc(label) + (badges[key] ? ' <span class="care-badge">' + badges[key] + '</span>' : '') + '</button>').join('') + '</div>';
@@ -241,9 +260,9 @@ export function initCare() {
     const button = document.getElementById('care_open');
     // Texts and emails waiting, on the tab bar's Care button
     const badge = unread => {
-        const total = unread.texts + unread.emails;
+        const total = unread.texts + unread.emails + (unread.incidents || 0);
         button.innerHTML = 'Care' + (total ? ' <span class="care-badge">' + total + '</span>' : '');
-        button.title = total ? unread.texts + ' text(s) and ' + unread.emails + ' email(s) waiting' : '';
+        button.title = total ? (unread.incidents ? unread.incidents + ' incident(s), ' : '') + unread.texts + ' text(s) and ' + unread.emails + ' email(s) waiting' : '';
     };
     fetch('/care/unread').then(res => res.json()).then(badge).catch(() => {});
     const show = next => {
@@ -286,6 +305,7 @@ export function initCare() {
         const unpair = event.target.closest('[data-mentor-off]');
         const answer = event.target.closest('[data-reply]');
         const email = event.target.closest('[data-email]');
+        const incident = event.target.closest('[data-incident]');
         if (tab) {
             ui.tab = tab.dataset.careTab;
             setStatus(status, '');
@@ -305,6 +325,8 @@ export function initCare() {
             await post('council', { save_id: on.dataset.councilOn, on: true });
         } else if (off) {
             await post('council', { save_id: off.dataset.councilOff, on: false });
+        } else if (incident) {
+            await post('incident', { incident_id: Number(incident.dataset.incident), response: incident.dataset.response });
         } else if (answer) {
             await post('reply', { message_id: Number(answer.dataset.reply), choice: answer.dataset.choice });
         } else if (email) {

@@ -396,7 +396,7 @@ def advance(week):
         set_state("hours", tuning['hours'])
         log(week, None, "start", f"Player care starts in Week {week}: every player begins with needs around {tuning['start_need']}.")
         return
-    import care_messages
+    import care_incidents, care_messages
     last = int(last)
     for w in range(last + 1, week + 1):
         players = load_players()
@@ -408,7 +408,9 @@ def advance(week):
             p['game'] = games.get(p['save_id'], {"played": False, "standout": False, "award": None}) if games else None
         before = {p['save_id']: dict(p['needs']) for p in players}
         events = care_messages.close_week(players, w, tuning)   # texts left on read
+        events += care_incidents.close_week(players, w, tuning)   # incidents nobody answered
         events += run_week(players, ctx, tuning, council_ids(), mentor_map(), rng)
+        events += care_incidents.roll(players, w, ctx, tuning, rng)
         for save_id, kind, text in events:
             log(w, save_id, kind, text)
         for p in players:   # what the week did to each need, before the coach steps in ("Morale 31, down 8")
@@ -490,7 +492,8 @@ def simulate(weeks=12, policy="care", preset=None):
     players = [{**p, "needs": start_needs(p['save_id'], tuning), "trust": tuning['start_trust'], "warnings": []} for p in roster_players()]
     council = [p['save_id'] for p in sorted(players, key=lambda p: (p['class'] != "Senior", -p['overall']))[:2]] if policy == "care" else []
     rng_seed = random.Random(7)
-    warnings = low_weeks = 0
+    import care_incidents
+    warnings = low_weeks = incidents = 0
     cared_for = set()
     for w in range(1, weeks + 1):
         ctx = {"week": w, "exam": w in tuning['calendar']['exam_weeks'], "away": w % 2 == 0, "week_of_year": (35 + w) % 52}
@@ -505,6 +508,10 @@ def simulate(weeks=12, policy="care", preset=None):
         care_list = pick_care_list(players, ctx, tuning, council)
         events = run_week(players, ctx, tuning, council, {}, lambda key, w=w: random.Random(f"sim-{w}-{key}"))
         warnings += sum(1 for _, kind, _ in events if kind == "warning")
+        none = 1.0
+        for p in players:
+            none *= 1 - care_incidents.incident_chance(p, ctx, tuning)
+        incidents += 1 - none   # the chance of an incident this week (at most one a week): adds up to the expected count
         low_weeks += sum(1 for p in players if min(p['needs'].values()) < tuning['low_need'])
         if policy == "care":
             hours = tuning['hours']
@@ -521,7 +528,7 @@ def simulate(weeks=12, policy="care", preset=None):
                 hours -= cost
                 cared_for.add(save_id)
     lows = [p for p in players if min(p['needs'].values()) < tuning['low_need']]
-    return {"preset": tuning['preset'], "policy": policy, "weeks": weeks, "warning_signs": warnings, "player_weeks_with_a_low_need": low_weeks,
+    return {"preset": tuning['preset'], "policy": policy, "weeks": weeks, "warning_signs": warnings, "incidents_expected": round(incidents, 1), "player_weeks_with_a_low_need": low_weeks,
             "players_with_a_low_need": len(lows), "average_need": round(sum(sum(p['needs'].values()) / len(NEEDS) for p in players) / len(players), 1),
             "average_trust": round(sum(p['trust'] for p in players) / len(players), 1),
             "players_cared_for": len(cared_for),
@@ -535,7 +542,7 @@ def current_week():
     return game['week_id'] if game else None
 
 def dashboard():
-    import care_messages
+    import care_incidents, care_messages
     tuning = load_tuning()
     if get_state("week") is None:
         advance(current_week())  # first look: set the roster up
@@ -595,7 +602,8 @@ def dashboard():
                          key=lambda p: (p['position'], p['name'])),
         "log": league.query_rows("SELECT week, kind, text FROM care_log ORDER BY log_id DESC LIMIT 40"),
         "phone": care_messages.phone_view(week, by_id), "inbox": care_messages.inbox_view(),
-        "unread": dict(zip(("texts", "emails"), care_messages.unread())),
+        "incidents": care_incidents.open_incidents(tuning),
+        "unread": {**dict(zip(("texts", "emails"), care_messages.unread())), "incidents": care_messages.open_incident_count()},
     }
 
 # ---------- Campus feed mood ring ----------

@@ -222,14 +222,17 @@ def generate_dynasty_content(selected_model, storyline_context="", player_lines=
     headline = f"CURRENT WEEK FOCUS: Preparing for Week {active_stats['week_id']} against {active_stats['opponent_name']}."
     us = team.user_team()
     scouting = f" Scouting report on the opponent (use only these facts about them): {scouting_context}" if scouting_context else ""
-    import rivals, presser
+    import rivals, presser, care_incidents
     rivalry = rivals.prompt_context()
     presser_quotes = presser.dispatch_context()
+    off_field = care_incidents.prompt_context()
 
     # Generate main article
     article_prompt = f"IMPORTANT: every player is a man on a men's college football team, so always use he/him/his for players, whatever their first name. Write an immersive 3-sentence game dispatch layout entry. Sentence 1 must summarize the dramatic outcome from the PREVIOUS game: {prev_context}. Sentences 2 and 3 must pivot directly into the game preparation strategy for the UPCOMING matchup: {headline} using {us['identity']}.{scouting}{rivalry}{presser_quotes} Do not output raw code strings or brackets."
     if storyline_context:
         article_prompt += f" Ongoing player storylines on the team: {storyline_context} Work a brief nod to one of these storylines into sentence 3, referring to players by name and position."
+    if off_field:
+        article_prompt += off_field + " Mention it briefly and respectfully in sentence 2 or 3."
 
     try:
         progress.step("Writing the dispatch")
@@ -258,6 +261,8 @@ def generate_dynasty_content(selected_model, storyline_context="", player_lines=
     mood = care.mood_context()
     if mood:
         plan.append("One of the remaining posts is campus chatter, from a student or campus account, about how a player seems lately. " + mood)
+    if off_field:
+        plan.append("One of the remaining posts reacts to the off-field news, respectfully." + off_field)
     plan.append(f"The remaining posts hype the upcoming Week {active_stats['week_id']} game vs {active_stats['opponent_name']}.")
     plan.append(f"Exactly {PHOTO_TWEETS} posts include a photo: give only those posts a \"photo\" field with one vivid sentence describing what the photo shows (the scene, people, action and setting). The other posts have no photo field.")
     tweet_prompt = (

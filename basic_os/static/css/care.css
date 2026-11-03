@@ -110,6 +110,10 @@
 .care-bubble--me { align-self: flex-end; background: var(--gold-soft); color: var(--gold); border-bottom-right-radius: 4px; }
 .care-missed { align-self: flex-end; font-style: italic; }
 
+/* Incidents waiting for a response (top of This week) */
+.care-incidents { list-style: none; margin: 0 0 6px; padding: 0; display: grid; gap: 10px; }
+.care-incident { padding: 12px 14px; border: 1px solid var(--care-low); border-radius: 8px; background: rgba(224, 122, 122, 0.06); }
+
 /* Inbox */
 .care-email-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; color: #fff; }
 .care-email-body { margin: 6px 0 8px; font-size: 13px; line-height: 1.5; color: var(--text); }
@@ -121,3 +125,11 @@
     .care-row-body { padding-left: 8px; }
     .care-need { grid-template-columns: 80px 1fr 26px 30px; }
 }
+
+/* Locker Room: the off-field panel */
+.off-field { margin-top: 18px; }
+.off-field-list { list-style: none; margin: 0 0 10px; padding: 0; font-size: 13px; line-height: 1.5; }
+.off-field-list li { padding: 6px 0; border-bottom: 1px solid var(--border-soft); }
+.off-field-week { display: inline-block; min-width: 44px; color: var(--gold); font-size: 12px; }
+.off-field-sub { margin: 10px 0 4px; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: var(--text-dim); }
+.off-field-note { margin: 0; font-size: 12px; }

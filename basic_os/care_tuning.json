@@ -210,5 +210,88 @@
         }
       }
     }
+  },
+  "incidents": {
+    "_about": "Off-field incidents (app-only). Each week every player rolls base_chance x (1 + weights for each low need and open warning sign) x persona, star, big win, trust and counseling; at most one incident a week for the team. Aim: about 1-3 a season, more under neglect.",
+    "base_chance": 0.0008,
+    "low_need_weight": 5,
+    "low_focus_weight": 10,
+    "warning_weight": 3,
+    "undisciplined": 1.6,
+    "disciplined": 0.6,
+    "star": 1.3,
+    "big_win": 1.5,
+    "trust_relief": 0.6,
+    "max_chance": 0.08,
+    "serious_weight": 0.5,
+    "counseling_factor": 0.5,
+    "counseling_weeks": 6,
+    "unanswered_trust": 6,
+    "unanswered_morale": 10,
+    "protect_break_chance": 0.4,
+    "story_breaks_morale": 10,
+    "responses": {
+      "support": {
+        "label": "Support him",
+        "hours": 2,
+        "needs": {
+          "morale": 15,
+          "home": 10
+        },
+        "trust": 6,
+        "effect": "Morale +15, Home life +10, trust +6",
+        "outcome": "{name} has the coach's full support.",
+        "press": "he has the staff's full support"
+      },
+      "counseling": {
+        "label": "Counseling",
+        "hours": 2,
+        "needs": {
+          "focus": 10,
+          "morale": 5
+        },
+        "trust": 3,
+        "clears_warnings": true,
+        "effect": "Focus +10, Morale +5, trust +3, lower risk for 6 weeks",
+        "outcome": "{name} starts weekly sessions with a counselor.",
+        "press": "he is working with the team's counselors"
+      },
+      "discipline": {
+        "label": "Discipline",
+        "hours": 1,
+        "needs": {
+          "focus": 15,
+          "morale": -5
+        },
+        "trust": -2,
+        "clears_warnings": true,
+        "only_for_misconduct": true,
+        "effect": "Focus +15, Morale -5, trust -2",
+        "outcome": "Extra conditioning and a talk about standards for {name}.",
+        "press": "it was handled internally"
+      },
+      "suspend": {
+        "label": "Suspend him",
+        "hours": 0,
+        "needs": {
+          "focus": 10,
+          "morale": -10
+        },
+        "trust": -3,
+        "only_for_misconduct": true,
+        "effect": "Focus +10, Morale -10, trust -3 (sit him yourself on the depth chart)",
+        "outcome": "{name} is suspended for the next game. (App-only: sit him on your depth chart if you want it to count.)",
+        "press": "he is suspended for the next game"
+      },
+      "protect": {
+        "label": "Keep it quiet",
+        "hours": 1,
+        "needs": {},
+        "trust": 3,
+        "effect": "trust +3, stays out of the press (it may still get out)",
+        "outcome": "Kept {name}'s situation out of the press for now.",
+        "press": "the program has declined to comment"
+      }
+    }
   }
 }

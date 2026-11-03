@@ -29,6 +29,7 @@ import printing
 import games
 import care
 import care_messages
+import care_incidents
 import os
 from urllib.parse import urlsplit
 from flask import Flask, Response, render_template, request, jsonify, send_from_directory, abort, url_for
@@ -193,6 +194,7 @@ def home():
         depth_chart=depth_chart,
         positions=positions,
         storylines=storylines.query_storylines(),
+        off_field=care_incidents.locker_room(),
         recap_weeks=recap.available_weeks(),
         recap=recap.build_recap(recap.default_week()) if recap.default_week() is not None else None,
         sync_status=sync_status,
@@ -472,7 +474,7 @@ def care_dashboard():
 @app.route('/care/unread')
 def care_unread():
     texts, emails = care_messages.unread()
-    return jsonify({"texts": texts, "emails": emails})
+    return jsonify({"texts": texts, "emails": emails, "incidents": care_messages.open_incident_count()})
 
 @app.route('/care/<action>', methods=['POST'])
 def care_action(action):
@@ -490,6 +492,8 @@ def care_action(action):
             return jsonify(care_messages.reply(int(body.get('message_id') or 0), body.get('choice')))
         if action == "email":
             return jsonify(care_messages.email_action(int(body.get('email_id') or 0), body.get('action')))
+        if action == "incident":
+            return jsonify(care_incidents.respond(int(body.get('incident_id') or 0), body.get('response')))
         if action == "simulate":
             return jsonify({policy: care.simulate(int(body.get('weeks') or 12), policy, body.get('preset')) for policy in ("ignore", "care")})
     except ValueError as e:
