@@ -32,10 +32,10 @@ class LocalOnly(unittest.TestCase):
             from flask import url_for
             css = url_for('static', filename='css/base.css')
         self.assertRegex(css, r"^/static/css/base\.css\?v=\d+$")
-        cached = self.client.get(css, headers={"Host": "127.0.0.1:5000"})
-        self.assertEqual(cached.headers["Cache-Control"], "public, max-age=31536000, immutable")
-        plain = self.client.get("/static/js/utils.js", headers={"Host": "127.0.0.1:5000"})
-        self.assertNotIn("max-age=31536000", plain.headers.get("Cache-Control", ""))  # imported modules keep revalidating
+        with self.client.get(css, headers={"Host": "127.0.0.1:5000"}) as cached:
+            self.assertEqual(cached.headers["Cache-Control"], "public, max-age=31536000, immutable")
+        with self.client.get("/static/js/utils.js", headers={"Host": "127.0.0.1:5000"}) as plain:
+            self.assertNotIn("max-age=31536000", plain.headers.get("Cache-Control", ""))  # imported modules keep revalidating
 
     def test_debug_is_off(self):
         self.assertFalse(app.debug)

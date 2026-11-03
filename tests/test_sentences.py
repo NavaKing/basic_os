@@ -24,7 +24,8 @@ class Split(unittest.TestCase):
 
     @unittest.skipUnless(shutil.which("node"), "needs Node.js")
     def test_javascript_matches(self):
-        source = open(os.path.join(APP_DIR, "static", "js", "stories.js"), encoding="utf-8").read()
+        with open(os.path.join(APP_DIR, "static", "js", "stories.js"), encoding="utf-8") as f:
+            source = f.read()
         pattern = re.search(r"const SENTENCE_END = (/.+/);", source).group(1)
         script = f"console.log(JSON.stringify({TEXT!r}.split({pattern})))"
         result = subprocess.run(["node", "-e", script], capture_output=True, text=True)

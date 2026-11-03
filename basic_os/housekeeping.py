@@ -47,6 +47,21 @@ def compact_scoring():
     conn.close()
     return len(rows)
 
+VACUUM_FREE_BYTES = 1024 * 1024
+
+def vacuum():
+    """Gives free space inside the database back to the disk (SQLite keeps it after rows shrink or go) once it's
+    over a megabyte. Returns the megabytes reclaimed (rounded), 0 when not worth it."""
+    conn = database.get_db_connection()
+    try:
+        free = conn.execute("PRAGMA freelist_count").fetchone()[0] * conn.execute("PRAGMA page_size").fetchone()[0]
+        if free < VACUUM_FREE_BYTES:
+            return 0
+        conn.execute("VACUUM")
+        return round(free / (1024 * 1024))
+    finally:
+        conn.close()
+
 def run():
     """All upkeep steps; returns {step: count} for the ones that did something."""
     import podcast  # also makes sure every table the steps update exists
@@ -54,4 +69,5 @@ def run():
     done = {"photos converted to WebP": convert_photos(), "backups compressed": backups.compress_old_backups(),
             "duplicate podcast MP3s removed": podcast.drop_joined_copies(), "logos shrunk": shrink_logos(),
             "scoring summaries compacted": compact_scoring()}
+    done["MB returned to the disk from the database"] = vacuum()  # last, after the steps that shrink rows
     return {step: count for step, count in done.items() if count}

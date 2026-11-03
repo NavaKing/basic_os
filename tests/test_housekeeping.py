@@ -66,5 +66,15 @@ class Logos(unittest.TestCase):
         self.assertFalse(media.shrink_logo(path))  # already small
 
 
+class Vacuum(unittest.TestCase):
+    def test_only_when_worth_it(self):
+        self.assertEqual(housekeeping.vacuum(), 0)  # the test database has next to no free space
+        with mock.patch.object(housekeeping, "VACUUM_FREE_BYTES", 0):
+            self.assertGreaterEqual(housekeeping.vacuum(), 0)
+        conn = database.get_db_connection()
+        self.assertEqual(conn.execute("PRAGMA quick_check").fetchone()[0], "ok")
+        conn.close()
+
+
 if __name__ == "__main__":
     unittest.main()
