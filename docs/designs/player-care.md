@@ -378,6 +378,12 @@ App-only. The code is in `basic_os/care_incidents.py`, and the dials are under `
   - Question: they answer it.
   - Plain: the usual styles.
   - A reply that copies a line or joke already in the recent chat is dropped.
+- **Depth chart awareness:**
+  - A spot ("QB1", "rb1") or a position group ("the o-line", "receivers", "secondary") counts as naming those
+    players, so they answer first. "QB" alone means the starter.
+  - The answers are given the real depth chart starters, so "who's my QB1" gets the right name.
+  - A correction ("no more interceptions") is owned seriously by that player, and nobody laughs.
+  - Once one player answers a question, the others add something of their own instead of repeating it.
 - **Still to come:** free-text replies in the one-on-one threads, and players starting new conversations midweek.
 
 ## Build order (when un-tabled)
