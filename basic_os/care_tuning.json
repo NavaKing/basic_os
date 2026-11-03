@@ -1,0 +1,143 @@
+{
+  "_about": "Player care dials. Every number the care game uses lives here; edit and restart the app. Needs and trust run 0-100. Each week every need drains (base + modifiers, x the player's temperament x drain_scale) and the support staff pulls it staff_rate of the way back toward staff_target, so a player with no extra stress settles near staff_target - drain / staff_rate and only stressed players sink low; the coach's hours fill the rest.",
+  "preset": "Relaxed",
+  "presets": {
+    "Relaxed": {
+      "hours": 12,
+      "drain_scale": 0.8,
+      "staff_target": 70,
+      "staff_rate": 0.22,
+      "warning_chance": 0.001
+    },
+    "Normal": {
+      "hours": 10,
+      "drain_scale": 1.0,
+      "staff_target": 67,
+      "staff_rate": 0.2,
+      "warning_chance": 0.001
+    },
+    "Demanding": {
+      "hours": 8,
+      "drain_scale": 1.2,
+      "staff_target": 69,
+      "staff_rate": 0.22,
+      "warning_chance": 0.002
+    }
+  },
+  "start_need": 70,
+  "start_trust": 30,
+  "care_list_size": 10,
+  "low_need": 35,
+  "drain": {
+    "morale": 5,
+    "academics": 4,
+    "home": 4,
+    "focus": 5,
+    "health": 4
+  },
+  "drain_modifiers": {
+    "loss_morale": 4,
+    "win_morale": -3,
+    "backup_rated_like_a_starter_morale": 4,
+    "starter_health": 3,
+    "injured_health": 6,
+    "injured_morale": 3,
+    "exam_week_academics": 5,
+    "away_game_academics": 2,
+    "out_of_state_home": 1,
+    "far_from_home_home": 2,
+    "holiday_week_home": 5,
+    "undisciplined_focus": 4,
+    "disciplined_focus": -3,
+    "star_focus": 2,
+    "big_win_focus": 4
+  },
+  "actions": {
+    "text": {
+      "label": "Text",
+      "hours": 1,
+      "fill": 10,
+      "trust": 2
+    },
+    "call": {
+      "label": "Call",
+      "hours": 2,
+      "fill": 20,
+      "trust": 4
+    },
+    "sit_down": {
+      "label": "Sit-down",
+      "hours": 3,
+      "fill": 35,
+      "trust": 8,
+      "focus_bonus": 10,
+      "clears_warnings": true
+    },
+    "home_visit": {
+      "label": "Home visit",
+      "hours": 5,
+      "fill": 50,
+      "trust": 12,
+      "fills": [
+        "home",
+        "morale"
+      ]
+    },
+    "council": {
+      "label": "Ask a captain",
+      "hours": 1,
+      "fill": 15,
+      "trust": 0,
+      "captain_trust": 1
+    },
+    "position_coach": {
+      "label": "Position coach",
+      "hours": 1,
+      "fill": 12,
+      "trust": 0
+    }
+  },
+  "birthday_trust_bonus": 5,
+  "council": {
+    "max": 4,
+    "low_morale": 30,
+    "team_morale_drain": 2
+  },
+  "mentor": {
+    "drain_factor": 0.7,
+    "bad_pair_focus_factor": 1.2,
+    "mentor_trust_per_week": 1
+  },
+  "senior_day_morale": 10,
+  "calendar": {
+    "exam_weeks": [
+      7,
+      8,
+      14
+    ],
+    "holiday_dates": [
+      [
+        "11-22",
+        "11-29"
+      ],
+      [
+        "12-20",
+        "01-02"
+      ]
+    ]
+  },
+  "warning": {
+    "low_need_chance": 0.12,
+    "low_focus_chance": 0.06,
+    "undisciplined": 1.5,
+    "disciplined": 0.6,
+    "star": 1.2,
+    "big_win": 1.3,
+    "trust_relief": 0.7,
+    "max_chance": 0.6
+  },
+  "temperament_spread": 0.4,
+  "start_spread": 12,
+  "trust_drain_relief": 0.5,
+  "homesick_below": 50
+}

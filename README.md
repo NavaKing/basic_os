@@ -36,6 +36,7 @@ download and the podcast voices.
 | **Box scores** | Click a played game in a schedule (Game Day or any team page) for the line score, both teams' stats side by side (first downs, yards, third and fourth downs, red zone, turnovers, sacks, penalties, possession), each team's top performers and the scoring plays when the app captured them. A week's player stats appear once the save moves on to the next week. |
 | **Player profiles** | Click a player's name (depth chart, recap, Heisman race, team pages, All-America cards, offseason lists) for his profile: hometown and recruiting stars, size, depth chart spot and development trait for our players, season totals, a game-by-game log, honors (All-America picks, Players of the Week, Heisman rank), and for our players the storylines and campus-feed photos he's been in. |
 | **Finish notifications** | Long jobs (the hub generator, podcast episodes and recordings, screenshot reading, coach quotes, the game plan and the Heisman, recruiting and rivalry columns) announce when they finish or fail: a toast in the page, plus a desktop notification and a note in the tab title when you're in another tab or window. The browser asks once whether notifications are allowed. |
+| **Player care** | The Care button in the tab bar opens a care game for your roster. Every player has five needs (morale, academics, home life, focus, health/rest) and trust in you. Each week, needs drain with the season (losses, injuries, being stuck behind a starter, exam weeks, holidays far from home, a big win going to heads), while the support staff pull them part of the way back. The care list shows the ten players who most need you, and your coach hours (12/10/8 a week by difficulty) buy texts, calls, sit-downs, home visits or a word from a captain or position coach. Players with low needs show warning signs. Name a leadership council of 2-4 captains and pair younger players with mentors. A simulator compares a made-up 12 weeks of ignoring everyone against caring. All dials live in `basic_os/care_tuning.json`; for now it's app-only, nothing is written to the save. |
 | **Backups** | The Backups button in the tab bar makes, downloads, restores and deletes copies of the app's database (stories, storylines, podcasts, quotes, game plans, captured scoring summaries and your edits). One is made automatically before every save sync (the last 10 are kept), and restoring first backs up what you have, so it can be undone. Upload a downloaded backup to move your dynasty to another PC. |
 
 ---
@@ -153,6 +154,7 @@ basic_os/
   gameplan.py coaches.py coaches tab: game plan and coach news
   events.py podcast.py   screenshot reading and the weekly podcast
   progress.py            live progress for long generations
+  care.py care_tuning.json  player care: needs, trust, care list, council, mentors, simulator
   templates/             base, partials, one template per tab
   static/css, static/js  one stylesheet and ES module per component
 ```

@@ -212,6 +212,44 @@ The balance will take tuning over time, so the system is built for it from day o
 6. Can incidents happen in the offseason (summer, spring break)?
 7. Should big-moment spikes also hit other teams (league news), or only us?
 
+## Iteration 1 (built on feature/player-care)
+
+App-only: nothing is written to the save. The Care button in the tab bar opens the care window.
+
+- **Needs and trust.** Five needs, 0-100, plus trust. Starting needs vary around 70 per player. Each player has a
+  stable *temperament* (each need drains 0.6x-1.4x), so one gets homesick easily and another loses focus first.
+- **The weekly model.** Each need drains by base + modifiers, scaled by temperament, difficulty and trust (a player
+  who trusts the coach drains up to half as fast). The support staff then pull it `staff_rate` of the way back to
+  `staff_target`. A player with no extra stress settles around the middle; only stressed players sink below the
+  low line (35). This replaced a flat drain, which sent the whole roster to zero together and made care pointless.
+- **Warning signs** come almost only from low needs: about 12% a week for each low need (Focus counts extra),
+  times persona, big wins and trust. A player whose needs are fine almost never shows one.
+- **Coach hours and the care list.** The ten most urgent players each week (lowest need, warnings, birthdays,
+  slightly weighted to starters). Actions: Text 1h, Call 2h, Sit-down 3h (clears warnings), Home visit 5h
+  (home and morale), Ask a captain 1h, Position coach 1h.
+- **Addition 1, leadership council:** 2-4 captains, with suggestions (upperclassmen by rating). "Ask a captain"
+  needs one. A captain with morale under 30 drains everyone's morale.
+- **Addition 2, life calendar:** exam weeks (7, 8, 14), holiday weeks, senior day (last home game), away games,
+  last week's result, and big wins over ranked teams or rivals. App-assigned birthdays give trust bonuses.
+- **Addition 3, mentorship pairs:** a good mentor slows the mentee's morale and focus drain and gains trust. An
+  undisciplined or unfocused mentor makes focus drain faster.
+- **Addition 4, campus feed as a mood ring:** *not built yet.* It needs changes to the hub generator's tweet
+  prompts. Next iteration.
+- **Tuning:** `basic_os/care_tuning.json` holds every dial. The simulator (12 made-up weeks, ignore vs care)
+  currently reports, for the real roster:
+
+  | Preset | Warnings, ignore | Warnings, care | Player-weeks with a low need, ignore | Player-weeks with a low need, care |
+  |---|---|---|---|---|
+  | Relaxed | 1 | 1 | 5 | 0 |
+  | Normal | 19 | 16 | 136 | 86 |
+  | Demanding | 36 | 29 | 249 | 187 |
+
+  Care cuts time spent struggling by about a third on Normal. One coach can't reach 85 players, which is the
+  point: the council, mentors and the position coach extend reach.
+- **Save facts found along the way:** none of Wyoming's 85 players currently carry the Disciplined/Undisciplined
+  persona traits (about 430 players league-wide do), so those rules wait until one joins. Hot/Cold today:
+  1 Hot, 2 Cold.
+
 ## Build order (when un-tabled)
 
 1. **In-game test:** one edited Hot/Cold, ability, injury and heal, loaded in CFB27 to see what the game honours.

@@ -59,6 +59,8 @@ try {
   const playerId = (player) => `${playerTable.header.tableId}:${player.index}`;
   // Where a player is from and how he was recruited (player profiles)
   const STARS = { ONE_STAR: 1, TWO_STAR: 2, THREE_STAR: 3, FOUR_STAR: 4, FIVE_STAR: 5 };
+  const PERSONA_TRAITS = [['PT_DISCIPLINED', 'Disciplined'], ['PT_UNDISCIPLINED', 'Undisciplined'], ['PT_BIGHITTER', 'Big Hitter'],
+    ['PT_PARANOID', 'Paranoid'], ['PT_OBLIVIOUS', 'Oblivious'], ['PT_CONSERVATIVE', 'Conservative'], ['PT_QUICKTRIGGER', 'Quick Trigger']];
   const background = (player) => ({
     hometown: player.PLYR_HOME_TOWN || '', homeState: player.PLYR_HOME_STATE || '', stars: STARS[player.ProspectStarRating] ?? null
   });
@@ -120,6 +122,9 @@ try {
       redshirt: clean(player.RedshirtStatus),
       ...background(player),
       devTrait: clean(player.TraitDevelopment), nil: player.CurrentNILCompensation ?? null, captain: Boolean(player.PLYR_ISCAPTAIN),
+      // Player care: personality traits that shape behaviour, confidence and how he starts the next game
+      traits: PERSONA_TRAITS.filter(([field]) => player[field] === true).map(([, name]) => name),
+      confidence: player.ConfidenceRating ?? null, hotCold: clean(player.StartingHotCold),
       // The game's own odds (0-100) that he transfers or turns pro after the season
       transferChance: player.AbsoluteTransferChance ?? null,
       goProChance: player.AbsoluteGoProChance ?? null,

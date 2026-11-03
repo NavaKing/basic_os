@@ -1,0 +1,62 @@
+/* Player care: the window opened from the tab bar's Care button (layout shared with the Backups window) */
+
+.care-dialog { width: min(860px, calc(100vw - 32px)); }
+
+.care-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin: 4px 0 10px; }
+.care-hours-left { font-size: 14px; color: var(--text-dim); }
+.care-hours-left strong { font-family: var(--font-display); font-size: 24px; color: var(--gold); margin-right: 2px; }
+.care-preset { display: flex; align-items: center; gap: 8px; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: var(--text-dim); }
+.care-preset select { width: auto; }
+.care-calendar { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+
+.care-section { margin: 22px 0 6px; }
+.care-note { margin: 0 0 10px; font-size: 12px; line-height: 1.5; }
+.care-meta { font-size: 12px; color: #999; }
+
+.care-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 12px; }
+.care-card { padding: 12px 14px; border: 1px solid var(--border-soft); border-radius: 8px; background: rgba(255, 255, 255, 0.02); }
+.care-player { display: flex; gap: 12px; align-items: center; margin-bottom: 10px; }
+.care-headshot { --headshot-size: 48px; }
+.care-name { width: auto; padding: 0; border: 0; background: none; color: #fff; font-weight: 600; font-size: 15px; text-align: left; cursor: pointer; }
+.care-name:hover { background: none; color: var(--gold); }
+.care-flags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.care-flag { padding: 2px 7px; border-radius: 10px; background: var(--gold-soft); color: var(--gold); font-size: 11px; }
+
+.care-needs { display: grid; gap: 4px; }
+.care-need { display: grid; grid-template-columns: 96px 1fr 28px; align-items: center; gap: 8px; font-size: 12px; color: var(--text-dim); }
+.care-need-bar { height: 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
+.care-need-bar span { display: block; height: 100%; background: #6fb37a; }
+.care-need-value { text-align: right; font-variant-numeric: tabular-nums; }
+.care-need--low { color: #e07a7a; }
+.care-need--low .care-need-bar span { background: #e07a7a; }
+
+.care-warnings { margin: 8px 0 0; padding-left: 18px; font-size: 12px; color: #e0a47a; }
+.care-act-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.care-need-pick { width: auto; flex: 1 0 100%; padding: 6px 8px; font-size: 12px; }
+.care-action { width: auto; padding: 5px 9px; font-size: 11px; letter-spacing: 0.8px; text-transform: uppercase; border-radius: 6px; }
+.care-action:disabled { opacity: 0.4; cursor: not-allowed; }
+.care-hours { color: var(--text-dim); }
+
+.care-pills { list-style: none; display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; }
+.care-pill { display: flex; align-items: center; gap: 6px; padding: 5px 6px 5px 12px; border: 1px solid var(--border); border-radius: 16px; font-size: 13px; color: #fff; }
+.care-x { width: auto; padding: 0 6px; border: 0; background: none; color: var(--text-dim); font-size: 16px; line-height: 1; cursor: pointer; }
+.care-x:hover { background: none; color: #e07a7a; }
+.care-suggestions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.care-suggest { width: auto; padding: 4px 9px; font-size: 12px; border-radius: 6px; }
+
+.care-pair { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.care-pair select { flex: 1 1 200px; width: auto; }
+.care-pair button { width: auto; padding: 8px 14px; }
+
+#care_simulate { width: auto; padding: 8px 14px; }
+.care-sim { margin-top: 10px; border-collapse: collapse; font-size: 13px; }
+.care-sim th, .care-sim td { padding: 5px 14px 5px 0; text-align: left; border-bottom: 1px solid var(--border-soft); }
+.care-sim td + td, .care-sim th + th { text-align: right; font-variant-numeric: tabular-nums; }
+
+.care-log { list-style: none; margin: 0; padding: 0; max-height: 220px; overflow-y: auto; font-size: 13px; line-height: 1.5; }
+.care-log li { padding: 4px 0; border-bottom: 1px solid var(--border-soft); }
+
+@media (max-width: 560px) {
+    .care-list { grid-template-columns: 1fr; }
+    .care-need { grid-template-columns: 80px 1fr 26px; }
+}

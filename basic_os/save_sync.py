@@ -5,6 +5,7 @@ import shutil
 import subprocess
 import threading
 import backups
+import care
 import history
 import database
 import league
@@ -77,6 +78,7 @@ def _sync_if_changed():
         league.sync_scoring(dynasty.get('scoringSummaries'))
         league.sync_rivalries(dynasty.get('rivalries'))
         history.sync(dynasty)
+        care.advance(care.current_week())  # the week of our next game, now that the schedule is synced
         recruiting.sync_recruiting(dynasty.get('recruiting'), dynasty['league']['userTeamId'], dynasty['currentWeek'])
     except Exception as e:
         # The version isn't stored, so the next page load tries again (e.g. if the game was mid-write)
@@ -164,7 +166,8 @@ def sync_roster(dynasty):
                          p.get('overall'), p.get('classYear'), p.get('heightInches'), p.get('weightPounds'),
                          media.player_portrait_file(p.get('assetName'), p.get('headAsset')),
                          p.get('redshirt'), p.get('transferChance'), p.get('goProChance'),
-                         p.get('hometown'), p.get('homeState'), p.get('stars'), p.get('devTrait'), p.get('nil'), int(bool(p.get('captain')))))
+                         p.get('hometown'), p.get('homeState'), p.get('stars'), p.get('devTrait'), p.get('nil'), int(bool(p.get('captain'))),
+                         json.dumps(p.get('traits') or []), p.get('confidence'), p.get('hotCold')))
 
     conn = roster.get_connection()
     # Drop placeholder players and anyone who has left the team in the save
@@ -173,8 +176,8 @@ def sync_roster(dynasty):
     conn.executemany("""
         INSERT INTO team_roster (save_id, player_name, position, jersey_num, health_status, injury_type, duration_weeks, depth_slot,
                                  overall, class_year, height_in, weight_lb, portrait_file, redshirt, transfer_chance, go_pro_chance,
-                                 hometown, home_state, stars, dev_trait, nil_value, captain)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                 hometown, home_state, stars, dev_trait, nil_value, captain, traits_json, confidence, hot_cold)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(save_id) DO UPDATE SET
             player_name = excluded.player_name, position = excluded.position, jersey_num = excluded.jersey_num,
             health_status = excluded.health_status, injury_type = excluded.injury_type,
@@ -183,7 +186,8 @@ def sync_roster(dynasty):
             portrait_file = excluded.portrait_file, redshirt = excluded.redshirt,
             transfer_chance = excluded.transfer_chance, go_pro_chance = excluded.go_pro_chance,
             hometown = excluded.hometown, home_state = excluded.home_state, stars = excluded.stars,
-            dev_trait = excluded.dev_trait, nil_value = excluded.nil_value, captain = excluded.captain
+            dev_trait = excluded.dev_trait, nil_value = excluded.nil_value, captain = excluded.captain,
+            traits_json = excluded.traits_json, confidence = excluded.confidence, hot_cold = excluded.hot_cold
     """, rows)
     
     # Replace this season's stat lines; a player can have several records per game (e.g. offense + returns)

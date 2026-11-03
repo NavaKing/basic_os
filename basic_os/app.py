@@ -27,6 +27,7 @@ import presser
 import history
 import printing
 import games
+import care
 import os
 from urllib.parse import urlsplit
 from flask import Flask, Response, render_template, request, jsonify, send_from_directory, abort, url_for
@@ -460,6 +461,30 @@ def press_questions():
         return jsonify({"questions": presser.suggest_questions(request.json.get('model', 'gemma3:12b'))})
     except Exception as e:
         return jsonify({"error": str(e)}), 400
+
+# ---------- Player care ----------
+
+@app.route('/care')
+def care_dashboard():
+    return jsonify(care.dashboard())
+
+@app.route('/care/<action>', methods=['POST'])
+def care_action(action):
+    body = request.json or {}
+    try:
+        if action == "act":
+            return jsonify(care.act(body.get('save_id'), body.get('action'), body.get('need'), body.get('captain')))
+        if action == "council":
+            return jsonify(care.set_council(body.get('save_id'), bool(body.get('on'))))
+        if action == "mentor":
+            return jsonify(care.set_mentor(body.get('mentee'), body.get('mentor') or None))
+        if action == "preset":
+            return jsonify(care.set_preset(body.get('preset')))
+        if action == "simulate":
+            return jsonify({policy: care.simulate(int(body.get('weeks') or 12), policy, body.get('preset')) for policy in ("ignore", "care")})
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    abort(404)
 
 # ---------- Backups ----------
 
