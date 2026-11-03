@@ -2,6 +2,7 @@
 
 .tabs-tool { width: auto; flex-shrink: 0; margin: 9px 0 9px auto; padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
              background: transparent; color: var(--text-dim); font-size: 11px; letter-spacing: 1.4px; }
+.tabs-tool--next { margin-left: 8px; }
 .tabs-tool:hover { background: transparent; color: var(--gold); border-color: var(--gold); }
 
 .backup-dialog { width: min(680px, calc(100vw - 32px)); max-height: calc(100vh - 48px); padding: 22px 24px 24px; border: 1px solid var(--border);
