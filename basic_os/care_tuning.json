@@ -140,5 +140,6 @@
   "start_spread": 12,
   "trust_drain_relief": 0.5,
   "homesick_below": 50,
-  "sim_slipping_margin": 15
+  "sim_slipping_margin": 15,
+  "watch_need": 50
 }

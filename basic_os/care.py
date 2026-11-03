@@ -62,9 +62,13 @@ def initialize_care_tables():
     CREATE TABLE IF NOT EXISTS care_players (
         save_id TEXT PRIMARY KEY,
         needs_json TEXT NOT NULL,
-        trust INTEGER NOT NULL
+        trust INTEGER NOT NULL,
+        change_json TEXT
     )
     """)
+    # change_json (how much each need moved in the last weekly update) came after the first release
+    if "change_json" not in [col[1] for col in cursor.execute("PRAGMA table_info(care_players)").fetchall()]:
+        cursor.execute("ALTER TABLE care_players ADD COLUMN change_json TEXT")
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS care_warnings (
         warning_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -292,13 +296,14 @@ def load_players():
         row = stored.get(p['save_id'])
         p['needs'] = json.loads(row['needs_json']) if row else start_needs(p['save_id'], tuning)
         p['trust'] = row['trust'] if row else tuning['start_trust']
+        p['change'] = json.loads(row['change_json']) if row and row['change_json'] else None
         p['warnings'] = warnings.get(p['save_id'], [])
     return players
 
 def save_players(players, week):
     conn = database.get_db_connection()
-    conn.executemany("INSERT OR REPLACE INTO care_players (save_id, needs_json, trust) VALUES (?, ?, ?)",
-                     [(p['save_id'], json.dumps(p['needs']), p['trust']) for p in players])
+    conn.executemany("INSERT OR REPLACE INTO care_players (save_id, needs_json, trust, change_json) VALUES (?, ?, ?, ?)",
+                     [(p['save_id'], json.dumps(p['needs']), p['trust'], json.dumps(p['change']) if p.get('change') else None) for p in players])
     ids = {p['save_id'] for p in players}
     # Warnings a player no longer carries (a sit-down cleared them) are closed
     known = [w['id'] for p in players for w in p['warnings'] if 'id' in w]
@@ -341,8 +346,11 @@ def advance(week):
         ctx = week_context(w)
         seed = season_seed()
         rng = lambda key, w=w: random.Random(f"{seed}-{w}-{key}")
+        before = {p['save_id']: dict(p['needs']) for p in players}
         for save_id, kind, text in run_week(players, ctx, tuning, council_ids(), mentor_map(), rng):
             log(w, save_id, kind, text)
+        for p in players:   # what the week did to each need, before the coach steps in ("Morale 31, down 8")
+            p['change'] = {n: round(p['needs'][n] - before[p['save_id']][n]) for n in NEEDS}
         save_players(players, w)
         set_state("week", w)
         set_state("hours", tuning['hours'])
@@ -472,7 +480,11 @@ def dashboard():
     ctx = week_context(week)
     council = council_ids()
     mentors = mentor_map()
-    care_list = pick_care_list(players, ctx, tuning, council)
+    # Everyone, most urgent first, split into who needs the coach now, who is slipping, and everyone else
+    ranked = pick_care_list(players, ctx, {**tuning, "care_list_size": len(players)}, council)
+    def group(p):
+        lowest = min(p['needs'].values())
+        return "now" if p['warnings'] or lowest < tuning['low_need'] else "close" if lowest < tuning['watch_need'] else "fine"
     def view(p):
         flags = []
         if p['save_id'] in council:
@@ -490,16 +502,18 @@ def dashboard():
         return {"save_id": p['save_id'], "name": p['name'], "position": p['position'], "class": p['class'], "overall": p['overall'],
                 "portrait": p['portrait'], "needs": {n: round(p['needs'][n]) for n in NEEDS}, "trust": p['trust'], "flags": flags,
                 "warnings": [w['text'] for w in p['warnings']], "mentor": mentor['name'] if mentor else None,
-                "lowest": min(NEEDS, key=lambda n: p['needs'][n])}
+                "lowest": min(NEEDS, key=lambda n: p['needs'][n]), "change": p['change']}
     calendar = [label for key, label in (("exam", "Exam week: academics drain faster"), ("holiday", "Holiday week: players far from home miss it"),
                                           ("senior_day", "Senior day this week"), ("big_win", "Big win last week: focus slips")) if ctx.get(key)]
     suggestions = [p['save_id'] for p in sorted(players, key=lambda p: ({"Senior": 0, "Junior": 1}.get(p['class'], 2), -p['overall']))[:6]]
     return {
         "started": True, "week": week, "hours": int(float(get_state("hours") or 0)), "hours_total": tuning['hours'],
-        "preset": tuning['preset'], "presets": list(tuning['presets']), "calendar": calendar, "low_need": tuning['low_need'],
+        "preset": tuning['preset'], "presets": list(tuning['presets']), "calendar": calendar,
+        "low_need": tuning['low_need'], "watch_need": tuning['watch_need'],
         "needs": [{"key": n, "label": NEED_LABELS[n]} for n in NEEDS],
-        "actions": [{"key": k, "label": a['label'], "hours": a['hours']} for k, a in tuning['actions'].items()],
-        "care_list": [view(by_id[s]) for s in care_list],
+        "actions": [{"key": k, "label": a['label'], "hours": a['hours'], "fill": a['fill'], "fills": a.get('fills'),
+                     "clears_warnings": bool(a.get('clears_warnings'))} for k, a in tuning['actions'].items()],
+        "groups": {name: [view(by_id[s]) for s in ranked if group(by_id[s]) == name] for name in ("now", "close", "fine")},
         "council": [view(by_id[s]) for s in council if s in by_id], "council_max": tuning['council']['max'],
         "council_suggestions": [s for s in suggestions if s not in council][:4],
         "mentors": [{"mentee": view(by_id[m]), "mentor": view(by_id[t])} for m, t in mentors.items() if m in by_id and t in by_id],
