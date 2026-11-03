@@ -135,8 +135,8 @@ def pick_emoji(text, from_coach, rng):
         tone = team_board.coach_tone(text)
         if tone == "playful":
             weights.update({"😂": 7, "❓": 1.5, "👍": 1, "‼️": 0.5, "❤️": 1})
-        elif tone == "question":
-            weights.update({"👍": 2, "❓": 0.3})
+        elif tone == "question":   # a question gets answers more than taps: a few thumbs up or question marks, few hearts
+            weights.update({"👍": 3, "❓": 1, "❤️": 0.5, "‼️": 0.5})
         return rng.choices(list(weights), weights=list(weights.values()))[0]
     if any(w in lowered for w in KIND_WORDS["😂"]):
         weights["😂"] = 6
@@ -156,6 +156,8 @@ def schedule_reactions(msg_id, text, author_id, rng=None):
         return
     if author_id is None:
         count = rng.randint(*t['coach_reactors'])
+        if team_board.coach_tone(text) == "question":
+            count = rng.randint(0, 2)
     else:
         if rng.random() > t['post_chance']:
             return
@@ -322,6 +324,9 @@ def pick_responders(text, players, council, now=None, rng=None):
     low, high = t['responders']
     count = 1 if now - last < t['cooldown_seconds'] else rng.randint(low, high)
     count = max(count, min(len(named), high))
+    spots = addressed(text, players)
+    if spots and team_board.coach_tone(text) == "question":   # "who is my HB2": him, plus one teammate to hype him
+        count = len(named) + 1
     others = [p for p in players if p['save_id'] not in named]
     weights = [(2.0 if p['save_id'] in council else 1.3 if p['starter'] else 1.0) * (0.4 if min(p['needs'].values()) < 35 else 1.0) for p in others]
     picked = list(named)
@@ -349,13 +354,13 @@ def send(text, selected_model):
     if responders:
         history = [line_for(m) for m in recent(14)][:-1]
         _jobs['answer'] = {"started": now}
-        threading.Thread(target=_write_answers, args=(selected_model, text, responders, history, week), daemon=True).start()
+        threading.Thread(target=_write_answers, args=(selected_model, text, responders, history, week, named), daemon=True).start()
     return view()
 
-def _write_answers(selected_model, text, responders, history, week):
+def _write_answers(selected_model, text, responders, history, week, named=()):
     t = tuning()
     try:
-        answers = team_board.answer(selected_model, text, responders, history)
+        answers = team_board.answer(selected_model, text, responders, history, named)
         for row in schedule(answers, t['answer_first_delay'], t['answer_delay']):
             msg_id = execute("INSERT INTO chat_messages (week, save_id, kind, text, delay) VALUES (?, ?, 'answer', ?, ?)", (week, row['save_id'], row['text'], row['delay']))
             schedule_reactions(msg_id, row['text'], row['save_id'])

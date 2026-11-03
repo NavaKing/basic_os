@@ -58,7 +58,8 @@ TONE_NOTES = {
                "laugh, tease him back, play along, or ask if he's joking. Nobody pivots to football or the next opponent.",
     "question": "He asked the team a question, so they answer it, with the real names from the depth chart. Once one player has "
                 "given the answer, the others don't just repeat it: they add something of their own (hype for the guy, a joke, a "
-                "promise). A player asked about himself answers as himself ('that's me, coach'), not in the third person.",
+                "promise). The player the coach asked about answers as himself ('that's me, coach'); nobody else ever claims "
+                "to be him.",
     "plain": "",
 }
 
@@ -73,6 +74,8 @@ def coach_tone(text):
 REPLY_STYLES = ["fired up and ready", "hypes up a teammate the coach mentioned (or another one by name)", "a little joke or some banter",
                 "short and serious, all business", "looks ahead to the next opponent", "promises something specific for practice this week"]
 TOO_SIMILAR = 0.6
+# "that's me, coach" from anyone but the player the coach asked about makes no sense, whatever the model says
+CLAIMS = re.compile(r"\b(that'?s me|it'?s me|its me|right here|here coach|i'?m (your|the) (qb|hb|rb|wr|te|starter|guy|backup))\b|^me[,.! ]", re.IGNORECASE)
 COPY_MIN_LENGTH = 20   # "on it coach" and "yes coach" look alike letter by letter; only judge replies long enough to be a copied line   # a post this close to his previous one is dropped
 
 GUARDRAILS = ("Every player is a man on a men's college football team, so always use he/him/his. This is the team's private "
@@ -198,6 +201,14 @@ def starters_fact():
     rows.sort(key=lambda p: p['depth_slot'])
     return ("Depth chart starters (use these exact names, never guess one): " + "; ".join(f"{p['depth_slot']} {p['player_name']}" for p in rows) + ".") if rows else ""
 
+def about(addressed_ids):
+    """A fact line naming the players he named or addressed by spot, e.g. "The coach is asking about: QB2 Mason Drube."."""
+    if not addressed_ids:
+        return ""
+    people = {p['save_id']: p for p in roster.query_full_roster()}
+    names = [f"{people[i].get('depth_slot') or people[i]['position']} {people[i]['player_name']}" for i in addressed_ids if i in people]
+    return f" The coach is talking to or asking about: {', '.join(names)}." if names else ""
+
 def game_facts():
     import ai_engine
     last = database.query_last_played_week()
@@ -294,7 +305,7 @@ def compose(selected_model, week, posts_count=POSTS, replies_count=REPLIES):
     return ([{"save_id": sid(p['author']), "text": p['text']} for p in posts],
             [{"save_id": sid(r['author']), "text": r['text'], "reply_to": r['reply_to']} for r in replies[:replies_count]])
 
-def answer(selected_model, coach_text, responder_ids, history):
+def answer(selected_model, coach_text, responder_ids, history, addressed_ids=()):
     """Replies from `responder_ids` (in that order) to the coach's message. history: recent chat lines, oldest first.
     Returns [{save_id, text}]."""
     import ai_engine
@@ -305,14 +316,20 @@ def answer(selected_model, coach_text, responder_ids, history):
         return []
     by_name = {c['name']: c for c in people}
     tone = coach_tone(coach_text)
+    asked_names = " and ".join(c['name'] for c in people if c['save_id'] in addressed_ids) or "the player the coach asked about"
     pool = TONE_STYLES.get(tone, REPLY_STYLES)
     styles = random.Random(coach_text).sample(pool, len(pool))
     for i, c in enumerate(people):
         c['angle'] = styles[i % len(styles)]   # each answer a different way, so it isn't "got it coach" four times
         c['previous'] = None
+        # Only the player he's asking about may say "that's me" (QB1 answered "it's me" to "where my QB2 at")
+        if c['save_id'] in addressed_ids:
+            c['angle'] += "; the coach is talking to or about HIM"
+        elif addressed_ids:   # the others back up the player he asked about instead of answering for him
+            c['angle'] = f"hypes up {asked_names} by name; he is NOT the one the coach asked about"
     roster_text = "; ".join(describe(c) for c in people)
     prompt = (f"{GUARDRAILS} Facts: {game_facts()} Recent group chat: {' | '.join(history[-12:]) or '(quiet)'} "
-              f"{starters_fact()} Coach just wrote to the whole team: \"{coach_text}\" {TONE_NOTES[tone]} "
+              f"{starters_fact()}{about(addressed_ids)} Coach just wrote to the whole team: \"{coach_text}\" {TONE_NOTES[tone]} "
               f"The players answering, in this order: {roster_text}. Write one short reply from each of them to the coach, in order. "
               "They answer what he actually said, in their own voice and mood, respectfully but casually (it's still the head coach). "
               "If he called someone out by name or by depth chart spot or position (like 'QB1' or 'the o-line'), that player answers "
@@ -323,11 +340,20 @@ def answer(selected_model, coach_text, responder_ids, history):
               'Respond with ONLY JSON: {"replies": [{"author": "Exact Name", "text": "reply text"}, ...]}')
     out = []
     said = [line.split(": ", 1)[-1] for line in history[-12:]]
+    asked = {c['name'] for c in people if c['save_id'] in addressed_ids}
     for r in ask(selected_model, prompt, by_name, "replies"):
         text = scrub(ai_engine.strip_tags(r['text']), people)
-        if (text and not re.search(r"\d", text) and r['author'] not in [o['author'] for o in out]
-                and not (len(text) >= COPY_MIN_LENGTH and any(repeats(text, line) for line in said + [o['text'] for o in out]))):   # no copied jokes
-            out.append({"author": r['author'], "text": text})
+        if not text or re.search(r"\d", text) or r['author'] in [o['author'] for o in out]:
+            continue
+        is_asked = r['author'] in asked
+        copied = len(text) >= COPY_MIN_LENGTH and any(repeats(text, line) for line in said + [o['text'] for o in out])
+        if copied and not is_asked:   # no copied jokes
+            continue
+        if copied:   # the player he asked always answers, but not with last time's joke: just "right here, coach."
+            text = sentences.split(text)[0]
+        if asked and not is_asked and CLAIMS.search(text):   # only the player he asked can say "that's me"
+            continue
+        out.append({"author": r['author'], "text": text})
     return [{"save_id": by_name[o['author']]['save_id'], "text": o['text']} for o in out[:len(people)]]
 
 initialize_tables()
