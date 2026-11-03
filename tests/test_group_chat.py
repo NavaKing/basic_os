@@ -148,6 +148,20 @@ class GroupChat(unittest.TestCase):
         self.assertEqual((picked[0], named), ("cb1", ["cb1"]))
         self.assertIn("HB1 Samuel Harris", team_board.starters_fact())
 
+    def test_only_the_player_asked_about_says_thats_me(self):
+        group_chat.execute("UPDATE team_roster SET depth_slot = CASE save_id WHEN 'hb1' THEN 'HB2' WHEN 'wr1' THEN 'WR1' ELSE 'CB1' END")
+        players = care.load_players()
+        picked, named = group_chat.pick_responders("who is my HB2", players, [], now=1000.0, rng=random.Random(4))
+        self.assertEqual((picked[0], named, len(picked)), ("hb1", ["hb1"], 2))   # him, plus one teammate to hype him
+        replies = {"replies": [{"author": "Samuel Harris", "text": "right here, coach. been studying film all week."},
+                               {"author": "Eric Richardson", "text": "it's me, coach."},
+                               {"author": "Bench Corner", "text": "sam is a beast, he earned it"}]}
+        with mock.patch("ai_engine.call_ollama", return_value=json.dumps(replies)):
+            out = team_board.answer("test-model", "who is my HB2", ["hb1", "wr1", "cb1"],
+                                    ["Samuel Harris: right here, coach. been studying film all week."], ["hb1"])
+        self.assertEqual(out, [{"save_id": "hb1", "text": "right here, coach."},          # his repeat trimmed, not dropped
+                               {"save_id": "cb1", "text": "sam is a beast, he earned it"}])   # Eric's "it's me" dropped
+
     def test_the_coach_reacts_toggles_and_lifts_morale_a_little(self):
         msg = group_chat.execute("INSERT INTO chat_messages (week, save_id, kind, text, delivered_at) VALUES (1, 'hb1', 'postgame', 'big win', 1000)")
         morale = next(p for p in care.load_players() if p['save_id'] == 'hb1')['needs']['morale']

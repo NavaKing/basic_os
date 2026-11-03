@@ -384,6 +384,10 @@ App-only. The code is in `basic_os/care_incidents.py`, and the dials are under `
   - The answers are given the real depth chart starters, so "who's my QB1" gets the right name.
   - A correction ("no more interceptions") is owned seriously by that player, and nobody laughs.
   - Once one player answers a question, the others add something of their own instead of repeating it.
+  - "Who is my HB2" / "where my QB2 at": the player in that spot answers, plus one teammate who hypes him by name.
+    Any reply from someone else claiming to be him ("it's me", "right here") is dropped, whatever the model writes. The
+    player asked always gets to answer; if he'd just repeat last time's joke, only his first sentence is kept.
+  - Questions get fewer tapbacks (0-2, mostly 👍 or ❓).
 - **Still to come:** free-text replies in the one-on-one threads, and players starting new conversations midweek.
 
 ## Build order (when un-tabled)
