@@ -54,6 +54,8 @@
 .app-tile--messages { background: linear-gradient(180deg, #5ef27a, #18b83c); }
 .app-tile--care { background: linear-gradient(180deg, #ff7a6e, #d92d43); }
 .app-tile--mail { background: linear-gradient(180deg, #5cb8ff, #1a6ff0); }
+.app-tile--feed { background: linear-gradient(180deg, #3a3a3c, #0d0d0f); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12), 0 4px 12px rgba(0, 0, 0, 0.35); }
+.app-tile--feed svg { fill: var(--gold); }
 .phone-icon-label { font-size: 12px; font-weight: 500; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5); }
 .phone-badge { position: absolute; top: -6px; right: 2px; display: none; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px;
                background: #ff3b30; color: #fff; font-size: 13px; font-weight: 600; line-height: 22px; text-align: center; }
@@ -191,3 +193,11 @@
 .tapback-choice { width: 34px; height: 34px; padding: 0; border: 0; border-radius: 50%; background: none; font-size: 20px; line-height: 1; cursor: pointer; }
 .tapback-choice:hover { background: #3a3a3c; }
 .tapback-choice.is-mine { background: #0a84ff; }
+
+/* The campus feed app: the feed's own cards, full width inside the phone */
+.phone-feed { background: #000; }
+.phone-feed-scroll { padding: 0; }
+.phone-feed .twitter-container { max-height: none; overflow: visible; border: 0; border-radius: 0; }
+.phone-feed .tweet-card { padding: 12px 16px; border-bottom-color: #1c1c1e; }
+.phone-feed .tweet-header, .phone-feed .tweet-body { font-size: 14px; }
+.phone-icon-label { max-width: 76px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

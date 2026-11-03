@@ -18,9 +18,34 @@ function tweetCard(tweet) {
     '</div>';
 }
 
+const SEEN_KEY = 'basic_os_feed_seen';
+let unseen = 0;
+
+function signature(tweets) {
+    return (tweets || []).map(t => t.tweet_text).join('|').slice(0, 400);
+}
+
+function remembered() {
+    try { return localStorage.getItem(SEEN_KEY); } catch (err) { return null; }
+}
+
+/** Posts that arrived since the feed app was last opened (for its badge on the phone). */
+export function unseenPosts() {
+    return unseen;
+}
+
+/** Called when the feed app opens: everything on it now counts as seen. */
+export function markFeedSeen(tweets) {
+    unseen = 0;
+    try { localStorage.setItem(SEEN_KEY, signature(tweets)); } catch (err) { /* private window: the badge just won't remember */ }
+}
+
 export function renderTweets(tweets) {
     const box = document.getElementById('twitter_feed_box');
+    if (!box) return;
     box.innerHTML = tweets && tweets.length
         ? tweets.map(tweetCard).join('')
-        : '<div class="empty-note">Awaiting generator call... Local AI models will simulate campus tweets based on current matchup arrays.</div>';
+        : '<div class="empty-note">No posts yet. Run the hub generator and the campus starts talking about the matchup.</div>';
+    unseen = tweets && tweets.length && signature(tweets) !== remembered() ? tweets.length : 0;
+    document.dispatchEvent(new CustomEvent('feed:update', { detail: tweets || [] }));
 }
