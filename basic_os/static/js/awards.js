@@ -1,19 +1,7 @@
 // Awards tab: All-America and All-Conference teams, the Heisman race and column, the playoff bracket and the bowl schedule.
 
-import { esc, setStatus, postJSON, applyTeamColors } from './utils.js';
-import { longJob } from './notify.js';
-
-function teamMark(team) {
-    if (!team) return '';
-    const id = ' data-team-id="' + esc(team.id) + '"';
-    return team.logo
-        ? '<img class="team-logo" src="' + esc(team.logo) + '" alt="' + esc(team.short) + '" loading="lazy"' + id + '>'
-        : '<span class="team-chip" data-color="' + esc(team.color || '') + '"' + id + '>' + esc(team.short) + '</span>';
-}
-
-function headshot(url) {
-    return '<span class="headshot">' + (url ? '<img src="' + esc(url) + '" alt="" loading="lazy">' : '') + '</span>';
-}
+import { esc, applyTeamColors, teamLogo, headshot } from './utils.js';
+import { wireColumn, columnParagraphs } from './columns.js';
 
 function dateText(iso, options = { weekday: 'short', month: 'short', day: 'numeric' }) {
     if (!iso) return 'Date TBD';
@@ -38,8 +26,20 @@ function initAllAmerica(aa) {
         ? 'The game\'s end-of-season teams.'
         : 'Preseason teams, picked by the game before the season. They\'re replaced by the final teams once the season ends.';
     let side = 'first';
-    const show = () => {
+    const show = async () => {
         const group = groups[Number(select.value) || 0];
+        if (!group.first) {  // conferences other than ours load when picked
+            grid.innerHTML = '<div class="empty-note">Loading...</div>';
+            try {
+                const res = await fetch('/awards/all-america/' + encodeURIComponent(group.key));
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                Object.assign(group, await res.json());
+            } catch (err) {
+                grid.innerHTML = '<div class="empty-note">Could not load these teams: ' + esc(String(err.message || err)) + '</div>';
+                return;
+            }
+            if (groups[Number(select.value) || 0] !== group) return;  // the pick changed while loading
+        }
         document.querySelectorAll('.aa-side').forEach(b => b.setAttribute('aria-selected', String(b.dataset.side === side)));
         const players = group[side] || [];
         grid.innerHTML = players.length ? players.map(p =>
@@ -48,7 +48,7 @@ function initAllAmerica(aa) {
                 headshot(p.portrait) +
                 '<div class="aa-id">' +
                     '<div class="aa-name" data-player-id="' + esc(p.id) + '">' + esc(p.name) + '</div>' +
-                    '<div class="aa-meta">' + teamMark(p.team) + '<span>' + esc(p.team ? p.team.short : '') + '</span>' +
+                    '<div class="aa-meta">' + teamLogo(p.team) + '<span>' + esc(p.team ? p.team.short : '') + '</span>' +
                         (p.class ? '<span>' + esc(p.class) + '</span>' : '') + (p.overall ? '<span>' + esc(p.overall) + ' OVR</span>' : '') + '</div>' +
                 '</div>' +
             '</div>').join('') : '<div class="empty-note">No picks for this team.</div>';
@@ -68,7 +68,7 @@ function renderHeisman(rows) {
         '<li class="aw-heisman-row">' +
             '<span class="aw-heisman-rank">' + esc(h.rank) + '</span>' + headshot(h.portrait) +
             '<div class="aw-heisman-id"><div class="aa-name"><span data-player-id="' + esc(h.id) + '">' + esc(h.name) + '</span> ' + move(h.movement) + '</div>' +
-                '<div class="aa-meta">' + teamMark(h.team) + '<span>' + esc(h.position) + ' &middot; ' + esc(h.team.name) + '</span></div></div>' +
+                '<div class="aa-meta">' + teamLogo(h.team) + '<span>' + esc(h.position) + ' &middot; ' + esc(h.team.name) + '</span></div></div>' +
             '<div class="stat-boxes stat-boxes--inline">' + h.boxes.map(b =>
                 '<div class="stat-box"><div class="stat-box-value">' + esc(b.value) + '</div><div class="stat-box-label">' + esc(b.label) + '</div></div>').join('') + '</div>' +
         '</li>').join('') : '<li class="empty-note">The Heisman race starts once games are played.</li>';
@@ -82,7 +82,7 @@ function renderColumn(column, ceremony) {
         ? (column.kind === 'heisman_ceremony' ? 'Ceremony Edition' : 'After Week ' + column.week) : (ceremony ? 'Ceremony Edition' : 'Heisman Watch');
     document.getElementById('aw_column_title').textContent = column ? column.title : (ceremony ? 'And the Heisman goes to...' : 'The Heisman Watch');
     document.getElementById('aw_column_body').innerHTML = column
-        ? column.paragraphs.map((p, i) => '<p' + (i === 0 ? ' class="mag-dropcap"' : '') + '>' + esc(p) + '</p>').join('')
+        ? columnParagraphs(column.paragraphs)
         : '<p class="mag-empty">' + (ceremony
             ? 'The regular season is over. Write the story of the ceremony, built from the finalists\' numbers.'
             : 'Write a column on the race so far, built from the contenders\' numbers.') + '</p>';
@@ -90,22 +90,8 @@ function renderColumn(column, ceremony) {
 
 function initColumn(column, ceremony) {
     renderColumn(column, ceremony);
-    const button = document.getElementById('aw_column_generate');
-    const status = document.getElementById('aw_column_status');
-    button.addEventListener('click', async () => {
-        button.disabled = true;
-        setStatus(status, 'Writing the column...');
-        try {
-            const data = await longJob('The Heisman column', postJSON('/awards/heisman/generate'));
-            if (data.error) throw new Error(data.error);
-            renderColumn(data.column, ceremony);
-            setStatus(status, '');
-        } catch (err) {
-            setStatus(status, String(err.message || err), true);
-        } finally {
-            button.disabled = false;
-        }
-    });
+    wireColumn({ buttonId: 'aw_column_generate', statusId: 'aw_column_status', url: '/awards/heisman/generate',
+                 label: 'The Heisman column', working: 'Writing the column...', render: written => renderColumn(written, ceremony) });
 }
 
 // ---------- Bowl season ----------
@@ -113,7 +99,7 @@ function initColumn(column, ceremony) {
 function slot(s) {
     if (s.team) {
         return '<div class="cfp-slot' + (s.won ? ' is-winner' : '') + '">' + (s.seed ? '<span class="cfp-seed">' + esc(s.seed) + '</span>' : '') +
-            teamMark(s.team) + '<span class="cfp-team">' + esc(s.team.name) + '</span>' +
+            teamLogo(s.team) + '<span class="cfp-team">' + esc(s.team.name) + '</span>' +
             (s.score !== undefined && s.score !== null ? '<span class="cfp-score">' + esc(s.score) + '</span>' : (s.record ? '<span class="cfp-record">' + esc(s.record) + '</span>' : '')) + '</div>';
     }
     return '<div class="cfp-slot cfp-slot--open">' + (s.seed ? '<span class="cfp-seed">' + esc(s.seed) + '</span>' : '') + esc(s.label || 'TBD') + '</div>';

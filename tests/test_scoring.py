@@ -195,6 +195,36 @@ class DraftFromSave(unittest.TestCase):
         self.assertEqual(draft['plays'][1]['text'], "Touchdown (kick)")  # Rutgers has no stat lines: left alone
 
 
+class StoredScoring(unittest.TestCase):
+    """What's kept of a scoring summary, and what happens when its game goes away or its id is reused."""
+
+    setUp = DraftFromSave.setUp
+
+    def store(self):
+        plays = [save_row(1, 629, 0, 0, 0, 3), save_row(4, 30, 0, 3, 7, 3)]
+        plays[0]['home'] = [{"playerId": "p", "name": "A", "position": "QB", "touchdowns": 0, "attempts": 3, "catches": 0, "yards": 9, "teamId": 2}]
+        plays[0]['type'] = "FieldGoal"
+        league.sync_scoring([{"homeId": 2, "awayId": 1, "homeScore": 14, "awayScore": 9, "plays": plays}])
+
+    def test_only_used_fields_are_kept(self):
+        self.store()
+        row = league.query_rows("SELECT * FROM game_scoring WHERE game_id = 77")[0]
+        self.assertEqual((row['home_id'], row['away_id']), (2, 1))
+        first = json.loads(row['plays_json'])[0]
+        self.assertNotIn("type", first)
+        self.assertEqual(first['home'], [{"playerId": "p", "name": "A", "position": "QB", "touchdowns": 0, "attempts": 3}])
+
+    def test_reused_game_id_drops_the_old_summary(self):
+        self.store()
+        conn = database.get_db_connection()
+        conn.execute("UPDATE league_games SET home_id = 1, away_id = 2 WHERE game_id = 77")  # next season, same id, new matchup
+        conn.commit()
+        conn.close()
+        self.assertEqual(league.query_scoring_games(), [])
+        league.sync_scoring([])
+        self.assertEqual(league.query_rows("SELECT COUNT(*) AS n FROM game_scoring")[0]['n'], 0)
+
+
 @unittest.skipUnless(os.path.exists(REAL_DB), "needs a synced dynasty_data.db")
 class RealSave(unittest.TestCase):
     """Every scoring summary captured from your save must add up to that game's final (run on a copy of the database)."""
@@ -204,20 +234,33 @@ class RealSave(unittest.TestCase):
         copy = os.path.join(TEMP_DIR, "real_copy.db")
         shutil.copyfile(REAL_DB, copy)
         database.DB_FILE = roster.DB_FILE = copy
+        league.initialize_league_tables()  # what the app does at start: adds any newer columns
 
     def tearDown(self):
         database.DB_FILE, roster.DB_FILE = self.original
 
-    def test_every_captured_game_adds_up(self):
+    def check_all_games(self):
         games = league.query_scoring_games()
         if not games:
             self.skipTest("no scoring summaries captured yet")
+        drafts = {}
         for g in games:
             with self.subTest(game=g['game_id'], week=g['week']):
                 draft = events.draft_from_save(g['game_id'])
                 self.assertEqual(draft['warnings'], [])
                 totals = sorted(t['total'] for t in draft['teams'])
                 self.assertEqual(totals, sorted((g['home_score'], g['away_score'])))
+                drafts[g['game_id']] = [(p['team'], p['points'], p['clock'], p['text']) for p in draft['plays']]
+        return drafts
+
+    def test_every_captured_game_adds_up(self):
+        self.check_all_games()
+
+    def test_compacting_changes_no_draft(self):
+        import housekeeping
+        before = self.check_all_games()
+        housekeeping.compact_scoring()  # nothing to do once the real database has been compacted
+        self.assertEqual(self.check_all_games(), before)
 
 
 if __name__ == "__main__":

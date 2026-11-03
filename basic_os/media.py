@@ -78,6 +78,21 @@ def espn_school_name(name):
             school = full + school[len(short):]
     return re.sub(r" St\.?$", " State", school)
 
+LOGO_SIZE = 320   # ESPN's logos are 500 px; the largest the app shows is the 150 px header logo, so 320 stays sharp at 2x
+
+def shrink_logo(path):
+    """Scales a logo down to LOGO_SIZE (keeping transparency). Returns True if it was larger. Needs Pillow."""
+    try:
+        from PIL import Image
+    except ImportError:
+        return False
+    with Image.open(path) as img:
+        if max(img.size) <= LOGO_SIZE:
+            return False
+        img.thumbnail((LOGO_SIZE, LOGO_SIZE))
+        img.save(path, "PNG", optimize=True)
+    return True
+
 def download_logos(teams):
     """teams: [(short_name, school name, nickname)]. Downloads any missing logo and home stadium; returns the schools with no match."""
     os.makedirs(LOGO_DIR, exist_ok=True)
@@ -100,6 +115,7 @@ def download_logos(teams):
             logos = [l['href'] for l in variants if 'dark' in l.get('rel', [])] or [l['href'] for l in variants if 'default' in l.get('rel', [])]
             if logos:
                 urllib.request.urlretrieve(logos[0], target)
+                shrink_logo(target)
         info[short] = {"espn_id": team['id'], **fetch_venue(team['id'])}
     with open(TEAM_INFO_FILE, "w", encoding="utf-8") as f:
         json.dump(info, f, indent=1, sort_keys=True)

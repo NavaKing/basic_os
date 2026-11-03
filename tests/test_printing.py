@@ -58,5 +58,20 @@ class Pdf(unittest.TestCase):
         self.assertIn('-Week-1.pdf"', response.headers["Content-Disposition"])
 
 
+class HubGeneratorFailure(unittest.TestCase):
+    """When Ollama doesn't answer, /generate says so as an error (it used to answer 'OK' with the message as the story)."""
+
+    def test_dispatch_failure_is_an_error(self):
+        import ai_engine
+        import database
+        execute("DELETE FROM schedule_tracking")
+        execute("INSERT INTO schedule_tracking (week_id, opponent_name, is_played, site) VALUES (5, 'NDSU Bison', 0, 'Away')")
+        with mock.patch.object(ai_engine, "call_ollama", side_effect=ConnectionError("refused")),              mock.patch("storylines.advance_storylines"), mock.patch("recruiting.create_commit_storylines"),              mock.patch("scouting.generate_preview", return_value=None), mock.patch("save_sync.sync_if_changed"):
+            response = app.test_client().post("/generate", headers=LOCAL, json={"model": "m"})
+        self.assertEqual(response.status_code, 500)
+        self.assertIn("Ollama didn't answer while writing the dispatch", response.get_json()['error'])
+        self.assertEqual([s for s in database.query_archived_stories() if s.get('week_num') == 5], [])
+
+
 if __name__ == "__main__":
     unittest.main()

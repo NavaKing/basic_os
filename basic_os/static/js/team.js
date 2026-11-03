@@ -1,17 +1,7 @@
 // Team page: clicking anything with data-team-id (logos, team chips) opens that team's record,
 // coaching staff, schedule, top players and poll history in a dialog.
 
-import { esc, applyTeamColors } from './utils.js';
-
-function logo(team, cls) {
-    if (team.logo) return '<img class="' + cls + '" src="' + esc(team.logo) + '" alt="">';
-    // No logo (FCS placeholder teams): a colour badge like the recap uses
-    return '<span class="team-chip" data-color="' + esc(team.color || '') + '">' + esc(team.short || '') + '</span>';
-}
-
-function headshot(url) {
-    return '<span class="headshot">' + (url ? '<img src="' + esc(url) + '" alt="" loading="lazy">' : '') + '</span>';
-}
+import { esc, applyTeamColors, teamLogo, headshot } from './utils.js';
 
 function staffList(staff) {
     if (!staff.length) return '';
@@ -28,7 +18,7 @@ function scheduleTable(games) {
             ? '<span class="score ' + (g.result === 'W' ? 'score-win' : g.result === 'L' ? 'score-loss' : '') + '">' + esc(g.result) + ' ' + esc(g.score) + '</span>'
             : '<span class="muted">&mdash;</span>';
         return '<tr><td class="muted">Wk ' + esc(g.week) + '</td><td class="nowrap">' + esc(g.venue) + ' ' +
-            '<span class="team-link" data-team-id="' + esc(g.opponent.id) + '">' + logo(g.opponent, 'team-logo team-logo--sm') +
+            '<span class="team-link" data-team-id="' + esc(g.opponent.id) + '">' + teamLogo(g.opponent, 'team-logo team-logo--sm', false) +
             (g.opponent.rank ? '<span class="team-rank">#' + esc(g.opponent.rank) + '</span> ' : '') + esc(g.opponent.name) + '</span></td>' +
             '<td class="team-schedule-result">' + result + '</td></tr>';
     }).join('') + '</tbody></table>';
@@ -55,7 +45,7 @@ function pollHistory(polls) {
 function render(dialog, t) {
     dialog.innerHTML =
         '<div class="team-dialog-hero" data-color="' + esc(t.color || '') + '">' +
-            logo(t, 'team-dialog-logo') +
+            teamLogo(t, 'team-dialog-logo', false) +
             '<div class="team-dialog-title">' +
                 '<div class="team-dialog-kicker">' + (t.rank ? 'AP #' + esc(t.rank) + ' &middot; ' : '') + esc(t.record) + (t.is_user ? ' &middot; Your team' : '') + '</div>' +
                 '<h2>' + esc(t.full_name) + '</h2>' +

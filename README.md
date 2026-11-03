@@ -69,7 +69,7 @@ save_reader/read_dynasty.mjs  ──JSON──▶  Flask app (app.py)  ◀──
 | Need | Notes |
 |---|---|
 | Windows 10/11 | Paths and the launcher assume Windows. |
-| Python 3.13 | `pip install -r requirements.txt` (Flask, requests, edge-tts). |
+| Python 3.13 | `pip install -r requirements.txt` (Flask, requests, edge-tts, Pillow for compact WebP photos and logos). |
 | Node.js 20+ | For the save reader (`npm install` in `basic_os/save_reader`). |
 | CFB27 (the game) | A dynasty save in `Documents\EA SPORTS College Football 27\saves`. |
 | [Ollama](https://ollama.com) | A text model (tested with `gemma3:12b`) and a **vision** model for the podcast screenshots (tested with `cfb-gemma`, a Gemma 3 build with vision). |

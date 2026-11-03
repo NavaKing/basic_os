@@ -71,7 +71,24 @@ def security_headers(response):
     response.headers.setdefault("X-Content-Type-Options", "nosniff")
     response.headers.setdefault("Referrer-Policy", "no-referrer")
     response.headers.setdefault("Cross-Origin-Resource-Policy", "same-origin")
+    if response.status_code == 200 and request.path.startswith("/static/"):
+        if request.args.get("v"):
+            response.headers["Cache-Control"] = "public, max-age=31536000, immutable"  # the address changes with the file
+        elif request.path.startswith(UNIQUE_NAMES):
+            response.headers["Cache-Control"] = "public, max-age=604800"
     return response
+
+# Browser caching for static files: stylesheets and the main script carry ?v=<last changed> in their address, so they
+# can be kept until they change. Generated photos and podcast audio never reuse a name, so they keep for a week.
+# (Scripts imported by main.js keep revalidating: their import addresses can't carry a version.)
+UNIQUE_NAMES = ("/static/generated/", "/static/podcasts/")
+
+@app.url_defaults
+def static_version(endpoint, values):
+    if endpoint == "static" and "filename" in values and "v" not in values:
+        path = os.path.join(app.static_folder, values["filename"])
+        if os.path.exists(path):
+            values["v"] = int(os.path.getmtime(path))
 
 def spaced(value):
     """'LightBreeze' -> 'Light breeze'"""
@@ -231,6 +248,9 @@ def generate_lore():
         story_text = ai_engine.generate_dynasty_content(selected_model, storylines.build_storyline_context(),
                                                         storylines.build_player_impact_lines(), storylines.build_storyline_titles(),
                                                         scouting.scouting_context(scouting_card))
+    except Exception as e:
+        # A failure reads as one (the status line and the finish notice), with nothing half-saved shown as new
+        return jsonify({"error": str(e)}), 500
     finally:
         progress.finish()
     return jsonify({
@@ -328,6 +348,15 @@ def generate_weekly_podcast():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/podcast/<int:episode_id>/episode.mp3')
+def podcast_episode_audio(episode_id):
+    import io
+    from flask import send_file
+    audio = podcast.episode_audio(episode_id)
+    if audio is None:
+        abort(404)
+    return send_file(io.BytesIO(audio), mimetype="audio/mpeg", download_name=f"between-the-numbers-{episode_id}.mp3", conditional=True)
+
 @app.route('/podcast/<int:episode_id>/record', methods=['POST'])
 def retry_podcast_recording(episode_id):
     try:
@@ -370,6 +399,11 @@ def resolve_storyline(storyline_id):
     except Exception as e:
         return jsonify({"error": str(e), "storylines": storylines.query_storylines()})
     return jsonify({"storylines": storylines.query_storylines()})
+
+@app.route('/awards/all-america/<name>')
+def all_conference_teams(name):
+    group = awards.conference_teams(name)
+    return jsonify(group) if group else (jsonify({"error": "No All-Conference teams for that conference."}), 404)
 
 @app.route('/awards/heisman/generate', methods=['POST'])
 def generate_heisman_column():
@@ -438,7 +472,8 @@ def backup_file(file_name):
     if request.method == 'DELETE':
         backups.delete_backup(file_name)
         return jsonify({"backups": backups.list_backups()})
-    return send_from_directory(backups.BACKUP_DIR, file_name, as_attachment=True)
+    data, download_name = backups.download(file_name)
+    return Response(data, mimetype="application/x-sqlite3", headers={"Content-Disposition": f'attachment; filename="{download_name}"'})
 
 @app.route('/backups/<file_name>/restore', methods=['POST'])
 def backup_restore(file_name):
@@ -449,5 +484,8 @@ def backup_restore(file_name):
     return jsonify({"restored": file_name, "safety": safety, "backups": backups.list_backups()})
 
 if __name__ == '__main__':
+    import housekeeping
+    for step, count in housekeeping.run().items():
+        print(f"Housekeeping: {count} {step}")
     # Debug mode (auto-reload and Werkzeug's in-browser debugger) is for development only: set BASIC_OS_DEBUG=1
     app.run(host="127.0.0.1", port=5000, debug=os.environ.get("BASIC_OS_DEBUG") == "1")

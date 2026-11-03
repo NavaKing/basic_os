@@ -3,6 +3,7 @@ import unittest
 
 import tests  # noqa: F401  (sets up the throwaway database first)
 import awards
+import columns
 import database
 import league
 
@@ -35,6 +36,35 @@ class AllAmerica(unittest.TestCase):
         aa = awards.all_america([], TEAMS, 1, "MW")
         self.assertIsNone(aa['national'])
         self.assertEqual(aa['conferences'], [])
+
+
+class OnDemand(unittest.TestCase):
+    """The page carries All-America and our conference; other conferences load from /awards/all-america/<name>."""
+
+    def setUp(self):
+        conn = database.get_db_connection()
+        for table in ("league_teams", "league_season_awards"):
+            conn.execute(f"DELETE FROM {table}")
+        conn.executemany("INSERT INTO league_teams (team_id, name, short_name, is_user, conference) VALUES (?, ?, ?, ?, ?)",
+                         [(1, "Wyoming", "WYO", 1, "MW"), (2, "Clemson", "CLEM", 0, "ACC")])
+        conn.executemany("INSERT INTO league_season_awards (award_type, position, conference, team_id, player_id, name) VALUES (?, ?, ?, ?, ?, ?)",
+                         [("ALL_AM_1ST_PRE", "QB", None, 2, "a", "National QB"), ("ALL_AM_1ST_PRE_CONF", "QB", "MW", 1, "b", "MW QB"),
+                          ("ALL_AM_1ST_PRE_CONF", "QB", "ACC", 2, "c", "ACC QB")])
+        conn.commit()
+        conn.close()
+
+    def test_page_carries_ours_only(self):
+        aa = awards.page_all_america()
+        self.assertEqual([c['name'] for c in aa['conferences']], ["MW", "ACC"])
+        self.assertEqual(aa['conferences'][0]['first'][0]['name'], "MW QB")
+        self.assertEqual(aa['conferences'][1], {"name": "ACC", "label": "ACC"})
+        self.assertEqual(aa['national']['first'][0]['name'], "National QB")
+
+    def test_route(self):
+        from app import app
+        client = app.test_client()
+        self.assertEqual(client.get("/awards/all-america/ACC", headers={"Host": "127.0.0.1:5000"}).get_json()['first'][0]['name'], "ACC QB")
+        self.assertEqual(client.get("/awards/all-america/Nope", headers={"Host": "127.0.0.1:5000"}).status_code, 404)
 
 
 class Bracket(unittest.TestCase):
@@ -76,7 +106,7 @@ class Bowls(unittest.TestCase):
                                "played": False, "homeScore": None, "awayScore": None, "date": "2026-12-27"}]}
         league.sync_league(data, 5)
         self.assertEqual(league.query_teams()[1]['conference'], "MW")
-        self.assertEqual([c['name'] for c in league.query_conferences()], ["MW"])
+        self.assertEqual([c['name'] for c in league.query_rows("SELECT name FROM league_conferences")], ["MW"])
         self.assertEqual(league.query_season_awards()[0]['name'], "Kaleb Vance")
         self.assertEqual(league.query_bowls()[0]['name'], "Arizona Bowl")
 
@@ -94,8 +124,22 @@ class Column(unittest.TestCase):
 
     def test_one_block_is_split_into_paragraphs(self):
         text = " ".join(f"Sentence {i}." for i in range(8))
-        self.assertEqual(awards.paragraphs(text).count("\n\n"), 3)
-        self.assertEqual(awards.paragraphs("One.\n\nTwo."), "One.\n\nTwo.")
+        self.assertEqual(columns.paragraphs(text).count("\n\n"), 3)
+        self.assertEqual(columns.paragraphs("One.\n\nTwo."), "One.\n\nTwo.")
+
+    def test_shared_writer_retries_and_checks_numbers(self):
+        import json as json_module
+        from unittest import mock
+        import ai_engine
+        body = ("Malachi Toney caught 36 passes. He scored 99 touchdowns somehow. "
+                "Every defense he faces knows exactly where he lines up, and it still doesn't matter. " * 3).strip()
+        replies = iter(["not json", json_module.dumps({"title": "", "body": body})])
+        with mock.patch.object(ai_engine, "call_ollama", side_effect=lambda *a, **k: next(replies)), \
+             mock.patch.object(ai_engine, "proper_names", return_value=set()):
+            title, text = columns.write("model", "Facts: Toney has 36 catches.", "The Heisman Race")
+        self.assertEqual(title, "The Heisman Race")
+        self.assertNotIn("99", text)
+        self.assertIn("36 passes", text)
 
     def test_stored_column(self):
         conn = database.get_db_connection()

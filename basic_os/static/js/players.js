@@ -1,14 +1,7 @@
 // Player profiles: clicking anything with data-player-id opens that player's season, honors, background and
 // (for our players) storylines and campus photos in a dialog.
 
-import { esc, applyTeamColors } from './utils.js';
-
-function teamMark(team) {
-    if (!team) return '';
-    return team.logo
-        ? '<img class="team-logo" src="' + esc(team.logo) + '" alt="" data-team-id="' + esc(team.id) + '">'
-        : '<span class="team-chip" data-color="' + esc(team.color || '') + '">' + esc(team.short) + '</span>';
-}
+import { esc, applyTeamColors, teamLogo } from './utils.js';
 
 function section(title, body) {
     return body ? '<section class="pp-section"><h3>' + esc(title) + '</h3>' + body + '</section>' : '';
@@ -25,7 +18,7 @@ function render(dialog, p) {
         : '<p class="muted">No stats recorded this season.</p>';
     const games = p.games.length ? '<table class="pp-games"><tbody>' + p.games.map(g =>
         '<tr><td class="muted">Wk ' + esc(g.week) + '</td>' +
-            '<td class="nowrap">' + esc(g.venue) + ' ' + teamMark(g.opponent) + ' ' + esc(g.opponent ? g.opponent.short : '') + '</td>' +
+            '<td class="nowrap">' + esc(g.venue) + ' ' + teamLogo(g.opponent) + ' ' + esc(g.opponent ? g.opponent.short : '') + '</td>' +
             '<td><span class="score ' + (g.outcome === 'W' ? 'score-win' : g.outcome === 'L' ? 'score-loss' : '') + '">' + esc(g.outcome) + ' ' + esc(g.score) + '</span></td>' +
             '<td class="pp-game-line">' + esc(g.line) + '</td></tr>').join('') + '</tbody></table>' : '';
     const honors = p.honors.length ? '<ul class="pp-honors">' + p.honors.map(h => '<li>' + esc(h) + '</li>').join('') + '</ul>' : '';
@@ -41,7 +34,7 @@ function render(dialog, p) {
             '<div class="team-dialog-title">' +
                 '<div class="team-dialog-kicker">' + sub + '</div>' +
                 '<h2>' + esc(p.name) + '</h2>' +
-                (p.team ? '<div class="pp-team">' + teamMark(p.team) + ' ' + esc(p.team.name) + '</div>' : '') +
+                (p.team ? '<div class="pp-team">' + teamLogo(p.team) + ' ' + esc(p.team.name) + '</div>' : '') +
                 (origin ? '<div class="team-dialog-stadium">' + origin + '</div>' : '') +
             '</div>' +
             '<button class="team-dialog-close" type="button" aria-label="Close">&times;</button>' +

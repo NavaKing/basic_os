@@ -7,6 +7,7 @@ from unittest import mock
 import tests  # noqa: F401  (sets up the throwaway database and backups folder first)
 import backups
 import database
+import roster  # noqa: F401  (its table is part of what makes a file a BASIC_OS database)
 
 
 def story_count():
@@ -38,7 +39,7 @@ class Backups(unittest.TestCase):
 
     def test_make_and_list(self):
         file_name = backups.create_backup("Before Week 6!")
-        self.assertRegex(file_name, r"^dynasty_20261102-120001_before-week-6\.db$")
+        self.assertRegex(file_name, r"^dynasty_20261102-120001_before-week-6\.db\.gz$")
         listed = backups.list_backups()
         self.assertEqual([(b['file'], b['label_text'], b['automatic']) for b in listed], [(file_name, "Before week 6", False)])
 
@@ -78,6 +79,37 @@ class Backups(unittest.TestCase):
         listed = backups.list_backups()
         self.assertEqual(sum(b['label'] == backups.AUTO_LABEL for b in listed), backups.AUTO_KEEP)
         self.assertIn(keep, [b['file'] for b in listed])
+
+
+class Compression(unittest.TestCase):
+    def setUp(self):
+        shutil.rmtree(backups.BACKUP_DIR, ignore_errors=True)
+        ticks = iter(range(1, 1000))
+        patcher = mock.patch.object(backups, "timestamp", lambda: f"20261102-13{next(ticks):04d}")
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def test_backups_are_compressed_and_download_plain(self):
+        name = backups.create_backup("small")
+        size = os.path.getsize(os.path.join(backups.BACKUP_DIR, name))
+        self.assertLess(size, os.path.getsize(database.DB_FILE) / 2)
+        data, download_name = backups.download(name)
+        self.assertTrue(data.startswith(b"SQLite format 3"))
+        self.assertEqual(download_name, name[:-3])
+
+    def test_old_uncompressed_backups_still_work_and_get_compressed(self):
+        os.makedirs(backups.BACKUP_DIR, exist_ok=True)
+        old = "dynasty_20261101-090000_old.db"
+        backups.copy_database(database.DB_FILE, os.path.join(backups.BACKUP_DIR, old))
+        backups.restore_backup(old)
+        self.assertEqual(backups.compress_old_backups(), 1)
+        self.assertIn(old + ".gz", [b['file'] for b in backups.list_backups()])
+
+    def test_compressed_upload(self):
+        import gzip
+        with open(database.DB_FILE, "rb") as f:
+            name = backups.save_upload(gzip.compress(f.read()))
+        self.assertTrue(name.endswith("_uploaded.db.gz"))
 
 
 class Routes(unittest.TestCase):

@@ -6,29 +6,13 @@ import media
 
 DB_FILE = os.environ.get("BASIC_OS_DB") or os.path.join(os.path.dirname(os.path.abspath(__file__)), "dynasty_data.db")
 
-# Depth chart slots for the starter roster, plus backups so position battles are possible
-DEFAULT_DEPTH_SLOTS = {
-    "Broderick Donahue": "WR1",
-    "Kaleb Vance": "QB1",
-    "Tyler Cross": "RB1",
-    "Marcus Miller": "OT1",
-    "Jalen Brooks": "DE1"
-}
-BACKUP_PLAYERS = [
-    ("Dawson Reyes", "QB", 7, "Healthy", "None", "N/A", "QB2"),
-    ("Trey Whitaker", "WR", 11, "Healthy", "None", "N/A", "WR2"),
-    ("Isaiah Grant", "RB", 28, "Healthy", "None", "N/A", "RB2"),
-    ("Cole Hansen", "OT", 68, "Healthy", "None", "N/A", "OT2"),
-    ("Malik Price", "DE", 95, "Healthy", "None", "N/A", "DE2")
-]
-
 def get_connection():
     conn = sqlite3.connect(DB_FILE)
     conn.row_factory = sqlite3.Row
     return conn
 
 def initialize_roster_table():
-    """Verifies and initializes the roster tracking data table matrix."""
+    """Creates the roster table (filled from the save at each sync) and adds any newer columns."""
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     cursor.execute("""
@@ -41,24 +25,9 @@ def initialize_roster_table():
         injury_type TEXT DEFAULT 'None',
         duration_weeks TEXT DEFAULT 'N/A',
         depth_slot TEXT, -- e.g. 'QB1', 'WR2'
-        save_id TEXT -- player id from the game save; NULL for placeholder players
+        save_id TEXT -- player id from the game save
     )
     """)
-
-    # Check if empty, then seed initial sample roster states
-    cursor.execute("SELECT COUNT(*) FROM team_roster")
-    if cursor.fetchone()[0] == 0:
-        initial_roster = [
-            ("Broderick Donahue", "WR", 1, "Healthy", "None", "N/A"),
-            ("Kaleb Vance", "QB", 12, "Healthy", "None", "N/A"),
-            ("Tyler Cross", "RB", 22, "Questionable", "Ankle Sprain", "1-2 Weeks"),
-            ("Marcus Miller", "OT", 74, "Out", "Torn Meniscus", "Season"),
-            ("Jalen Brooks", "DE", 90, "Probable", "Bruised Ribs", "Day-to-Day")
-        ]
-        cursor.executemany("""
-        INSERT INTO team_roster (player_name, position, jersey_num, health_status, injury_type, duration_weeks)
-        VALUES (?, ?, ?, ?, ?, ?)
-        """, initial_roster)
 
     # Add the depth chart column to rosters created before it existed
     existing_cols = [col[1] for col in cursor.execute("PRAGMA table_info(team_roster)").fetchall()]
@@ -84,16 +53,6 @@ def initialize_roster_table():
         PRIMARY KEY (save_id, week_num)
     )
     """)
-
-    # Fill in a starting depth chart if none has been set yet
-    cursor.execute("SELECT COUNT(*) FROM team_roster WHERE depth_slot IS NOT NULL")
-    if cursor.fetchone()[0] == 0:
-        for name, slot in DEFAULT_DEPTH_SLOTS.items():
-            cursor.execute("UPDATE team_roster SET depth_slot = ? WHERE player_name = ?", (slot, name))
-        cursor.executemany("""
-        INSERT INTO team_roster (player_name, position, jersey_num, health_status, injury_type, duration_weeks, depth_slot)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, BACKUP_PLAYERS)
 
     conn.commit()
     conn.close()

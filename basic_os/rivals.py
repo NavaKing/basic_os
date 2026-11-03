@@ -1,9 +1,10 @@
-import json
+import columns
 import database
 import league
 import recap
 import team
 import team_page
+from request_cache import per_request
 
 # Rival watch: our rivals as the save tracks them (series, streak, last meeting) next to their season so far,
 # plus rivalry week: when the next game is against a rival, the hub generator and a rivalry-week issue lean into it.
@@ -75,6 +76,7 @@ def their_season(team_id, teams, ranks):
                         "opponent": recap.team_view(teams[opponent_id]) if opponent_id in teams else None}
     return view
 
+@per_request
 def build_rival_watch():
     us = team.user_team()
     teams = league.query_teams()
@@ -139,7 +141,7 @@ def query_column(opponent_id):
     rows = league.query_rows("SELECT * FROM rivalry_columns WHERE opponent_id = ? ORDER BY column_id DESC LIMIT 1", (opponent_id,))
     if not rows:
         return None
-    return {"week": rows[0]['week'], "title": rows[0]['title'], "paragraphs": [p.strip() for p in rows[0]['body'].split("\n\n") if p.strip()]}
+    return {"week": rows[0]['week'], "title": rows[0]['title'], "paragraphs": columns.split_paragraphs(rows[0]['body'])}
 
 def next_rival_game():
     """The soonest unplayed meeting with a rival (the rivalry-week issue can be written ahead of time)."""
@@ -147,7 +149,6 @@ def next_rival_game():
     return min(upcoming, key=lambda r: r['meeting']['week']) if upcoming else None
 
 def generate_issue(selected_model):
-    import ai_engine, awards
     entry = next_rival_game()
     if not entry:
         raise ValueError("No rival is left on this season's schedule.")
@@ -161,21 +162,12 @@ def generate_issue(selected_model):
              + (f"{entry['team']['name']} players to watch: {'; '.join(theirs)}." if theirs else ""))
     prompt = (f"You are a columnist for a {us['name']} fan magazine writing the rivalry week issue. Build up the game: the history and "
               f"what it means, where both teams stand this year, and the players who could decide it. Use only these facts and never invent past "
-              f"games, scores or quotes: {facts} Write {awards.COLUMN_PARAGRAPHS} paragraphs separated by blank lines. "
+              f"games, scores or quotes: {facts} Write {columns.PARAGRAPHS} paragraphs separated by blank lines. "
               'Respond with ONLY JSON: {"title": "headline under 10 words", "body": "the column"}')
-    for _attempt in range(3):
-        try:
-            data = json.loads(ai_engine.call_ollama(selected_model, prompt, force_json=True))
-            body = awards.paragraphs(ai_engine.clean_text(str(data.get('body') or "")))
-            if len(body) > 200:
-                break
-        except Exception:
-            continue
-    else:
-        raise RuntimeError("The model didn't return a usable column. Is Ollama running?")
+    title, body = columns.write(selected_model, prompt, entry['name'])
     conn = database.get_db_connection()
     conn.execute("INSERT INTO rivalry_columns (opponent_id, week, title, body) VALUES (?, ?, ?, ?)",
-                 (entry['team']['id'], meeting['week'], ai_engine.clean_text(str(data.get('title') or "")) or entry['name'], body))
+                 (entry['team']['id'], meeting['week'], title, body))
     conn.commit()
     conn.close()
     return query_column(entry['team']['id'])

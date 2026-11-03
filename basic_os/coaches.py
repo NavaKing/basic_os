@@ -5,7 +5,7 @@ import gameplan
 import league
 import media
 import recap
-import team
+from request_cache import per_request
 from sentences import split as sentence_split
 
 # Coaches news column: the top 10 and the hot seat for head coaches, offensive and defensive coordinators.
@@ -103,17 +103,23 @@ def current_week():
     game = database.query_active_week()
     return game['week_id'] if game else 0
 
-def query_stored(week, role, list_name):
+def query_stored(week):
+    """{(role, list): {team_id: {headline, quote}}} for every quote written this week, in one query."""
     conn = database.get_db_connection()
-    rows = conn.execute("SELECT team_id, headline, quote FROM coach_news WHERE week_num = ? AND role = ? AND list = ?", (week, role, list_name)).fetchall()
+    rows = conn.execute("SELECT role, list, team_id, headline, quote FROM coach_news WHERE week_num = ?", (week,)).fetchall()
     conn.close()
-    return {r['team_id']: dict(r) for r in rows}
+    stored = {}
+    for r in rows:
+        stored.setdefault((r['role'], r['list']), {})[r['team_id']] = dict(r)
+    return stored
 
+@per_request
 def build_news():
     seasons = team_seasons()
     ranked = rankings(seasons)
     week = current_week()
-    return {"week": week, "lists": {role: {name: [coach_card(role, seasons[t], query_stored(week, role, name)) for t in ids]
+    stored = query_stored(week)
+    return {"week": week, "lists": {role: {name: [coach_card(role, seasons[t], stored.get((role, name), {})) for t in ids]
                                            for name, ids in lists.items()} for role, lists in ranked.items()}}
 
 def clean_quote(text):

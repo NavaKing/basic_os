@@ -1,10 +1,9 @@
-import json
 import re
+import columns
 import database
 import league
 import media
 import recap
-from sentences import split as sentence_split
 
 # Awards tab: the game's All-America and All-Conference teams, a Heisman column, and bowl season
 # (a projected 12-team playoff bracket until the game sets the real one, plus every bowl on the schedule).
@@ -129,7 +128,7 @@ def query_column():
         return None
     column = rows[0]
     return {"kind": column['kind'], "week": column['week'], "title": column['title'],
-            "paragraphs": [p.strip() for p in column['body'].split("\n\n") if p.strip()]}
+            "paragraphs": columns.split_paragraphs(column['body'])}
 
 # The recap's stat box labels, spelled out so the model can't misread them ("YAC" is yards after the catch)
 STAT_WORDS = {"Pass Yds": "passing yards", "Pass TD": "passing touchdowns", "INT": "interceptions", "Comp %": "completion percentage",
@@ -137,8 +136,6 @@ STAT_WORDS = {"Pass Yds": "passing yards", "Pass TD": "passing touchdowns", "INT
               "Rec": "catches", "Rec Yds": "receiving yards", "TD": "touchdowns", "YAC": "yards after the catch",
               "Tkl": "tackles", "Sack": "sacks", "PBU": "pass breakups", "FF": "forced fumbles", "FG": "field goals made",
               "Long": "longest field goal", "XP": "extra points made"}
-COLUMN_PARAGRAPHS = 4
-
 def heisman_facts(heisman):
     lines = []
     for row in heisman[:5]:
@@ -149,17 +146,7 @@ def heisman_facts(heisman):
         lines.append(f"No. {row['rank']} {row['name']}, {row['position']}, {row['team']['name']} ({move}): {stats}.")
     return " ".join(lines)
 
-def paragraphs(text, count=COLUMN_PARAGRAPHS):
-    """Keeps the model's paragraphs; a column that came back as one block is split into about `count` by sentence."""
-    parts = [p.strip() for p in re.split(r"\n\s*\n", text) if p.strip()]
-    if len(parts) > 1:
-        return "\n\n".join(parts)
-    sentences = sentence_split(text)
-    size = max(1, -(-len(sentences) // count))
-    return "\n\n".join(" ".join(sentences[i:i + size]) for i in range(0, len(sentences), size))
-
 def generate_heisman_column(selected_model):
-    import ai_engine
     week = recap.default_week()
     if week is None:
         raise ValueError("No games have been played yet.")
@@ -173,26 +160,32 @@ def generate_heisman_column(selected_model):
             f"Write a Heisman Watch column after Week {week}: who leads the race, who is rising or falling, and what each contender must do from here.")
     prompt = (f"You are a national college football columnist. {task} Use only these facts and stats, and never invent games, quotes or numbers: "
               f"{heisman_facts(heisman)} Only call a player rising or falling if the facts say he moved. "
-              f"Write {COLUMN_PARAGRAPHS} paragraphs separated by blank lines, vivid but grounded in the numbers. "
+              f"Write {columns.PARAGRAPHS} paragraphs separated by blank lines, vivid but grounded in the numbers. "
               'Respond with ONLY JSON: {"title": "headline under 10 words", "body": "the column"}')
-    for _attempt in range(3):
-        try:
-            data = json.loads(ai_engine.call_ollama(selected_model, prompt, force_json=True))
-            body = paragraphs(ai_engine.clean_text(str(data.get('body') or "")))
-            if len(body) > 200:
-                break
-        except Exception:
-            continue
-    else:
-        raise RuntimeError("The model didn't return a usable column. Is Ollama running?")
+    title, body = columns.write(selected_model, prompt, "The Heisman Race")
     conn = database.get_db_connection()
     conn.execute("INSERT INTO award_columns (kind, week, title, body) VALUES (?, ?, ?, ?)",
-                 (kind, week, ai_engine.clean_text(str(data.get('title') or "")) or "The Heisman Race", body))
+                 (kind, week, title, body))
     conn.commit()
     conn.close()
     return query_column()
 
 # ---------- Page ----------
+
+def our_all_america():
+    teams = league.query_teams()
+    user = next((t for t in teams.values() if t.get('is_user')), None)
+    return all_america(league.query_season_awards(), teams, user['team_id'] if user else None, user.get('conference') if user else None)
+
+def conference_teams(name):
+    """One conference's first and second teams (the page loads the others on demand), or None."""
+    return next(({"first": c['first'], "second": c['second']} for c in our_all_america()['conferences'] if c['name'] == name), None)
+
+def page_all_america():
+    """All-America plus our conference (listed first) for the page; the other conferences carry only their names."""
+    aa = our_all_america()
+    aa['conferences'] = [c if i == 0 else {"name": c['name'], "label": c['label']} for i, c in enumerate(aa['conferences'])]
+    return aa
 
 def build_awards():
     teams = league.query_teams()
@@ -203,7 +196,7 @@ def build_awards():
     return {
         "week": week,
         "conference": user.get('conference') if user else None,
-        "all_america": all_america(league.query_season_awards(), teams, user['team_id'] if user else None, user.get('conference') if user else None),
+        "all_america": page_all_america(),
         "heisman": page['heisman'][:5],
         "column": query_column(),
         "ceremony": regular_season_over(),

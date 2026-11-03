@@ -293,7 +293,9 @@ def build_plan(week):
     o_us, d_us = offense(Lineup(us_roster)), defense(Lineup(us_roster))
     o_them, d_them = offense(Lineup(them_roster)), defense(Lineup(them_roster))
     attack, stop = group(offense_matchups(o_us, d_them)), group(defense_matchups(d_us, o_them))
-    stored = query_stored(week) if (query_stored(week).get('opponent') == game['opponent_name']) else {}
+    stored = query_stored(week)
+    if stored.get('opponent') != game['opponent_name']:
+        stored = {}
     notes = stored.get('notes', {})
 
     us, them = side_view(us_row, us_roster), side_view(them_row, them_roster)

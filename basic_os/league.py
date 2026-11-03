@@ -1,6 +1,7 @@
 import json
 import database
 import media
+from request_cache import per_request
 
 # League-wide data from the save (every team, game and player stat line) for the weekly recap.
 # Everything except the poll history is replaced on each sync; poll snapshots accumulate week by week.
@@ -167,7 +168,8 @@ def initialize_league_tables():
                                     ("league_teams", "off_rank", "INTEGER"), ("league_teams", "def_rank", "INTEGER"),
                                     ("league_teams", "ratings_json", "TEXT"), ("league_teams", "conference", "TEXT"),
                                     ("league_players", "portrait_file", "TEXT"), ("league_players", "hometown", "TEXT"),
-                                    ("league_players", "home_state", "TEXT"), ("league_players", "stars", "INTEGER")):
+                                    ("league_players", "home_state", "TEXT"), ("league_players", "stars", "INTEGER"),
+                                    ("game_scoring", "home_id", "INTEGER"), ("game_scoring", "away_id", "INTEGER")):
         if column not in [c[1] for c in cursor.execute(f"PRAGMA table_info({table})").fetchall()]:
             cursor.execute(f"ALTER TABLE {table} ADD COLUMN {column} {col_type}")
     conn.commit()
@@ -330,8 +332,28 @@ def query_plan_roster(team_id):
     rows = query_rows("SELECT roster_json FROM plan_rosters WHERE team_id = ?", (team_id,))
     return json.loads(rows[0]['roster_json']) if rows else None
 
+# What draft_from_save reads from a scoring row and its player snapshots; the save's other fields aren't kept
+PLAY_FIELDS = ("quarter", "secondsLeft", "homeBefore", "homeAfter", "awayBefore", "awayAfter")
+SNAPSHOT_FIELDS = ("playerId", "name", "position", "touchdowns", "attempts")
+
+def compact_plays(plays):
+    return [{**{k: p.get(k) for k in PLAY_FIELDS},
+             **{side: [{k: s.get(k) for k in SNAPSHOT_FIELDS} for s in p.get(side) or []] for side in ("home", "away")}}
+            for p in plays]
+
+def prune_scoring():
+    """Drops summaries whose game is gone or is now a different matchup (a new season can reuse game ids)."""
+    conn = database.get_db_connection()
+    if conn.execute("SELECT 1 FROM league_games LIMIT 1").fetchone():  # never prune against an empty schedule
+        conn.execute("""DELETE FROM game_scoring WHERE NOT EXISTS (
+                            SELECT 1 FROM league_games g WHERE g.game_id = game_scoring.game_id
+                            AND (game_scoring.home_id IS NULL OR (g.home_id = game_scoring.home_id AND g.away_id = game_scoring.away_id)))""")
+        conn.commit()
+    conn.close()
+
 def sync_scoring(summaries):
     """Stores each scoring summary under its game (matched by the two teams; the save doesn't link them)."""
+    prune_scoring()
     if not summaries:
         return 0
     played = query_rows("SELECT game_id, week, home_id, away_id, home_score, away_score FROM league_games WHERE played = 1")
@@ -342,9 +364,9 @@ def sync_scoring(summaries):
             continue
         # A rematch (conference title game) is possible: pick the game whose final the summary reaches
         game = min(candidates, key=lambda g: abs(g['home_score'] - summary['homeScore']) + abs(g['away_score'] - summary['awayScore']))
-        rows.append((game['game_id'], game['week'], json.dumps(summary['plays'])))
+        rows.append((game['game_id'], game['week'], json.dumps(compact_plays(summary['plays'])), game['home_id'], game['away_id']))
     conn = database.get_db_connection()
-    conn.executemany("INSERT OR REPLACE INTO game_scoring (game_id, week, plays_json) VALUES (?, ?, ?)", rows)
+    conn.executemany("INSERT OR REPLACE INTO game_scoring (game_id, week, plays_json, home_id, away_id) VALUES (?, ?, ?, ?, ?)", rows)
     conn.commit()
     conn.close()
     return len(rows)
@@ -352,7 +374,7 @@ def sync_scoring(summaries):
 def query_scoring_games(team_id=None):
     """Games we have a scoring summary for, newest first (optionally only one team's)."""
     sql = """SELECT s.game_id, s.week, g.home_id, g.away_id, g.home_score, g.away_score FROM game_scoring s
-             JOIN league_games g ON g.game_id = s.game_id"""
+             JOIN league_games g ON g.game_id = s.game_id AND (s.home_id IS NULL OR (g.home_id = s.home_id AND g.away_id = s.away_id))"""
     params = ()
     if team_id is not None:
         sql += " WHERE g.home_id = ? OR g.away_id = ?"
@@ -372,6 +394,7 @@ def query_team_by_name(name):
     team['staff'] = json.loads(team.get('staff_json') or "{}")
     return team
 
+@per_request
 def query_players():
     return {p['player_id']: p for p in query_rows("SELECT * FROM league_players")}
 
@@ -415,9 +438,6 @@ def query_rivalries():
 
 def query_coaching_changes():
     return query_rows("SELECT * FROM coaching_changes ORDER BY change_id DESC")
-
-def query_conferences():
-    return query_rows("SELECT * FROM league_conferences ORDER BY name")
 
 def query_awards(week):
     return query_rows("SELECT * FROM league_awards WHERE week = ?", (week,))

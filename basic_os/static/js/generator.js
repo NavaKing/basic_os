@@ -27,12 +27,11 @@ export function initGenerator(onResult) {
         bar.hidden = false;
         try {
             const data = await longJob('The hub generator', postJSON('/generate'));
+            if (data.error) throw new Error(data.error);
             onResult(data);
-            // /generate returns the new story on success, or an error message it didn't save
-            const saved = (data.past_stories || []).some(story => story.generated_text === data.text);
-            setStatus(status, saved ? 'Done: new dispatch, ' + (data.tweets || []).length + ' posts and photos are ready.' : data.text, !saved);
+            setStatus(status, 'Done: new dispatch, ' + (data.tweets || []).length + ' posts and photos are ready.');
         } catch (err) {
-            setStatus(status, 'Request failed: ' + err, true);
+            setStatus(status, String(err.message || err), true);
         } finally {
             clearInterval(timer);
             bar.hidden = true;

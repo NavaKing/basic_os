@@ -1,6 +1,7 @@
 import math
 import league
 import media
+from request_cache import per_request
 from storylines import impact_score, turnovers
 
 # Weekly recap: awards, notable games, polls and races for one week, built from the league snapshot.
@@ -329,6 +330,7 @@ def default_week():
     finished = [w['week'] for w in weeks if not w['in_progress']]
     return finished[-1] if finished else (weeks[-1]['week'] if weeks else None)
 
+@per_request
 def build_recap(week):
     season_games = league.query_games(through_week=week)
     ranks_before, ranks_after = league.query_poll(week - 1), league.query_poll(week)
