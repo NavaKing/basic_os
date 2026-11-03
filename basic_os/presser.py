@@ -97,6 +97,10 @@ def week_facts(role):
     context = storylines.build_storyline_context()
     if context:
         facts.append(f"Locker room storylines: {context}")
+    import care_incidents
+    off_field = care_incidents.prompt_context()
+    if off_field:
+        facts.append(off_field.strip())
     row = league.query_user_team() or {}
     if role == "oc" and row.get('off_rank'):
         facts.append(f"The offense ranks No. {row['off_rank']} nationally.")

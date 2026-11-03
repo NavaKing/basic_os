@@ -583,6 +583,9 @@ def weekly_facts(page, us_name, our_line):
         facts.append(("heisman", "Heisman race: " + awards.heisman_facts(page['heisman'])))
     if our_line:
         facts.append(("ours", f"{us_name} this week: {our_line}."))
+    import care_incidents
+    for line in care_incidents.story_lines():
+        facts.append(("ours", f"{us_name} off the field: {line} Report only this, never add details or blame."))
     streaks = page.get('streaks') or {}
     for kind, label in (("winning", "Longest winning streaks"), ("losing", "Longest losing streaks")):
         if streaks.get(kind):

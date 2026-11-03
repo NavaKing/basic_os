@@ -14,4 +14,27 @@
         <div class="status-text" id="storyline_status"></div>
         <div id="storyline_list"></div>
     </div>
+    {# Player care: warning signs to watch and off-field incidents (app-only; see care_incidents.py) #}
+    {% if off_field.warnings or off_field.incidents %}
+    <div class="panel off-field">
+        {{ section_head("Off the field", "Warning signs and incidents") }}
+        {% if off_field.incidents %}
+        <ul class="off-field-list">
+            {% for i in off_field.incidents %}
+            <li><span class="off-field-week">Wk {{ i.week }}</span> <strong>{{ i.title }}</strong>: {{ i.position }} {{ i.name }}
+                <span class="muted">&middot; {{ i.outcome or 'Waiting for your response in the Care window' }}</span></li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+        {% if off_field.warnings %}
+        <div class="off-field-sub">Warning signs</div>
+        <ul class="off-field-list">
+            {% for w in off_field.warnings %}
+            <li><span class="off-field-week">Wk {{ w.week }}</span> {{ w.position }} {{ w.name }}: {{ w.text }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+        <p class="muted off-field-note">Handle these in the Care window (tab bar). Acting on warning signs lowers the risk of an incident.</p>
+    </div>
+    {% endif %}
 </section>

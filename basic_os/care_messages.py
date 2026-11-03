@@ -248,4 +248,8 @@ def unread():
     emails = league.query_rows("SELECT COUNT(*) AS n FROM care_emails WHERE status = 'open'")[0]['n']
     return texts, emails
 
+def open_incident_count():
+    import care_incidents   # noqa: F401  (makes sure the table exists)
+    return league.query_rows("SELECT COUNT(*) AS n FROM care_incidents WHERE status = 'open'")[0]['n']
+
 initialize_tables()

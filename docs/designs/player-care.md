@@ -316,6 +316,35 @@ fill when the save moves to a new week. Every number is in `care_tuning.json` un
 - **Not yet:** texts written by gemma in the player's own voice, and free-text replies (open question 3).
   Generating them at sync time would slow every sync, so templates come first.
 
+## Iteration 3: incidents and warning-sign stories (built on feature/care-incidents)
+
+App-only. The code is in `basic_os/care_incidents.py`, and the dials are under `incidents` in `care_tuning.json`.
+
+- **The roll:** each week every player rolls `base_chance` (0.0008). It is multiplied by
+  (1 + 5 for each low need, 10 for a low Focus, 3 for each open warning sign), then by persona, starter or star
+  status, a big win, trust, and counseling (halved for 6 weeks). At most one incident a week for the team. The
+  simulator expects about 1.7 a season on Normal if you ignore everyone, and 1.3 if you care for them.
+- **Catalog:**
+  - *Blameless* (any player): family emergency, illness, burnout, a pickup-game injury, a car accident that
+    wasn't his fault, a death in the family.
+  - *Scandalous* (generated, generic-face players only): missed curfew, an off-campus party, a fight outside a
+    bar, a DUI. A player with no face on file counts as real, the safe default. An empty Focus makes scandal
+    likelier for a generated player.
+- **Responses:**
+  - Support (2h), Counseling (2h, lowers risk), Keep it quiet (1h; 40% chance it gets out the next week).
+  - For misconduct only: Discipline (1h) and Suspend (free; app-only, you sit him on your depth chart).
+  - No response by the next week: trust -6, morale -10.
+- **Where it shows up:**
+  - The top of the Care window's This week tab, with a badge.
+  - A new Off the field panel in the Locker Room: incidents and open warning signs.
+  - The hub generator's dispatch and one campus-feed post.
+  - Press Room facts, so reporters can ask about it.
+  - The weekly podcast's "our week" segment.
+
+  Writers only get the catalog's press wording plus how the coach responded, with an instruction never to add
+  details, charges or blame. A story kept quiet stays out until it breaks.
+- **Still to come:** the save writer (Hot/Cold, confidence, injuries), after an in-game test on a throwaway save.
+
 ## Build order (when un-tabled)
 
 1. **In-game test:** one edited Hot/Cold, ability, injury and heal, loaded in CFB27 to see what the game honours.
