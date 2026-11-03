@@ -169,7 +169,8 @@ def initialize_league_tables():
                                     ("league_teams", "ratings_json", "TEXT"), ("league_teams", "conference", "TEXT"),
                                     ("league_players", "portrait_file", "TEXT"), ("league_players", "hometown", "TEXT"),
                                     ("league_players", "home_state", "TEXT"), ("league_players", "stars", "INTEGER"),
-                                    ("game_scoring", "home_id", "INTEGER"), ("game_scoring", "away_id", "INTEGER")):
+                                    ("game_scoring", "home_id", "INTEGER"), ("game_scoring", "away_id", "INTEGER"),
+                                    ("league_games", "home_stats_json", "TEXT"), ("league_games", "away_stats_json", "TEXT")):
         if column not in [c[1] for c in cursor.execute(f"PRAGMA table_info({table})").fetchall()]:
             cursor.execute(f"ALTER TABLE {table} ADD COLUMN {column} {col_type}")
     conn.commit()
@@ -235,10 +236,13 @@ def sync_league(league, current_week, phase=None):
                        [(b['id'], b['week'], b['weekType'], b['name'], b['homeId'], b['awayId'], int(b['played']), b['homeScore'],
                          b['awayScore'], b['date']) for b in league.get('bowlGames') or []])
     cursor.executemany("""
-        INSERT INTO league_games (game_id, week, week_type, home_id, away_id, played, home_score, away_score, home_quarters, away_quarters, home_yards, away_yards)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO league_games (game_id, week, week_type, home_id, away_id, played, home_score, away_score, home_quarters, away_quarters,
+                                  home_yards, away_yards, home_stats_json, away_stats_json)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, [(g['id'], g['week'], g['weekType'], g['homeId'], g['awayId'], int(g['played']), g['homeScore'], g['awayScore'],
-           json.dumps(g['homeQuarters']), json.dumps(g['awayQuarters']), g['homeYards'], g['awayYards']) for g in league['games']])
+           json.dumps(g['homeQuarters']), json.dumps(g['awayQuarters']), g['homeYards'], g['awayYards'],
+           json.dumps(g['homeStats']) if g.get('homeStats') else None, json.dumps(g['awayStats']) if g.get('awayStats') else None)
+          for g in league['games']])
     cursor.executemany("""INSERT INTO league_players (player_id, name, position, class_year, redshirt, jersey, team_id, portrait_file,
                                                       hometown, home_state, stars) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                        [(p['id'], p['name'], p['position'], p['classYear'], p['redshirt'], p['jersey'], p['teamId'],
@@ -311,6 +315,12 @@ def query_team(team_id):
 def query_team_games(team_id):
     """Every game on one team's schedule this season, played or not, in week order."""
     return query_rows("SELECT * FROM league_games WHERE home_id = ? OR away_id = ? ORDER BY week, game_id", (team_id, team_id))
+
+def bye_weeks(weeks):
+    """Weeks without a game between a team's first and last regular-season games (bowl weeks never count)."""
+    last = query_rows("SELECT MAX(week) AS week FROM league_games WHERE week_type = 'RegularSeason'")[0]['week']
+    regular = {w for w in weeks if last is None or w <= last}
+    return [w for w in range(min(regular), max(regular) + 1) if w not in regular] if regular else []
 
 def query_team_polls(team_id):
     """[(poll_week, AP rank or None)] for every poll we've captured."""

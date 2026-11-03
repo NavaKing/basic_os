@@ -1,0 +1,40 @@
+/* Box score dialog (clicking a played game). Shares the team dialog's frame and the player profile's sections. */
+
+[data-game-id] { cursor: pointer; }
+tr[data-game-id]:hover td { background: rgba(255, 255, 255, 0.04); }
+
+.game-dialog { width: min(760px, calc(100vw - 32px)); }
+.gm-head { position: relative; padding: 22px 56px 16px 24px; border-bottom: 3px solid var(--gold);
+           background: linear-gradient(120deg, color-mix(in srgb, var(--gold) 18%, var(--panel)), var(--panel) 80%); }
+.gm-head h2 { margin: 4px 0 0; font-family: var(--font-display); font-size: 26px; letter-spacing: 0.6px; text-transform: uppercase; color: #fff; }
+
+.gm-line { width: 100%; margin-top: 16px; }
+.gm-team { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+
+.gm-stats { width: 100%; border-collapse: collapse; font-size: 14px; }
+.gm-stats th { font-family: var(--font-display); font-size: 12px; letter-spacing: 1.5px; color: var(--gold); padding-bottom: 6px; }
+.gm-stats td, .gm-stats th { text-align: center; }
+.gm-stats td { padding: 7px 6px; border-bottom: 1px solid var(--border-soft); color: var(--text-dim); }
+.gm-stats .gm-stat-label { width: 34%; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted); }
+.gm-stats .gm-better { color: #fff; font-weight: 700; }
+
+.gm-perfs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.gm-perf h4 { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; font-size: 14px; color: #fff; }
+.gm-perf ul { list-style: none; margin: 0; padding: 0; }
+.gm-perf li { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border-soft); }
+.gm-perf-label { font-family: var(--font-display); font-size: 10px; letter-spacing: 1.2px; text-transform: uppercase; color: var(--gold); }
+.gm-perf-name { font-weight: 700; color: #fff; }
+.gm-perf-line { font-size: 12px; color: var(--text-dim); }
+
+.gm-scoring { list-style: none; margin: 0; padding: 0; font-size: 14px; }
+.gm-scoring li { padding: 7px 0; border-bottom: 1px solid var(--border-soft); color: #e8e8e8; }
+.gm-when { display: inline-block; width: 92px; font-family: var(--font-display); font-size: 12px; letter-spacing: 0.8px; color: var(--text-muted); }
+.gm-who { display: inline-block; width: 56px; font-weight: 700; color: var(--gold); }
+
+@media (max-width: 640px) {
+    .gm-perfs { grid-template-columns: minmax(0, 1fr); }
+    .gm-when { width: 76px; }
+}
+
+/* Bye weeks in schedules */
+.schedule-bye td { font-style: italic; letter-spacing: 0.5px; }

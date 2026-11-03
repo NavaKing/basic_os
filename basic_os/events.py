@@ -376,7 +376,14 @@ def name_remaining_scorers(plays, touchdowns):
     return plays
 
 def draft_from_save(game_id):
-    """A review draft (same shape as the screenshot reading) built from a scoring summary captured from the save."""
+    """A review draft (same shape as the screenshot reading) built from a scoring summary captured from the save,
+    stored as the podcast's current draft."""
+    draft = build_save_draft(game_id)
+    save_draft(draft)
+    return draft
+
+def build_save_draft(game_id):
+    """The scoring plays of a game captured from the save, with per-quarter totals; ValueError if none were captured."""
     plays = league.query_game_scoring(game_id)
     # The pool also logs moments where neither score changed (ends of halves, failed tries); only real scores count
     plays = [p for p in plays or [] if p['homeAfter'] > p['homeBefore'] or p['awayAfter'] > p['awayBefore']]
@@ -403,7 +410,6 @@ def draft_from_save(game_id):
         name_remaining_scorers([p for p in out if p['team'] == abbr[team_id]], game_touchdowns(game_id, team_id))
     draft_teams = [{"abbr": abbr[t['team_id']], "name": t['name'], "team_id": t['team_id']} for t in (away, home)]
     draft = build_draft(draft_teams, out, {abbr[game['away_id']].upper(): game['away_score'], abbr[game['home_id']].upper(): game['home_score']})
-    save_draft(draft)
     return draft
 
 def saved_games():

@@ -250,6 +250,14 @@ try {
     const stats = recordFrom(teamStatsTable, data);
     return stats ? (stats.OFFYARDS ?? null) : null;
   };
+  // A played game's team stat line, for the box score (TeamStats via Home/AwayTeamStatCache)
+  const GAME_STATS = ['FIRSTDOWNS', 'OFFYARDS', 'OFFPASSYARDS', 'PASSCOMPLETIONS', 'PASSATTEMPTS', 'PASSTDS', 'OFFRUSHYARDS', 'RUSHATTEMPTS',
+    'RUSHTDS', 'THIRDDOWNCONV', 'THIRDDOWNS', 'FOURTHDOWNCONV', 'FOURTHDOWNS', 'OFFREDZONETDS', 'OFFREDZONES', 'TAKEAWAYS', 'SACKS',
+    'PENALTIES', 'PENALTYYARDS', 'POSSESSIONTIME'];
+  const gameStatLine = (data) => {
+    const stats = recordFrom(teamStatsTable, data);
+    return stats ? Object.fromEntries(GAME_STATS.map((key) => [key, stats[key] ?? 0])) : null;
+  };
   const leagueGames = [];
   for (const game of gameTable.records.filter(live)) {
     if (game.SeasonYear !== seasonInfo.CurrentYear) continue;
@@ -270,7 +278,9 @@ try {
       homeQuarters: played ? [game.HomeScoreQuarter1, game.HomeScoreQuarter2, game.HomeScoreQuarter3, game.HomeScoreQuarter4] : null,
       awayQuarters: played ? [game.AwayScoreQuarter1, game.AwayScoreQuarter2, game.AwayScoreQuarter3, game.AwayScoreQuarter4] : null,
       homeYards: played ? totalYards(ref(game, 'HomeTeamStatCache')) : null,
-      awayYards: played ? totalYards(ref(game, 'AwayTeamStatCache')) : null
+      awayYards: played ? totalYards(ref(game, 'AwayTeamStatCache')) : null,
+      homeStats: played ? gameStatLine(ref(game, 'HomeTeamStatCache')) : null,
+      awayStats: played ? gameStatLine(ref(game, 'AwayTeamStatCache')) : null
     });
   }
 

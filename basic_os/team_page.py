@@ -27,7 +27,7 @@ def schedule_rows(team_id, teams, polls_by_week):
         opponent = teams.get(g['away_id'] if home else g['home_id'])
         if not opponent:
             continue
-        row = {"week": g['week'], "venue": "vs" if home else "@",
+        row = {"game_id": g['game_id'], "week": g['week'], "venue": "vs" if home else "@",
                "opponent": recap.team_view(opponent, polls_by_week.get(g['week'] - 1, {}).get(opponent['team_id'])),
                "result": None, "score": None}
         if g['played']:
@@ -36,6 +36,8 @@ def schedule_rows(team_id, teams, polls_by_week):
             wins += outcome == 'W'
             losses += outcome == 'L'
         rows.append(row)
+    rows += [{"week": week, "bye": True} for week in league.bye_weeks([r['week'] for r in rows])]
+    rows.sort(key=lambda r: r['week'])
     return rows, wins, losses
 
 def top_players(team_id):

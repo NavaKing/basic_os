@@ -102,7 +102,10 @@
                     </thead>
                     <tbody>
                         {% for g in schedule %}
-                        <tr>
+                        {% if g.bye %}
+                        <tr class="schedule-bye"><td><strong>{{ g.week_id }}</strong></td><td></td><td colspan="5" class="muted">Bye week</td></tr>
+                        {% else %}
+                        <tr{% if g.is_played and our_game_ids.get(g.week_id) is not none %} data-game-id="{{ our_game_ids[g.week_id] }}" title="Box score"{% endif %}>
                             <td><strong>{{ g.week_id }}</strong></td>
                             <td class="muted nowrap">{{ g.date_text }}</td>
                             <td class="nowrap">{{ venue_word(g, short=True) }} <span class="team-link"{% if g.opponent_id %} data-team-id="{{ g.opponent_id }}"{% endif %}>{% if g.opponent_logo %}<img class="team-logo team-logo--sm" src="{{ g.opponent_logo }}" alt="">{% endif %}{{ g.opponent_name }}</span></td>
@@ -119,6 +122,7 @@
                             <td>{% if g.is_played %}{{ g.wyo_pass_yds }}/{{ g.wyo_rush_yds }}{% else %}<span class="muted">&mdash;</span>{% endif %}</td>
                             <td>{% if g.is_played %}{{ g.opp_pass_yds }}/{{ g.opp_rush_yds }}{% else %}<span class="muted">&mdash;</span>{% endif %}</td>
                         </tr>
+                        {% endif %}
                         {% endfor %}
                     </tbody>
                 </table>
