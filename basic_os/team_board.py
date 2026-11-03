@@ -85,6 +85,16 @@ GUARDRAILS = ("Every player is a man on a men's college football team, so always
               "anything negative about a named teammate. Only use numbers from the facts. Each player's 'how he feels' note is private to "
               "him: only his own post may hint at it, and nobody ever mentions another player's mood, health, school or personal life.")
 
+# Each player's texting voice, stable for the whole dynasty (the save has no personality data, so the app assigns one):
+# the same voice in his care texts and in the group chat, so players stop sounding alike
+VOICES = ["laid-back and funny, lots of 'lol'", "quiet, few words, all lowercase", "intense competitor, short and fired up",
+          "polite 'yes sir' type, proper punctuation", "hype man, heavy on emojis", "big-brother leader, encouraging",
+          "nervous energy, overexplains a little", "dry, deadpan humor", "country boy, easygoing, says 'y'all'",
+          "city kid, quick slang", "goofy jokester, always has a bit", "serious and focused, film-room guy"]
+
+def voice(save_id):
+    return random.Random(f"voice-{save_id}").choice(VOICES)
+
 def initialize_tables():
     conn = database.get_db_connection()
     conn.execute("""
@@ -125,7 +135,7 @@ def cast(week, everyone=False):
         mood = mood_words(p, tuning)
         out.append({"save_id": p['save_id'], "name": p['name'], "position": p['position'], "class": p['class'], "jersey": jerseys.get(p['save_id']),
                     "portrait": p['portrait'], "line": roster.format_stat_line(stats) if stats else "", "impact": impact(stats),
-                    "grade": grade(stats) if stats and stats.get('DOWNSPLAYED') else None,
+                    "grade": grade(stats) if stats and stats.get('DOWNSPLAYED') else None, "voice": voice(p['save_id']),
                     "starter": p['starter'], "slot": p.get('slot'), "played": bool(stats and stats.get('DOWNSPLAYED')), "mood": mood,
                     "stands_out": mood != "in a good place"})
     out.sort(key=lambda c: (-c['impact'], not c['stands_out'], not c['starter'], c['name']))
@@ -189,6 +199,8 @@ def describe(c):
               else ("played but had no stats" if c['played'] else "didn't play last game (bench)"))
     slot = f", {c['slot']} on the depth chart" if c.get('slot') else ""
     text = f"{c['name']} ({c['class']} {c['position']}{', #' + str(c['jersey']) if c['jersey'] else ''}{slot}; {played}; how he feels, for tone only: {c['mood']}"
+    if c.get('voice'):
+        text += f"; how he texts: {c['voice']}"
     if c.get('angle'):
         text += f"; his post this week: {c['angle']}"
     if c.get('previous'):
