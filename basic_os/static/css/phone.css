@@ -1,0 +1,135 @@
+/* Phone tab: the phone frame, home screen, and the Messages, Care and Mail apps */
+
+.phone-stage { display: flex; justify-content: center; padding: 10px 0 30px; }
+.phone { --phone-w: 400px; --phone-h: 820px; --bubble-me: #2f7cf6; --bubble-them: #26262a;
+         width: var(--phone-w); max-width: 100%; height: var(--phone-h); padding: 12px; border-radius: 58px;
+         background: linear-gradient(160deg, #d4864a, #8f4b22 55%, #c77a3f); box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6), inset 0 0 0 2px rgba(255, 255, 255, 0.15); }
+.phone-screen { position: relative; height: 100%; border-radius: 47px; overflow: hidden; background: #000; color: #f2f2f7;
+                font-family: -apple-system, "Segoe UI", system-ui, sans-serif; font-size: 14px; letter-spacing: 0; }
+
+.phone-status { position: absolute; z-index: 5; top: 0; left: 0; right: 0; height: 50px; display: flex; align-items: center; justify-content: space-between;
+                padding: 0 30px 0 34px; font-weight: 600; font-size: 15px; pointer-events: none; }
+.phone-island { position: absolute; left: 50%; top: 11px; width: 110px; height: 32px; margin-left: -55px; border-radius: 18px; background: #000; }
+.phone-icons { display: flex; gap: 6px; align-items: center; }
+.phone-icons svg { fill: currentColor; }
+.phone-homebar { position: absolute; z-index: 5; bottom: 8px; left: 50%; width: 130px; height: 5px; margin-left: -65px; border-radius: 3px; background: rgba(255, 255, 255, 0.7); pointer-events: none; }
+
+.phone-app { position: absolute; inset: 0; display: none; flex-direction: column; padding-top: 50px; }
+.phone-app.is-active { display: flex; animation: phone-open 0.18s ease; }
+@keyframes phone-open { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .phone-app.is-active { animation: none; } }
+.phone-view { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.phone-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 0 14px 24px; }
+.phone-empty { padding: 30px 10px; text-align: center; color: #8e8e93; list-style: none; }
+.phone-status-text { margin-top: 6px; text-align: center; }
+
+/* Home screen: wallpaper in the team's colours, widgets, app icons and the dock */
+.phone-home { padding: 64px 22px 0; background: radial-gradient(120% 70% at 20% 10%, #6b3a1d 0%, transparent 60%),
+                                                  radial-gradient(90% 60% at 90% 70%, #b8860b 0%, transparent 60%),
+                                                  linear-gradient(170deg, #2b1a10, #1a1208 60%, #3b2a0c); }
+.phone-widgets { display: grid; gap: 12px; margin-bottom: 22px; }
+.phone-widget { display: block; width: 100%; padding: 14px 16px; border: 0; border-radius: 22px; text-align: left; color: #fff;
+                background: rgba(30, 20, 12, 0.55); backdrop-filter: blur(14px); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+                font-family: inherit; text-transform: none; letter-spacing: 0; cursor: default; }
+.phone-widget--care { cursor: pointer; }
+.phone-widget--care:hover { background: rgba(40, 28, 16, 0.65); }
+.widget-kicker { font-size: 11px; font-weight: 700; letter-spacing: 0.6px; text-transform: uppercase; color: rgba(255, 255, 255, 0.6); }
+.widget-big { margin-top: 4px; font-size: 22px; font-weight: 700; }
+.widget-unit { font-size: 14px; font-weight: 500; color: rgba(255, 255, 255, 0.7); }
+.widget-small { margin-top: 2px; font-size: 13px; color: rgba(255, 255, 255, 0.75); }
+
+.phone-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px 10px; }
+.phone-icon { position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; width: auto; padding: 0; border: 0; background: none;
+              color: #fff; font-family: inherit; text-transform: none; letter-spacing: 0; cursor: pointer; }
+.phone-icon:hover { background: none; }
+.phone-icon:hover .app-tile { filter: brightness(1.1); }
+.app-tile { display: grid; place-items: center; width: 62px; height: 62px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35); }
+.app-tile svg { width: 34px; height: 34px; fill: #fff; }
+.app-tile--messages { background: linear-gradient(180deg, #5ef27a, #18b83c); }
+.app-tile--care { background: linear-gradient(180deg, #ff7a6e, #d92d43); }
+.app-tile--mail { background: linear-gradient(180deg, #5cb8ff, #1a6ff0); }
+.phone-icon-label { font-size: 12px; font-weight: 500; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5); }
+.phone-badge { position: absolute; top: -6px; right: 2px; display: none; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px;
+               background: #ff3b30; color: #fff; font-size: 13px; font-weight: 600; line-height: 22px; text-align: center; }
+.phone-badge.is-shown { display: block; }
+.phone-dock { position: absolute; left: 14px; right: 14px; bottom: 22px; display: flex; justify-content: space-around; padding: 14px 10px;
+              border-radius: 32px; background: rgba(60, 45, 30, 0.45); backdrop-filter: blur(16px); }
+
+/* App chrome: a top bar with a back button */
+.phone-nav { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px 6px; }
+.phone-back { width: auto; padding: 4px 6px 4px 0; border: 0; background: none; color: #0a84ff; font-family: inherit; font-size: 17px;
+              text-transform: none; letter-spacing: 0; cursor: pointer; }
+.phone-back:hover { background: none; color: #409cff; }
+.phone-nav-title { flex: 1; font-size: 17px; font-weight: 600; text-align: center; margin-right: 40px; }
+.phone-nav--thread { border-bottom: 1px solid #1c1c1e; padding-bottom: 8px; }
+.thread-head { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; margin-right: 24px; }
+.thread-head-name { font-size: 12px; color: #f2f2f7; }
+
+/* Messages: the conversation list */
+.thread-list { list-style: none; margin: 0; padding: 0; }
+.thread-row { display: flex; align-items: center; gap: 8px; width: 100%; padding: 10px 0; border: 0; border-bottom: 1px solid #1c1c1e; border-radius: 0;
+              background: none; color: #f2f2f7; text-align: left; font-family: inherit; text-transform: none; letter-spacing: 0; cursor: pointer; }
+.thread-row:hover { background: #111113; }
+.thread-dot, .thread-dot-space { flex-shrink: 0; width: 10px; height: 10px; border-radius: 50%; }
+.thread-dot { background: #0a84ff; }
+.thread-avatar { --headshot-size: 46px; flex-shrink: 0; }
+.thread-avatar--small { --headshot-size: 40px; }
+.thread-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.thread-top { display: flex; justify-content: space-between; gap: 8px; font-size: 15px; }
+.thread-time { flex-shrink: 0; font-size: 13px; color: #8e8e93; font-weight: 400; }
+.thread-preview { font-size: 14px; color: #8e8e93; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* Messages: a conversation */
+.chat-scroll { padding-top: 6px; }
+.chat { display: flex; flex-direction: column; gap: 3px; }
+.chat-time { margin: 14px 0 6px; text-align: center; font-size: 11px; font-weight: 600; color: #8e8e93; }
+.bubble { max-width: 78%; padding: 8px 13px; border-radius: 19px; font-size: 15px; line-height: 1.32; overflow-wrap: anywhere; }
+.bubble--them { align-self: flex-start; background: var(--bubble-them); color: #fff; border-bottom-left-radius: 6px; }
+.bubble--me { align-self: flex-end; background: var(--bubble-me); color: #fff; border-bottom-right-radius: 6px; margin-top: 6px; }
+.bubble-receipt { align-self: flex-end; margin: 1px 4px 4px; font-size: 11px; color: #8e8e93; }
+.bubble-receipt--missed { font-style: italic; }
+.quick-replies, .chat-compose { flex-shrink: 0; padding: 10px 12px 30px; border-top: 1px solid #1c1c1e; background: #0a0a0b; }
+.quick-replies { display: flex; flex-wrap: wrap; gap: 6px; }
+.quick-label { width: 100%; font-size: 11px; color: #8e8e93; text-align: center; }
+.quick-reply { display: flex; flex-direction: column; align-items: center; gap: 1px; width: auto; flex: 1 1 40%; padding: 7px 10px; border: 1px solid #2c2c2e;
+               border-radius: 16px; background: #1c1c1e; color: #0a84ff; font-family: inherit; font-size: 14px; font-weight: 600;
+               text-transform: none; letter-spacing: 0; cursor: pointer; }
+.quick-reply span { font-size: 11px; font-weight: 400; color: #8e8e93; }
+.quick-reply:hover { background: #2c2c2e; }
+.quick-reply:disabled { opacity: 0.4; cursor: not-allowed; }
+.quick-reply--plain { color: #f2f2f7; }
+.chat-compose--off { color: #8e8e93; font-size: 13px; text-align: center; }
+
+/* Mail */
+.mail-list { list-style: none; margin: 0; padding: 0; }
+.mail-row { display: flex; flex-direction: column; gap: 2px; width: 100%; padding: 10px 0 10px 14px; border: 0; border-bottom: 1px solid #1c1c1e; border-radius: 0;
+            background: none; color: #f2f2f7; text-align: left; font-family: inherit; text-transform: none; letter-spacing: 0; cursor: pointer; position: relative; }
+.mail-row:hover { background: #111113; }
+.mail-row.is-unread::before { content: ""; position: absolute; left: 0; top: 16px; width: 8px; height: 8px; border-radius: 50%; background: #0a84ff; }
+.mail-row-top { display: flex; justify-content: space-between; gap: 8px; font-size: 15px; }
+.mail-row-subject { font-size: 14px; }
+.mail-detail { padding-top: 4px; }
+.mail-subject { margin: 4px 0 6px; padding: 0; border: 0; font-size: 20px; text-transform: none; color: #fff; font-family: inherit; }
+.mail-from { font-size: 13px; color: #8e8e93; margin-bottom: 14px; }
+.mail-body { font-size: 15px; line-height: 1.5; color: #f2f2f7; }
+.mail-done { font-size: 13px; color: #30d158; }
+.mail-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px; }
+
+/* Care inside the phone: the same content as the old Care window, stacked for the phone's width */
+.phone-care { background: #0b0b0c; }
+.phone-care .care-tabs { position: sticky; top: 0; z-index: 2; margin: 0 -14px 12px; padding: 0 8px; background: #0b0b0c; }
+.phone-care .care-tab { padding: 8px 10px; font-size: 11px; }
+.phone-care .care-summary { gap: 6px 10px; }
+.phone-care .care-row-head { grid-template-columns: auto 1fr auto; gap: 8px; }
+.phone-care .care-row-why { grid-column: 2 / 4; }
+.phone-care .care-row-body { padding: 4px 6px 12px; }
+.phone-care .care-need { grid-template-columns: 82px 1fr 26px 30px; }
+.phone-care .care-action { flex: 1 1 45%; }
+.phone-care .care-pair select { flex-basis: 100%; }
+.phone-care .care-sim th, .phone-care .care-sim td { padding-right: 8px; font-size: 12px; }
+
+@media (max-width: 460px) {
+    .phone { --phone-h: 760px; padding: 8px; border-radius: 48px; }
+    .phone-screen { border-radius: 40px; }
+}
+.phone-care .care-chevron { display: none; }

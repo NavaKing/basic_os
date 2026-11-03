@@ -17,6 +17,7 @@
     {% include "tabs/offseason.html" %}
     {% include "tabs/coaches.html" %}
     {% include "tabs/podcast.html" %}
+    {% include "tabs/phone.html" %}
 
     {# Team page; filled in by static/js/team.js when a team logo is clicked #}
     <dialog class="team-dialog" id="team_dialog" aria-label="Team details"></dialog>
@@ -24,19 +25,6 @@
     <dialog class="team-dialog player-dialog" id="player_dialog" aria-label="Player profile"></dialog>
     {# Box score; filled in by static/js/game.js when a played game is clicked #}
     <dialog class="team-dialog game-dialog" id="game_dialog" aria-label="Box score"></dialog>
-
-    {# Player care: the weekly care list, coach hours, leadership council and mentors; filled in by static/js/care.js #}
-    <dialog class="backup-dialog care-dialog" id="care_dialog" aria-labelledby="care_title">
-        <div class="backup-head">
-            <div>
-                <div class="section-label" id="care_kicker">Player care</div>
-                <h2 class="backup-title" id="care_title">Care</h2>
-            </div>
-            <button class="team-dialog-close" type="button" id="care_close" aria-label="Close">&times;</button>
-        </div>
-        <div class="status-text" id="care_status"></div>
-        <div id="care_body"></div>
-    </dialog>
 
     {# Backups of the app's database; filled in by static/js/backups.js #}
     <dialog class="backup-dialog" id="backup_dialog" aria-labelledby="backup_title">

@@ -1,9 +1,8 @@
-/* Player care: the window opened from the tab bar's Care button (layout shared with the Backups window) */
+/* Player care: the phone's Care app (static/js/care.js), plus the Locker Room's off-field panel */
 
-.care-dialog { width: min(820px, calc(100vw - 32px)); }
 
 /* Need levels: red under low_need, yellow under watch_need, green otherwise */
-.care-dialog { --care-low: #e07a7a; --care-watch: #e0b84f; --care-ok: #6fb37a; }
+:root { --care-low: #e07a7a; --care-watch: #e0b84f; --care-ok: #6fb37a; }
 .care-level--low { --care-level: var(--care-low); }
 .care-level--watch { --care-level: var(--care-watch); }
 .care-level--ok { --care-level: var(--care-ok); }
