@@ -5,6 +5,7 @@ import unittest
 
 import tests  # noqa: F401  (sets up the throwaway database first)
 import care
+import care_messages
 import database
 import roster
 
@@ -103,7 +104,8 @@ class GamePerformance(unittest.TestCase):
 class Stored(unittest.TestCase):
     def setUp(self):
         conn = database.get_db_connection()
-        for table in ("care_state", "care_players", "care_warnings", "care_log", "care_council", "care_mentors", "schedule_tracking", "team_roster"):
+        for table in ("care_state", "care_players", "care_warnings", "care_log", "care_council", "care_mentors", "care_messages", "care_emails",
+                      "schedule_tracking", "team_roster"):
             conn.execute(f"DELETE FROM {table}")
         conn.executemany("INSERT INTO schedule_tracking (week_id, opponent_name, is_played, wyo_score, opp_score, site, game_date) VALUES (?, ?, ?, ?, ?, ?, ?)",
                          [(1, "Utah Utes", 1, 31, 10, "Home", "2026-09-05"), (2, "Utah State Aggies", 0, None, None, "Away", "2026-09-12")])
@@ -196,6 +198,68 @@ class Stored(unittest.TestCase):
         context = care.mood_context()
         self.assertIn("Senior Quarterback (QB) seems off and distracted lately", context)
         self.assertIn("no rumors", context)
+
+    def slip(self, needs):
+        """Sets every player's needs to 70 except the given {save_id: {need: value}}."""
+        players = care.load_players()
+        for p in players:
+            p['needs'] = {n: 70 for n in care.NEEDS}
+            p['needs'].update(needs.get(p['save_id'], {}))
+        care.save_players(players, int(care.get_state("week")))
+
+    def test_texts_replies_and_left_on_read(self):
+        care.advance(2)
+        self.slip({"qb2": {"home": 30}, "wr1": {"focus": 50}})
+        care.advance(3)
+        d = care.dashboard()
+        waiting = {t['save_id']: t for t in d['phone'] if t['waiting']}
+        self.assertEqual(set(waiting), {"qb2", "wr1"})   # qb1 is fine: no text
+        self.assertEqual(d['unread']['texts'], 2)
+        self.assertIn(waiting['qb2']['messages'][0]['text'], care_messages.TEXTS['home']['low'])
+        hours = d['hours']
+        d = care_messages.reply(waiting['qb2']['waiting']['message_id'], "call")
+        self.assertEqual(d['hours'], hours - 2)
+        self.assertEqual(d['unread']['texts'], 1)
+        with self.assertRaises(ValueError):
+            care_messages.reply(waiting['qb2']['waiting']['message_id'], "call")   # already answered
+        trust = {p['save_id']: p['trust'] for p in care.load_players()}['wr1']
+        care.advance(4)   # wr1's text was never answered
+        wr1 = next(p for p in care.load_players() if p['save_id'] == "wr1")
+        self.assertEqual(wr1['trust'], trust - care.load_tuning()['phone']['unanswered_trust'])
+        thread = next(t for t in care.dashboard()['phone'] if t['save_id'] == "wr1")
+        self.assertEqual(thread['messages'][0]['status'], "missed")
+
+    def test_not_now_is_free_but_costs_trust(self):
+        care.advance(2)
+        self.slip({"wr1": {"morale": 40}})
+        care.advance(3)
+        d = care.dashboard()
+        message = next(t for t in d['phone'] if t['save_id'] == "wr1")['waiting']['message_id']
+        before = next(p for p in care.load_players() if p['save_id'] == "wr1")['trust']
+        d = care_messages.reply(message, "not_now")
+        self.assertEqual(d['hours'], d['hours_total'])
+        self.assertEqual(next(p for p in care.load_players() if p['save_id'] == "wr1")['trust'], before - care.load_tuning()['phone']['not_now_trust'])
+
+    def test_staff_emails_and_their_actions(self):
+        care.advance(2)
+        self.slip({"qb2": {"academics": 30}, "wr1": {"academics": 40}})
+        care.advance(3)
+        d = care.dashboard()
+        advisor = next(e for e in d['inbox'] if e['sender'] == "Academic Advisor")
+        self.assertIn("Young Quarterback (QB)", advisor['body'])
+        self.assertEqual([a['label'] for a in advisor['actions']], ["Tutor for Young Quarterback", "Tutor for Wide Receiver", "Study hall for all of them"])
+        academics = {p['save_id']: p['needs']['academics'] for p in care.load_players()}
+        d = care_messages.email_action(advisor['email_id'], "Study hall for all of them")
+        after = {p['save_id']: p for p in care.load_players()}
+        self.assertEqual(after['qb2']['needs']['academics'], academics['qb2'] + 10)
+        self.assertEqual(after['wr1']['needs']['academics'], academics['wr1'] + 10)
+        self.assertEqual(d['hours'], d['hours_total'] - 2)
+        advisor = next(e for e in d['inbox'] if e['email_id'] == advisor['email_id'])
+        self.assertEqual(len(advisor['actions']), 2)   # the tutors are still on offer
+        d = care_messages.email_action(advisor['email_id'], "read")
+        self.assertEqual(next(e for e in d['inbox'] if e['email_id'] == advisor['email_id'])['status'], "read")
+        care.advance(4)
+        self.assertTrue(all(e['status'] != "open" or e['week'] == 4 for e in care.dashboard()['inbox']))   # last week's expired
 
     def test_routes_and_simulator(self):
         from app import app

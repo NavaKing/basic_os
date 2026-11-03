@@ -28,6 +28,7 @@ import history
 import printing
 import games
 import care
+import care_messages
 import os
 from urllib.parse import urlsplit
 from flask import Flask, Response, render_template, request, jsonify, send_from_directory, abort, url_for
@@ -468,6 +469,11 @@ def press_questions():
 def care_dashboard():
     return jsonify(care.dashboard())
 
+@app.route('/care/unread')
+def care_unread():
+    texts, emails = care_messages.unread()
+    return jsonify({"texts": texts, "emails": emails})
+
 @app.route('/care/<action>', methods=['POST'])
 def care_action(action):
     body = request.json or {}
@@ -480,6 +486,10 @@ def care_action(action):
             return jsonify(care.set_mentor(body.get('mentee'), body.get('mentor') or None))
         if action == "preset":
             return jsonify(care.set_preset(body.get('preset')))
+        if action == "reply":
+            return jsonify(care_messages.reply(int(body.get('message_id') or 0), body.get('choice')))
+        if action == "email":
+            return jsonify(care_messages.email_action(int(body.get('email_id') or 0), body.get('action')))
         if action == "simulate":
             return jsonify({policy: care.simulate(int(body.get('weeks') or 12), policy, body.get('preset')) for policy in ("ignore", "care")})
     except ValueError as e:

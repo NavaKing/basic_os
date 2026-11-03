@@ -168,5 +168,47 @@
     "played_morale": 1,
     "bench_drain_factor": 0.7,
     "bench_health_factor": 0.4
+  },
+  "phone": {
+    "_about": "Players whose lowest need is under text_below may text (max_texts a week, lowest first; luck shuffles close calls). A text still open when the next week arrives drains that need and trust.",
+    "max_texts": 3,
+    "text_below": 58,
+    "luck": 6,
+    "unanswered_drain": 6,
+    "unanswered_trust": 3,
+    "not_now_trust": 1,
+    "good_text_chance": 0.5
+  },
+  "inbox": {
+    "_about": "Staff emails each week. Actions cost coach hours like care actions; side_effects are need changes on the same players.",
+    "advisor_below": 50,
+    "trainer_below": 45,
+    "max_names": 4,
+    "actions": {
+      "tutor": {
+        "label": "Tutor",
+        "hours": 1,
+        "need": "academics",
+        "fill": 15
+      },
+      "study_hall": {
+        "label": "Study hall",
+        "hours": 2,
+        "need": "academics",
+        "fill": 10,
+        "side_effects": {
+          "morale": -3
+        }
+      },
+      "rest": {
+        "label": "Rest",
+        "hours": 0,
+        "need": "health",
+        "fill": 20,
+        "side_effects": {
+          "focus": -2
+        }
+      }
+    }
   }
 }

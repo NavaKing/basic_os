@@ -96,6 +96,25 @@
 .care-log { list-style: none; margin: 0; padding: 0; font-size: 13px; line-height: 1.5; }
 .care-log li { padding: 5px 0; border-bottom: 1px solid var(--border-soft); }
 
+/* Phone: one thread per player, their texts left and the coach's replies right */
+.care-threads, .care-emails { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.care-thread, .care-email { padding: 12px 14px; border: 1px solid var(--border-soft); border-radius: 8px; }
+.care-thread.is-waiting, .care-email.is-open { border-color: var(--gold); }
+.care-thread-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.care-name { width: auto; padding: 0; border: 0; background: none; color: #fff; font-weight: 600; font-size: 14px; cursor: pointer;
+             font-family: inherit; text-transform: none; letter-spacing: 0; }
+.care-name:hover { background: none; color: var(--gold); }
+.care-bubbles { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+.care-bubble { max-width: 75%; padding: 7px 11px; border-radius: 14px; font-size: 13px; line-height: 1.4; }
+.care-bubble--them { align-self: flex-start; background: rgba(255, 255, 255, 0.07); color: #fff; border-bottom-left-radius: 4px; }
+.care-bubble--me { align-self: flex-end; background: var(--gold-soft); color: var(--gold); border-bottom-right-radius: 4px; }
+.care-missed { align-self: flex-end; font-style: italic; }
+
+/* Inbox */
+.care-email-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; color: #fff; }
+.care-email-body { margin: 6px 0 8px; font-size: 13px; line-height: 1.5; color: var(--text); }
+.tabs-tool .care-badge { margin-left: 4px; }
+
 @media (max-width: 560px) {
     .care-row-head { grid-template-columns: auto 1fr auto; }
     .care-row-why { grid-column: 2 / 4; }
