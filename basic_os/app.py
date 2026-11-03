@@ -26,6 +26,7 @@ import rivals
 import presser
 import history
 import printing
+import games
 import os
 from urllib.parse import urlsplit
 from flask import Flask, Response, render_template, request, jsonify, send_from_directory, abort, url_for
@@ -93,6 +94,16 @@ def static_version(endpoint, values):
 def spaced(value):
     """'LightBreeze' -> 'Light breeze'"""
     return re.sub(r"(?<!^)(?=[A-Z])", " ", value or "").capitalize()
+
+def with_byes(schedule):
+    """Our schedule rows with a {'week_id', 'bye'} row for each bye week, in week order."""
+    byes = [{"week_id": week, "bye": True} for week in league.bye_weeks([g['week_id'] for g in schedule])]
+    return sorted(schedule + byes, key=lambda g: g['week_id'])
+
+def our_game_ids():
+    """{week: league game id} for our played games, so schedule rows can open their box score."""
+    row = league.query_user_team()
+    return {g['week']: g['game_id'] for g in league.query_team_games(row['team_id']) if g['played']} if row else {}
 
 def describe_game(game):
     """Adds display text (date, kickoff, venue, forecast) to a schedule row."""
@@ -171,7 +182,8 @@ def home():
         podcast_episodes=podcast.query_episodes(),
         event_uploads=events.list_uploads(),
         event_draft=events.query_draft(),
-        schedule=[describe_game(g) for g in schedule],
+        schedule=with_byes([describe_game(g) for g in schedule]),
+        our_game_ids=our_game_ids(),
         season_year=season_year(schedule),
         past_stories=database.query_archived_stories(),
         tweets=database.query_active_tweets(active_game['week_id']) if active_game else [],
@@ -196,6 +208,11 @@ def portrait(kind, file_name):
 def team_detail(team_id):
     page = team_page.build_team_page(team_id)
     return jsonify(page) if page else (jsonify({"error": "Unknown team"}), 404)
+
+@app.route('/game/<int:game_id>')
+def game_box_score(game_id):
+    game = games.build_game(game_id)
+    return jsonify(game) if game else (jsonify({"error": "That game hasn't been played yet."}), 404)
 
 @app.route('/player/<player_id>')
 def player_profile(player_id):

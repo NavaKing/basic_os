@@ -14,10 +14,11 @@ function staffList(staff) {
 function scheduleTable(games) {
     if (!games.length) return '<div class="empty-note empty-note--compact">No games scheduled.</div>';
     return '<table class="team-schedule"><tbody>' + games.map(g => {
+        if (g.bye) return '<tr class="schedule-bye"><td class="muted">Wk ' + esc(g.week) + '</td><td colspan="2" class="muted">Bye week</td></tr>';
         const result = g.result
             ? '<span class="score ' + (g.result === 'W' ? 'score-win' : g.result === 'L' ? 'score-loss' : '') + '">' + esc(g.result) + ' ' + esc(g.score) + '</span>'
             : '<span class="muted">&mdash;</span>';
-        return '<tr><td class="muted">Wk ' + esc(g.week) + '</td><td class="nowrap">' + esc(g.venue) + ' ' +
+        return '<tr' + (g.result ? ' data-game-id="' + esc(g.game_id) + '" title="Box score"' : '') + '><td class="muted">Wk ' + esc(g.week) + '</td><td class="nowrap">' + esc(g.venue) + ' ' +
             '<span class="team-link" data-team-id="' + esc(g.opponent.id) + '">' + teamLogo(g.opponent, 'team-logo team-logo--sm', false) +
             (g.opponent.rank ? '<span class="team-rank">#' + esc(g.opponent.rank) + '</span> ' : '') + esc(g.opponent.name) + '</span></td>' +
             '<td class="team-schedule-result">' + result + '</td></tr>';
