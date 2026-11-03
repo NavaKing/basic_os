@@ -1,15 +1,8 @@
 // Weekly Recap: league-wide awards, notable games, polls and races for one week.
 
-import { esc, setStatus, applyTeamColors } from './utils.js';
+import { esc, setStatus, applyTeamColors, teamLogo } from './utils.js';
 
 // ---------- Small building blocks ----------
-
-/** Team logo, or a badge in the team's colour when there's no logo (colour applied after render via data-color). */
-function teamChip(team) {
-    const id = ' data-team-id="' + esc(team.id) + '"';
-    if (team.logo) return '<img class="team-logo recap-logo" src="' + esc(team.logo) + '" alt="' + esc(team.short) + '" loading="lazy"' + id + '>';
-    return '<span class="team-chip" data-color="' + esc(team.color || '') + '"' + id + '>' + esc(team.short) + '</span>';
-}
 
 /** Player headshot, falling back to initials. */
 function avatar(portrait, initials, cls) {
@@ -19,7 +12,7 @@ function avatar(portrait, initials, cls) {
 }
 
 function teamName(team, { rank = true } = {}) {
-    return teamChip(team) + '<span class="team-name" data-team-id="' + esc(team.id) + '">' + (rank && team.rank ? '<span class="team-rank">#' + esc(team.rank) + '</span> ' : '') + esc(team.name) + '</span>';
+    return teamLogo(team, 'team-logo recap-logo') + '<span class="team-name" data-team-id="' + esc(team.id) + '">' + (rank && team.rank ? '<span class="team-rank">#' + esc(team.rank) + '</span> ' : '') + esc(team.name) + '</span>';
 }
 
 function card(title, body, { aside = '', extraClass = '' } = {}) {
@@ -127,7 +120,7 @@ function heismanCard(rows) {
     const movement = m => m > 0 ? '<span class="swing-up">&#9650;' + m + '</span>' : (m < 0 ? '<span class="swing-down">&#9660;' + (-m) + '</span>' : '<span class="muted">&mdash;</span>');
     const body = rows.length ? '<ol class="heisman-list">' + rows.map(h =>
         '<li><span class="list-seed">' + esc(h.rank) + '</span>' +
-        '<div class="list-main">' + avatar(h.portrait, '', 'heisman-avatar') + teamChip(h.team) + '<div><div class="heisman-name" data-player-id="' + esc(h.id) + '">' + esc(h.name) + '</div><div class="list-sub">' + esc(h.position) + ' | ' + esc(h.team.name) + '</div></div></div>' +
+        '<div class="list-main">' + avatar(h.portrait, '', 'heisman-avatar') + teamLogo(h.team, 'team-logo recap-logo') + '<div><div class="heisman-name" data-player-id="' + esc(h.id) + '">' + esc(h.name) + '</div><div class="list-sub">' + esc(h.position) + ' | ' + esc(h.team.name) + '</div></div></div>' +
         '<div class="stat-boxes stat-boxes--inline">' + h.boxes.map(b =>
             '<div class="stat-box"><div class="stat-box-value">' + esc(b.value) + '</div><div class="stat-box-label">' + esc(b.label) + '</div></div>').join('') + '</div>' +
         '<span class="heisman-move">' + movement(h.movement) + '</span></li>'

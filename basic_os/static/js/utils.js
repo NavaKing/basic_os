@@ -39,3 +39,17 @@ export function applyTeamColors(root = document) {
         if (el.dataset.color) el.style.setProperty('--team-color', el.dataset.color);
     });
 }
+
+/** A team's logo, or a badge in its colour when it has none (FCS placeholder teams). With link, clicking it opens the team page. */
+export function teamLogo(team, cls = 'team-logo', link = true) {
+    if (!team) return '';
+    const id = link ? ' data-team-id="' + esc(team.id) + '"' : '';
+    return team.logo
+        ? '<img class="' + cls + '" src="' + esc(team.logo) + '" alt="' + esc(team.short || '') + '" loading="lazy"' + id + '>'
+        : '<span class="team-chip" data-color="' + esc(team.color || '') + '"' + id + '>' + esc(team.short || '') + '</span>';
+}
+
+/** A round player or coach headshot (empty circle without a portrait). */
+export function headshot(url, cls = '') {
+    return '<span class="headshot' + (cls ? ' ' + cls : '') + '">' + (url ? '<img src="' + esc(url) + '" alt="" loading="lazy">' : '') + '</span>';
+}

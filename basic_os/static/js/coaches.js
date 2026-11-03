@@ -1,7 +1,7 @@
 // Coaches tab: the weekly game plan (matchups from the save's ratings plus AI coaching notes)
 // and the coaches news column (top 10 and hot seat for HCs, OCs and DCs).
 
-import { esc, postJSON, setStatus, applyTeamColors } from './utils.js';
+import { esc, postJSON, setStatus, applyTeamColors, teamLogo, headshot } from './utils.js';
 import { longJob } from './notify.js';
 
 const GRADE_BARS = { decisive: 3, clear: 2, slight: 1 };
@@ -9,16 +9,6 @@ const SECTIONS = [['keys', 'Keys'], ['staff', 'Their staff'], ['availability', '
                   ['attack', 'Attack'], ['stop', 'Stop'], ['tape', 'Tale of the tape'], ['press', 'Press room']];
 
 // ---------- Small pieces ----------
-
-function headshot(url, cls = '') {
-    return '<span class="headshot ' + cls + '">' + (url ? '<img src="' + esc(url) + '" alt="" loading="lazy">' : '') + '</span>';
-}
-
-function logo(team, cls) {
-    return team.logo
-        ? '<img class="' + cls + '" src="' + esc(team.logo) + '" alt="" data-team-id="' + esc(team.id) + '">'
-        : '<span class="team-chip ' + cls + '" data-color="' + esc(team.color || '') + '" data-team-id="' + esc(team.id) + '">' + esc(team.short || '') + '</span>';
-}
 
 function sectionHead(kicker, title, aside = '') {
     return '<div class="plan-head"><div><div class="plan-kicker">' + esc(kicker) + '</div><h3 class="plan-title">' + esc(title) + '</h3></div>' +
@@ -55,7 +45,7 @@ function coachBox(side) {
 
 function teamSide(side, label, align) {
     return '<div class="plan-side plan-side--' + align + '" data-color="' + esc(side.color || '') + '">' +
-        logo(side, 'plan-side-logo') +
+        teamLogo(side, 'plan-side-logo') +
         '<div class="plan-side-id">' +
             '<div class="plan-side-label">' + label + '</div>' +
             '<div class="plan-side-name team-link" data-team-id="' + esc(side.id) + '">' + esc(side.name) + '</div>' +
@@ -97,8 +87,8 @@ function keysAndStaff(p) {
         '<div class="panel plan-card" id="plan-staff">' + sectionHead('Their sideline', 'How ' + p.them.name + ' coach it', esc(p.them.off_scheme) + ' &middot; ' + esc(p.them.def_scheme)) +
             staff + bullets(p.staff_notes, '', 'Scheme tendencies appear when the game plan is written.') + '</div>' +
         '<div class="panel plan-card" id="plan-availability">' + sectionHead('Injury report', 'Availability') +
-            '<div class="plan-avail-team">' + logo(p.them, 'team-logo') + esc(p.them.name) + '</div>' + injuries(p.them) +
-            '<div class="plan-avail-team">' + logo(p.us, 'team-logo') + esc(p.us.name) + '</div>' + injuries(p.us) + '</div>' +
+            '<div class="plan-avail-team">' + teamLogo(p.them, 'team-logo') + esc(p.them.name) + '</div>' + injuries(p.them) +
+            '<div class="plan-avail-team">' + teamLogo(p.us, 'team-logo') + esc(p.us.name) + '</div>' + injuries(p.us) + '</div>' +
     '</div>';
 }
 

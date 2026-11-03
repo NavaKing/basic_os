@@ -1,19 +1,7 @@
 // Awards tab: All-America and All-Conference teams, the Heisman race and column, the playoff bracket and the bowl schedule.
 
-import { esc, applyTeamColors } from './utils.js';
+import { esc, applyTeamColors, teamLogo, headshot } from './utils.js';
 import { wireColumn, columnParagraphs } from './columns.js';
-
-function teamMark(team) {
-    if (!team) return '';
-    const id = ' data-team-id="' + esc(team.id) + '"';
-    return team.logo
-        ? '<img class="team-logo" src="' + esc(team.logo) + '" alt="' + esc(team.short) + '" loading="lazy"' + id + '>'
-        : '<span class="team-chip" data-color="' + esc(team.color || '') + '"' + id + '>' + esc(team.short) + '</span>';
-}
-
-function headshot(url) {
-    return '<span class="headshot">' + (url ? '<img src="' + esc(url) + '" alt="" loading="lazy">' : '') + '</span>';
-}
 
 function dateText(iso, options = { weekday: 'short', month: 'short', day: 'numeric' }) {
     if (!iso) return 'Date TBD';
@@ -60,7 +48,7 @@ function initAllAmerica(aa) {
                 headshot(p.portrait) +
                 '<div class="aa-id">' +
                     '<div class="aa-name" data-player-id="' + esc(p.id) + '">' + esc(p.name) + '</div>' +
-                    '<div class="aa-meta">' + teamMark(p.team) + '<span>' + esc(p.team ? p.team.short : '') + '</span>' +
+                    '<div class="aa-meta">' + teamLogo(p.team) + '<span>' + esc(p.team ? p.team.short : '') + '</span>' +
                         (p.class ? '<span>' + esc(p.class) + '</span>' : '') + (p.overall ? '<span>' + esc(p.overall) + ' OVR</span>' : '') + '</div>' +
                 '</div>' +
             '</div>').join('') : '<div class="empty-note">No picks for this team.</div>';
@@ -80,7 +68,7 @@ function renderHeisman(rows) {
         '<li class="aw-heisman-row">' +
             '<span class="aw-heisman-rank">' + esc(h.rank) + '</span>' + headshot(h.portrait) +
             '<div class="aw-heisman-id"><div class="aa-name"><span data-player-id="' + esc(h.id) + '">' + esc(h.name) + '</span> ' + move(h.movement) + '</div>' +
-                '<div class="aa-meta">' + teamMark(h.team) + '<span>' + esc(h.position) + ' &middot; ' + esc(h.team.name) + '</span></div></div>' +
+                '<div class="aa-meta">' + teamLogo(h.team) + '<span>' + esc(h.position) + ' &middot; ' + esc(h.team.name) + '</span></div></div>' +
             '<div class="stat-boxes stat-boxes--inline">' + h.boxes.map(b =>
                 '<div class="stat-box"><div class="stat-box-value">' + esc(b.value) + '</div><div class="stat-box-label">' + esc(b.label) + '</div></div>').join('') + '</div>' +
         '</li>').join('') : '<li class="empty-note">The Heisman race starts once games are played.</li>';
@@ -111,7 +99,7 @@ function initColumn(column, ceremony) {
 function slot(s) {
     if (s.team) {
         return '<div class="cfp-slot' + (s.won ? ' is-winner' : '') + '">' + (s.seed ? '<span class="cfp-seed">' + esc(s.seed) + '</span>' : '') +
-            teamMark(s.team) + '<span class="cfp-team">' + esc(s.team.name) + '</span>' +
+            teamLogo(s.team) + '<span class="cfp-team">' + esc(s.team.name) + '</span>' +
             (s.score !== undefined && s.score !== null ? '<span class="cfp-score">' + esc(s.score) + '</span>' : (s.record ? '<span class="cfp-record">' + esc(s.record) + '</span>' : '')) + '</div>';
     }
     return '<div class="cfp-slot cfp-slot--open">' + (s.seed ? '<span class="cfp-seed">' + esc(s.seed) + '</span>' : '') + esc(s.label || 'TBD') + '</div>';
