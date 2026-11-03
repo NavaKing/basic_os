@@ -4,7 +4,9 @@ last game and how they're feeling, with teammates replying to each other. Separa
 Each player's post is grounded in his real stat line from the last game and his player care mood. Guardrails, because
 most players are real college athletes: football and team topics only (no off-field life, beefs or drama), no made-up
 social handles, and numbers are checked against the facts given to the model."""
+import difflib
 import json
+import random
 import re
 import care
 import database
@@ -18,6 +20,15 @@ POSTS = 12      # first pass: players posting
 REPLIES = 8     # second pass: teammates replying to those posts
 CAST_SIZE = 16
 TEMPERATURE = 0.9
+
+# Each week every poster gets an angle, so a player doesn't say the same thing every week ("177 yards felt good, thanks
+# to the o-line" became "212 yards felt good, thanks to the o-line"). Players reacting to their stats get a STAT_ANGLE.
+STAT_ANGLES = ["proud of his numbers", "hard on himself: the numbers weren't enough", "gives the credit for his numbers to one teammate by name",
+               "jokes about his numbers"]
+ANGLES = ["shouts out one teammate by name for something specific", "talks about one play from the game", "looks ahead to the next opponent",
+          "talks about practice or film this week", "something funny from the locker room or the bus ride", "how the crowd or the road trip felt",
+          "a quick hype post", "his goal for this week"]
+TOO_SIMILAR = 0.6   # a post this close to his previous one is dropped
 
 GUARDRAILS = ("Every player is a man on a men's college football team, so always use he/him/his. This is the team's private, "
               "internal board, so posts are casual, like teammates texting a group chat: short, lowercase is fine, emojis are fine. "
@@ -78,9 +89,34 @@ def impact(stats):
     production = (s('RUSHYARDS') + s('RECEIVEYARDS')) / 10 + s('PASSYARDS') / 25 + 6 * (s('RUSHTDS') + s('RECEIVETDS') + s('PASSTDS'))
     return max(storylines.impact_score(stats), production)
 
+def assign_angles(people, week):
+    """The players with the biggest stat lines react to them (each a different way); everyone else gets another angle."""
+    rng = random.Random(f"board-{week}")
+    stat_angles, angles = STAT_ANGLES[:], ANGLES[:]
+    rng.shuffle(stat_angles)
+    rng.shuffle(angles)
+    stat_posters = [c for c in people if c['line']][:POSTS // 2]
+    others = [c for c in people if c not in stat_posters]
+    for i, c in enumerate(stat_posters):
+        c['angle'] = stat_angles[i % len(stat_angles)]
+    for i, c in enumerate(others):
+        c['angle'] = angles[i % len(angles)]
+
+def previous_posts(week):
+    """{save_id: his most recent post from an earlier week}."""
+    conn = database.get_db_connection()
+    rows = conn.execute("SELECT save_id, text FROM team_board_posts WHERE reply_to IS NULL AND week < ? ORDER BY week, post_id", (week or 0,)).fetchall()
+    conn.close()
+    return {r['save_id']: r['text'] for r in rows}
+
 def describe(c):
     played = f"last game: {c['line']}" if c['line'] else ("played but had no stats" if c['played'] else "didn't play last game (bench)")
-    return f"{c['name']} ({c['class']} {c['position']}{', #' + str(c['jersey']) if c['jersey'] else ''}; {played}; how he feels, for tone only: {c['mood']})"
+    text = f"{c['name']} ({c['class']} {c['position']}{', #' + str(c['jersey']) if c['jersey'] else ''}; {played}; how he feels, for tone only: {c['mood']}"
+    if c.get('angle'):
+        text += f"; his post this week: {c['angle']}"
+    if c.get('previous'):
+        text += f"; his last post, never repeat it or reuse its wording: \"{c['previous']}\""
+    return text + ")"
 
 def game_facts():
     import ai_engine
@@ -100,6 +136,15 @@ def scrub(text, people):
     kept = [s for s in sentences.split(text) if not any(m.lower() in s.lower() for m in moods)]
     return re.sub(r"\s{2,}", " ", " ".join(kept)).strip()
 
+# The save never says how long a touchdown was, so "a 30 yard TD" / "that td for 37 yards" merges two stats into a claim
+TD_LENGTH = re.compile(r"\d+[- ]?(?:yd|yard)s?\W*(?:td|touchdown|score)|(?:td|touchdown)\W+(?:for|of)\W+\d+", re.IGNORECASE)
+
+def drop_td_lengths(text):
+    return " ".join(s for s in sentences.split(text) if not TD_LENGTH.search(s))
+
+def repeats(text, previous):
+    return bool(previous) and difflib.SequenceMatcher(None, text.lower(), previous.lower()).ratio() >= TOO_SIMILAR
+
 def parse(raw, names, key="posts"):
     data = json.loads(raw)
     items = data.get(key, []) if isinstance(data, dict) else data
@@ -113,6 +158,10 @@ def generate(selected_model):
     if not people:
         raise RuntimeError("No players to post yet: player care starts once the schedule has synced.")
     by_name = {c['name']: c for c in people}
+    assign_angles(people, week)
+    earlier = previous_posts(week)
+    for c in people:
+        c['previous'] = earlier.get(c['save_id'])
     roster_text = "; ".join(describe(c) for c in people)
     facts = game_facts()
 
@@ -120,9 +169,10 @@ def generate(selected_model):
               f"Write {POSTS} posts for the Wyoming team board, each by a different player from the list (use the exact name as author). "
               "Each post fits his own stat line and mood: a big game sounds proud and thanks teammates, a quiet or bench week sounds "
               "humble or hungry, a low mood shows a little in the tone without saying why. Never write the 'how he feels' words themselves. "
-              f"Exactly {POSTS // 2} posts, by players with a stat line, react to their own numbers from the facts (quote exactly one stat as the facts "
-              "give it, like '177 rush yards' or '9 tackles'; never combine two stats into one claim, so '30 rec yds, 1 TD' is not "
-              "'a 30 yard TD'); the rest are about a teammate, a play, practice, the next opponent or just a vibe. Vary them: no two posts start or end the same way, and avoid 'felt good' and 'gotta keep'. "
+              "Each post follows that player's 'his post this week' angle. A post about his numbers quotes exactly one stat as the "
+              "facts give it, like '177 rush yards' or '9 tackles'; never combine two stats into one claim, so '30 rec yds, 1 TD' is "
+              "not 'a 30 yard TD'. Vary them: no two posts start or end the same way, never repeat a player's last post, and avoid "
+              "'felt good', 'gotta keep' and thanking the o-line for holes. "
               'Respond with ONLY JSON: {"posts": [{"author": "Exact Name", "text": "post text"}, ...]}')
     posts = []
     for _attempt in range(3):
@@ -135,8 +185,8 @@ def generate(selected_model):
     if not posts:
         raise RuntimeError("The model didn't return any team board posts. Is Ollama running?")
     allowed = fact_check.spoken_numbers(prompt)
-    posts = [{"author": p['author'], "text": scrub(fact_check.drop_invented(ai_engine.strip_tags(p['text']), allowed), people)} for p in posts[:POSTS]]
-    posts = [p for p in posts if p['text']]
+    posts = [{"author": p['author'], "text": drop_td_lengths(scrub(fact_check.drop_invented(ai_engine.strip_tags(p['text']), allowed), people))} for p in posts[:POSTS]]
+    posts = [p for p in posts if p['text'] and not repeats(p['text'], by_name[p['author']].get('previous'))]
 
     numbered = " ".join(f"[{i}] {p['author']}: {p['text']}" for i, p in enumerate(posts))
     reply_prompt = (f"{GUARDRAILS} Facts: {facts} The players: {roster_text}. These posts are on the team board: {numbered} "

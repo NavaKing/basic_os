@@ -60,6 +60,23 @@ class TeamBoard(unittest.TestCase):
             board = team_board.generate("test-model")
         self.assertEqual((len(board['posts']), board['count']), (2, 2))   # a regenerate replaces the week; broken replies are skipped
 
+    def test_no_repeats_angles_and_no_touchdown_lengths(self):
+        conn = database.get_db_connection()
+        conn.execute("INSERT INTO team_board_posts (week, save_id, text) VALUES (0, 'hb1', 'that 177 rush yards felt good, thanks to the o-line for opening those holes!')")
+        conn.commit()
+        conn.close()
+        posts = {"posts": [{"author": "Samuel Harris", "text": "that 177 rush yards felt good, thanks to the o-line for opening those lanes!"},
+                           {"author": "Eric Richardson", "text": "that 19 yard td was a team effort. bus ride was loud."}]}
+        prompts = []
+        def answer(model, prompt, **kwargs):
+            prompts.append(prompt)
+            return json.dumps(posts) if len(prompts) == 1 else json.dumps({"replies": []})
+        with mock.patch.object(ai_engine, "call_ollama", side_effect=answer):
+            board = team_board.generate("test-model")
+        self.assertIn("his last post, never repeat it", prompts[0])
+        self.assertIn("his post this week:", prompts[0])
+        self.assertEqual([(p['author']['name'], p['text']) for p in board['posts']], [("Eric Richardson", "bus ride was loud.")])
+
     def test_no_model_answer_is_an_error(self):
         with mock.patch.object(ai_engine, "call_ollama", side_effect=RuntimeError("down")):
             with self.assertRaises(RuntimeError):
