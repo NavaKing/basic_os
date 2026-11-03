@@ -95,9 +95,10 @@ function render(body, data) {
 
 function simTable(result) {
     const rows = [['Warning signs', 'warning_signs'], ['Player-weeks with a low need', 'player_weeks_with_a_low_need'],
-                  ['Players low at the end', 'players_with_a_low_need'], ['Average need', 'average_need'], ['Average trust', 'average_trust']];
+                  ['Players low at the end', 'players_with_a_low_need'], ['Average need', 'average_need'], ['Average trust (whole roster)', 'average_trust'],
+                  ['Players you cared for', 'players_cared_for'], ['Their average trust', 'trust_of_players_cared_for']];
     return '<table class="care-sim"><thead><tr><th>' + esc(result.ignore.preset) + '</th><th>Ignore</th><th>Care</th></tr></thead><tbody>' +
-        rows.map(([label, key]) => '<tr><td>' + label + '</td><td>' + esc(result.ignore[key]) + '</td><td>' + esc(result.care[key]) + '</td></tr>').join('') +
+        rows.map(([label, key]) => '<tr><td>' + label + '</td><td>' + esc(result.ignore[key] ?? '-') + '</td><td>' + esc(result.care[key] ?? '-') + '</td></tr>').join('') +
         '</tbody></table>';
 }
 

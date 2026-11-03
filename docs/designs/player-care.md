@@ -240,11 +240,14 @@ App-only: nothing is written to the save. The Care button in the tab bar opens t
 
   | Preset | Warnings, ignore | Warnings, care | Player-weeks with a low need, ignore | Player-weeks with a low need, care |
   |---|---|---|---|---|
-  | Relaxed | 1 | 1 | 5 | 0 |
-  | Normal | 19 | 16 | 136 | 86 |
-  | Demanding | 36 | 29 | 249 | 187 |
+  | Relaxed | 4 | 3 | 33 | 21 |
+  | Normal | 19 | 15 | 136 | 85 |
+  | Demanding | 36 | 31 | 249 | 191 |
 
-  Care cuts time spent struggling by about a third on Normal. One coach can't reach 85 players, which is the
+  Care cuts time spent struggling by about a third. The simulated coach spends hours like a player would
+  (sit-down for a warning sign, call for a need that is low or within 15 of low, text otherwise), so the
+  roughly 30 players it reaches end the 12 weeks at trust 38-40 instead of 30. Relaxed was retuned (staff
+  target 70 to 64) after its first version left nothing to do: now a handful of players slip each season. One coach can't reach 85 players, which is the
   point: the council, mentors and the position coach extend reach.
 - **Save facts found along the way:** none of Wyoming's 85 players currently carry the Disciplined/Undisciplined
   persona traits (about 430 players league-wide do), so those rules wait until one joins. Hot/Cold today:

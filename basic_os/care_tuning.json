@@ -5,8 +5,8 @@
     "Relaxed": {
       "hours": 12,
       "drain_scale": 0.8,
-      "staff_target": 70,
-      "staff_rate": 0.22,
+      "staff_target": 64,
+      "staff_rate": 0.2,
       "warning_chance": 0.001
     },
     "Normal": {
@@ -139,5 +139,6 @@
   "temperament_spread": 0.4,
   "start_spread": 12,
   "trust_drain_relief": 0.5,
-  "homesick_below": 50
+  "homesick_below": 50,
+  "sim_slipping_margin": 15
 }
