@@ -388,7 +388,20 @@ App-only. The code is in `basic_os/care_incidents.py`, and the dials are under `
     Any reply from someone else claiming to be him ("it's me", "right here") is dropped, whatever the model writes. The
     player asked always gets to answer; if he'd just repeat last time's joke, only his first sentence is kept.
   - Questions get fewer tapbacks (0-2, mostly 👍 or ❓).
-- **Still to come:** free-text replies in the one-on-one threads, and players starting new conversations midweek.
+- **Player voices (feature/player-voices):** each player has a stable texting voice (12 kinds: laid-back and funny,
+  quiet and lowercase, yes-sir polite, hype man, deadpan, country, city slang...) used everywhere he talks. The
+  week's care texts are rewritten in his voice in the background after a sync, keeping the same problem and worry,
+  with no new facts or numbers. The template stays if the model is away.
+- **Typed replies (feature/typed-replies):** a compose box under the quick replies in a one-on-one thread.
+  - Clear words decide the action: "come by my office" is a sit-down, "call" is a call, "deal with it" is not now.
+  - Otherwise the model reads the tone.
+  - It steps down to a cheaper action when the hours run short.
+  - The player texts back in his voice, and the phone says what the reply counted as.
+- **Midweek chats (feature/midweek-chat):** between games a player starts a conversation (practice, film, banter, hype,
+  a question for the coach, a shout-out, the weight room) and 2-3 teammates reply.
+  - Up to 3 a care week, at least 20 minutes of real time apart.
+  - Only once the post-game chat has finished arriving and nothing else is being written.
+  - Starters and captains start more; players who are down rarely do. Dials are under `chat` → `midweek`.
 
 ## Build order (when un-tabled)
 

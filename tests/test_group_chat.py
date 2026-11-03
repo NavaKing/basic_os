@@ -176,6 +176,35 @@ class GroupChat(unittest.TestCase):
         with self.assertRaises(ValueError):
             group_chat.react(msg, "🍕")
 
+    def test_midweek_conversations_start_now_and_then(self):
+        group_chat.set_state("postgame_week", 1)   # the post-game chat already happened
+        t = care.load_tuning()['chat']['midweek']
+        chat = [{"save_id": "wr1", "text": "film room at 6 tomorrow?"}, {"save_id": "hb1", "text": "i'll be there"}]
+        now = 10_000_000.0
+        with mock.patch.object(team_board, "chatter", return_value=chat) as chatter:
+            self.assertTrue(group_chat.start_midweek("test-model", now=now, rng=random.Random(1)))
+            wait_for("midweek")
+            self.assertFalse(group_chat.start_midweek("test-model", now=now + 60))   # messages still arriving
+            group_chat.execute("UPDATE chat_messages SET delivered_at = ?", (now,))
+            self.assertFalse(group_chat.start_midweek("test-model", now=now + 60))   # too soon after the last one
+            self.assertTrue(group_chat.start_midweek("test-model", now=now + t['gap_minutes'] * 60 + 1))
+            wait_for("midweek")
+        self.assertEqual(chatter.call_count, 2)
+        rows = league.query_rows("SELECT kind, text FROM chat_messages ORDER BY msg_id")
+        self.assertEqual([r['kind'] for r in rows], ["chatter"] * 4)
+        group_chat.set_state("midweek_" + care.get_state("week"), t['per_week'])
+        group_chat.execute("UPDATE chat_messages SET delivered_at = ?", (now,))
+        self.assertFalse(group_chat.start_midweek("test-model", now=now + 10 * 86400))   # the week's quota is used up
+
+    def test_midweek_chatter_starts_with_the_starter(self):
+        msgs = {"messages": [{"author": "Eric Richardson", "text": "who's got the aux on the bus"},
+                             {"author": "Samuel Harris", "text": "me obviously"}, {"author": "Bench Corner", "text": "we had 4 reps"}]}
+        with mock.patch("ai_engine.call_ollama", return_value=json.dumps(msgs)):
+            out = team_board.chatter("test-model", "wr1", ["hb1", "cb1"], [], random.Random(1))
+        self.assertEqual([m['save_id'] for m in out], ["wr1", "hb1"])   # the one with a number is dropped
+        with mock.patch("ai_engine.call_ollama", return_value=json.dumps({"messages": msgs['messages'][1:]})):
+            self.assertEqual(team_board.chatter("test-model", "wr1", ["hb1", "cb1"], [], random.Random(1)), [])
+
     def test_routes(self):
         from app import app
         client = app.test_client()

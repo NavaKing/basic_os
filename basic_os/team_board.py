@@ -368,4 +368,40 @@ def answer(selected_model, coach_text, responder_ids, history, addressed_ids=())
         out.append({"author": r['author'], "text": text})
     return [{"save_id": by_name[o['author']]['save_id'], "text": o['text']} for o in out[:len(people)]]
 
+# What players start talking about between games, with how often each comes up
+TOPICS = [("something that happened at practice today", 3), ("film study for the next opponent", 2),
+          ("harmless locker-room banter: food, music, a video game, a bet on something silly", 3), ("getting hyped for the next game", 2),
+          ("a question for the coach about practice, the plan or the next opponent", 1.5), ("shouting out a teammate's hard work this week", 2),
+          ("the weight room or recovery", 1)]
+
+def chatter(selected_model, starter_id, replier_ids, history, rng=None):
+    """A conversation a player starts between games: [{save_id, text}], the starter first. The topic is picked at random."""
+    rng = rng or random.Random()
+    topic = rng.choices([t for t, _ in TOPICS], weights=[w for _, w in TOPICS])[0]
+    last = database.query_last_played_week()
+    everyone = {c['save_id']: c for c in cast(last['week_id'] if last else None, everyone=True)}
+    people = [everyone[i] for i in [starter_id] + list(replier_ids) if i in everyone]
+    if len(people) < 2:
+        return []
+    for c in people:
+        c['angle'], c['previous'] = None, None
+    starter = people[0]
+    by_name = {c['name']: c for c in people}
+    prompt = (f"{GUARDRAILS} Facts: {game_facts()} {starters_fact()} Recent group chat: {' | '.join(history[-10:]) or '(quiet)'} "
+              f"It's midweek, no game today. {starter['name']} starts a new conversation in the team group chat about {topic}; then "
+              f"{', '.join(c['name'] for c in people[1:])} reply to him and each other, in that order. The players: "
+              + "; ".join(describe(c) for c in people) + ". Each message sounds like that player (how he texts), short like real texts, "
+              "nobody repeats a line or joke already in the recent chat, and if the starter asks the coach something, the others "
+              "can chime in but don't answer for the coach. No stats or numbers. "
+              'Respond with ONLY JSON: {"messages": [{"author": "Exact Name", "text": "message text"}, ...]}')
+    out = []
+    said = [line.split(": ", 1)[-1] for line in history[-10:]]
+    for r in ask(selected_model, prompt, by_name, "messages"):
+        text = scrub(r['text'], people)
+        if text and not re.search(r"\d", text) and not any(repeats(text, line) for line in said if len(text) >= COPY_MIN_LENGTH):
+            out.append({"save_id": by_name[r['author']]['save_id'], "text": text})
+    if not out or out[0]['save_id'] != starter['save_id']:   # the conversation has to start with the starter
+        return []
+    return out[:len(people) + 1]
+
 initialize_tables()

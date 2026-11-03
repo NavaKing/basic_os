@@ -341,6 +341,23 @@
       ],
       "coach_morale": 1,
       "coach_weekly_cap": 5
+    },
+    "midweek": {
+      "_about": "Players starting conversations between games: up to per_week a care week, at least gap_minutes of real time apart, only once the post-game chat has finished arriving. Each one is a starter plus replies teammates.",
+      "per_week": 3,
+      "gap_minutes": 20,
+      "replies": [
+        2,
+        3
+      ],
+      "first_delay": [
+        5,
+        20
+      ],
+      "delay": [
+        20,
+        60
+      ]
     }
   }
 }

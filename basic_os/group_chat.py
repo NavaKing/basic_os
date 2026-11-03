@@ -17,7 +17,7 @@ import roster
 import team_board
 
 _lock = threading.Lock()
-_jobs = {"postgame": None, "answer": None}   # the background job running, if any: {"started", "error"}
+_jobs = {"postgame": None, "answer": None, "midweek": None}   # the background job running, if any: {"started", "error"}
 
 def initialize_tables():
     conn = database.get_db_connection()
@@ -275,6 +275,51 @@ def _write_postgame(selected_model, week, force):
         set_state("postgame_failed_at", time.time())
         _jobs['postgame'] = {"done": True, "error": str(e)}
 
+# ---------- Between games ----------
+
+def start_midweek(selected_model, now=None, rng=None):
+    """Now and then between games a player starts a conversation: up to per_week a care week, gap_minutes apart, only
+    once nothing else is arriving or being written. Returns True if one was started."""
+    t = tuning()['midweek']
+    now = now or time.time()
+    week = care.get_state("week")
+    if week is None or postgame_due() or any(j and not j.get('done') for j in _jobs.values()):
+        return False
+    if league.query_rows("SELECT 1 FROM chat_messages WHERE delivered_at IS NULL LIMIT 1"):
+        return False
+    count = int(get_state(f"midweek_{week}") or 0)
+    last_activity = league.query_rows("SELECT MAX(delivered_at) AS t FROM chat_messages")[0]['t'] or 0
+    if count >= t['per_week'] or now - max(last_activity, float(get_state("midweek_last_at") or 0)) < t['gap_minutes'] * 60:
+        return False
+    rng = rng or random.Random()
+    players = care.load_players()
+    if len(players) < 3:
+        return False
+    # Starters, captains and players in a good place start conversations more; players who are down rarely do
+    council = set(care.council_ids())
+    weights = [(2.0 if p['save_id'] in council else 1.4 if p['starter'] else 1.0) * (0.3 if min(p['needs'].values()) < 35 else 1.0) for p in players]
+    starter = rng.choices(players, weights=weights)[0]
+    others = [p for p in players if p['save_id'] != starter['save_id']]
+    repliers = [p['save_id'] for p in rng.sample(others, min(rng.randint(*t['replies']), len(others)))]
+    set_state(f"midweek_{week}", count + 1)
+    set_state("midweek_last_at", now)
+    history = [line_for(m) for m in recent(12)]
+    _jobs['midweek'] = {"started": now}
+    threading.Thread(target=_write_midweek, args=(selected_model, starter['save_id'], repliers, history, int(week)), daemon=True).start()
+    return True
+
+def _write_midweek(selected_model, starter, repliers, history, week):
+    t = tuning()['midweek']
+    try:
+        messages = team_board.chatter(selected_model, starter, repliers, history)
+        for row in schedule(messages, t['first_delay'], t['delay']):
+            msg_id = execute("INSERT INTO chat_messages (week, save_id, kind, text, delay) VALUES (?, ?, 'chatter', ?, ?)",
+                             (week, row['save_id'], row['text'], row['delay']))
+            schedule_reactions(msg_id, row['text'], row['save_id'])
+        _jobs['midweek'] = {"done": True}
+    except Exception as e:
+        _jobs['midweek'] = {"done": True, "error": str(e)}
+
 # ---------- The coach writes ----------
 
 def first_names(players):
@@ -433,7 +478,7 @@ def poll(selected_model, since=0):
     """What the page calls every few seconds: starts the post-game chat when a new game has been played, delivers the
     next message if it's due, and returns what's new."""
     if selected_model:
-        start_postgame(selected_model)
+        start_postgame(selected_model) or start_midweek(selected_model)
         import care_messages
         care_messages.start_voicing(selected_model)   # this week's care texts, in each player's voice
     deliver()
