@@ -7,7 +7,23 @@ import { notify } from './notify.js';
 
 const POLL_MS = 5000;
 const GAP_FOR_TIME = 15 * 60;   // a time stamp above any message 15+ minutes after the one before
-const chat = { messages: [], members: 0, unread: 0, typing: null, writing: false, loaded: false };
+const chat = { messages: [], reactions: {}, members: 0, unread: 0, typing: null, writing: false, loaded: false, picker: null };
+const EMOJI = ['❤️', '👍', '😂', '‼️', '❓'];
+
+// The tapbacks on a message (a small pill on its corner), and the picker when it's the one being reacted to
+function tapbacks(m) {
+    const groups = chat.reactions[m.id] || [];
+    const pill = groups.length
+        ? '<span class="tapbacks' + (m.me ? ' tapbacks--me' : '') + '" title="' + esc(groups.map(g => g.names.join(', ') + ' ' + g.emoji).join(' · ')) + '">' +
+              groups.map(g => '<span class="tapback' + (g.mine ? ' is-mine' : '') + '">' + g.emoji + (g.count > 1 ? '<b>' + g.count + '</b>' : '') + '</span>').join('') + '</span>'
+        : '';
+    const mine = (groups.find(g => g.mine) || {}).emoji;
+    const picker = chat.picker === m.id
+        ? '<span class="tapback-picker' + (m.me ? ' tapback-picker--me' : '') + '">' + EMOJI.map(e =>
+              '<button type="button" class="tapback-choice' + (e === mine ? ' is-mine' : '') + '" data-react="' + m.id + '" data-emoji="' + e + '" aria-label="React ' + e + '">' + e + '</button>').join('') + '</span>'
+        : '';
+    return pill + picker;
+}
 
 function timeLabel(at) {
     const d = new Date(at * 1000);
@@ -39,7 +55,7 @@ function bubbles() {
         const sameAsPrev = prev && !prev.me && !m.me && prev.author.save_id === m.author.save_id && m.at - prev.at < GAP_FOR_TIME;
         const lastOfRun = !next || next.me !== m.me || (!m.me && next.author.save_id !== m.author.save_id) || next.at - m.at >= GAP_FOR_TIME;
         if (m.me) {
-            html += '<div class="bubble bubble--me">' + esc(m.text) + '</div>';
+            html += '<div class="bubble bubble--me" data-bubble="' + m.id + '">' + esc(m.text) + tapbacks(m) + '</div>';
             if (!next || !next.me) html += '<div class="bubble-receipt">' + (chat.messages.slice(i + 1).some(x => !x.me) ? 'Read' : 'Delivered') + '</div>';
             return;
         }
@@ -49,7 +65,7 @@ function bubbles() {
                         (sameAsPrev ? '' : '<button type="button" class="group-name" data-player-id="' + esc(m.author.save_id) + '">' + esc(m.author.name) +
                             (m.author.position ? ' <span>' + esc(m.author.position) + (m.author.jersey ? ' #' + esc(m.author.jersey) : '') + '</span>' : '') + '</button>') +
                         (m.reply_to ? '<div class="group-quote">&#8617; ' + esc(m.reply_to.name.split(' ')[0]) + ': ' + esc(m.reply_to.text) + '</div>' : '') +
-                        '<div class="bubble bubble--them">' + esc(m.text) + '</div>' +
+                        '<div class="bubble bubble--them" data-bubble="' + m.id + '">' + esc(m.text) + tapbacks(m) + '</div>' +
                     '</div>' +
                 '</div>';
     });
@@ -106,10 +122,26 @@ function root() {
     return el && el.dataset.view === 'group' && document.querySelector('#phone .phone-messages.is-active') ? el : null;
 }
 
+// A notification when a teammate reacts to one of the coach's messages
+function announceReactions(next, announce) {
+    if (!announce) return;
+    chat.messages.filter(m => m.me).forEach(m => {
+        const before = (chat.reactions[m.id] || []).reduce((n, g) => n + g.count - (g.mine ? 1 : 0), 0);
+        const after = (next[m.id] || []).filter(g => g.count > (g.mine ? 1 : 0));
+        if (after.reduce((n, g) => n + g.count - (g.mine ? 1 : 0), 0) > before) {
+            const g = after[after.length - 1];
+            const who = g.names.filter(n => n !== 'You');
+            notify('WYO Group Chat', who[who.length - 1] + ' reacted ' + g.emoji + ' to "' + m.text.slice(0, 40) + (m.text.length > 40 ? '…' : '') + '"');
+        }
+    });
+}
+
 function take(data, announce) {
     const lastId = chat.messages.length ? chat.messages[chat.messages.length - 1].id : 0;
     const fresh = data.messages.filter(m => m.id > lastId);
     chat.messages = chat.messages.concat(fresh);
+    announceReactions(data.reactions || {}, announce && !root());
+    chat.reactions = data.reactions || {};
     chat.members = data.members;
     chat.typing = data.typing;
     chat.writing = data.writing;
@@ -176,6 +208,23 @@ export function initGroupChat() {
         if (open) update(open, true);
     });
     phone.addEventListener('click', async event => {
+        const choice = event.target.closest('[data-react]');
+        const bubble = event.target.closest('[data-bubble]');
+        const open = root();
+        if (choice) {
+            chat.picker = null;
+            const res = await fetch('/phone/chat/react', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                                                            body: JSON.stringify({ msg_id: Number(choice.dataset.react), emoji: choice.dataset.emoji }) });
+            const data = await res.json().catch(() => ({ error: 'HTTP ' + res.status }));
+            if (!data.error) chat.reactions = data.reactions;
+            if (open) update(open, false);
+            return;
+        }
+        if (open && (bubble || chat.picker !== null)) {
+            // Tap a bubble to react to it; tap anywhere else to close the picker
+            chat.picker = bubble && chat.picker !== Number(bubble.dataset.bubble) ? Number(bubble.dataset.bubble) : null;
+            update(open, false);
+        }
         if (!event.target.closest('[data-chat-regenerate]')) return;
         if (!confirm("Write the last game's post-game chat again? Messages that haven't arrived yet are replaced.")) return;
         await fetch('/phone/chat/regenerate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ model: selectedModel() }) });

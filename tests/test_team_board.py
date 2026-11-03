@@ -15,7 +15,7 @@ import team_board
 
 def set_up_team():
     conn = database.get_db_connection()
-    for table in ("care_state", "care_players", "care_warnings", "care_log", "care_council", "chat_messages", "chat_state",
+    for table in ("care_state", "care_players", "care_warnings", "care_log", "care_council", "chat_messages", "chat_state", "chat_reactions",
                   "schedule_tracking", "team_roster", "player_game_stats"):
         conn.execute(f"DELETE FROM {table}")
     conn.executemany("INSERT INTO schedule_tracking (week_id, opponent_name, is_played, wyo_score, opp_score, site, game_date) VALUES (?, ?, ?, ?, ?, ?, ?)",

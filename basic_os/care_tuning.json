@@ -326,6 +326,21 @@
     ],
     "rally_morale": 2,
     "shoutout_morale": 5,
-    "retry_seconds": 120
+    "retry_seconds": 120,
+    "reactions": {
+      "_about": "Tapbacks. A player's message gets up to max_per_message reactions from teammates (post_chance that it gets any), a coach message gets coach_reactors; each shows up delay seconds after the message. The coach's heart, thumbs up, laugh or exclamation on a player's message is +coach_morale for him, up to coach_weekly_cap a week.",
+      "post_chance": 0.7,
+      "max_per_message": 4,
+      "coach_reactors": [
+        2,
+        5
+      ],
+      "delay": [
+        3,
+        40
+      ],
+      "coach_morale": 1,
+      "coach_weekly_cap": 5
+    }
   }
 }

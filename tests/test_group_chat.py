@@ -106,6 +106,33 @@ class GroupChat(unittest.TestCase):
         self.assertFalse(group_chat.postgame_due())   # week 1's chat already happened on the board
         group_chat.execute("DELETE FROM team_board_posts")
 
+    def test_reactions_show_after_their_delay_and_fit_the_message(self):
+        rng = random.Random(3)
+        self.assertEqual(max(set(e for e in (group_chat.pick_emoji("lol the bus ride", False, rng) for _ in range(200))),
+                             key=[group_chat.pick_emoji("lol the bus ride", False, random.Random(i)) for i in range(200)].count), "😂")
+        msg = group_chat.execute("INSERT INTO chat_messages (week, save_id, kind, text, delivered_at) VALUES (1, 'hb1', 'postgame', '177 yards', 1000)")
+        group_chat.execute("INSERT INTO chat_reactions (msg_id, who, emoji, delay) VALUES (?, 'wr1', '‼️', 20)", (msg,))
+        self.assertEqual(group_chat.reactions(now=1010), {})                    # not yet
+        self.assertEqual(group_chat.reactions(now=1021)[msg], [{"emoji": "‼️", "count": 1, "mine": False, "names": ["Eric Richardson"]}])
+        coach = group_chat.execute("INSERT INTO chat_messages (week, save_id, kind, text, delivered_at) VALUES (1, NULL, 'coach', 'great week', 1000)")
+        group_chat.schedule_reactions(coach, "great week", None, random.Random(1))
+        rows = group_chat.league.query_rows("SELECT who FROM chat_reactions WHERE msg_id = ?", (coach,))
+        self.assertTrue(rows and all(r['who'] != 'coach' for r in rows))       # teammates react to the coach
+
+    def test_the_coach_reacts_toggles_and_lifts_morale_a_little(self):
+        msg = group_chat.execute("INSERT INTO chat_messages (week, save_id, kind, text, delivered_at) VALUES (1, 'hb1', 'postgame', 'big win', 1000)")
+        morale = next(p for p in care.load_players() if p['save_id'] == 'hb1')['needs']['morale']
+        view = group_chat.react(msg, "❤️")
+        self.assertTrue(view['reactions'][msg][0]['mine'])
+        lift = care.load_tuning()['chat']['reactions']['coach_morale']
+        self.assertEqual(next(p for p in care.load_players() if p['save_id'] == 'hb1')['needs']['morale'], min(100, morale + lift))
+        group_chat.react(msg, "👍")    # switching doesn't lift again
+        view = group_chat.react(msg, "👍")   # the same one again takes it back
+        self.assertNotIn(msg, view['reactions'])
+        self.assertEqual(next(p for p in care.load_players() if p['save_id'] == 'hb1')['needs']['morale'], min(100, morale + lift))
+        with self.assertRaises(ValueError):
+            group_chat.react(msg, "🍕")
+
     def test_routes(self):
         from app import app
         client = app.test_client()

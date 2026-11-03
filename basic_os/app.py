@@ -308,6 +308,8 @@ def phone_chat_action(action):
         if action == "read":
             group_chat.mark_read()
             return jsonify({"ok": True})
+        if action == "react":
+            return jsonify(group_chat.react(int(body.get('msg_id') or 0), body.get('emoji')))
         if action == "regenerate":
             return jsonify({"started": group_chat.start_postgame(body.get('model') or 'gemma3:12b', force=True)})
     except ValueError as e:
