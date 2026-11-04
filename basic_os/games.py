@@ -70,12 +70,14 @@ def performers(game, teams):
     return out
 
 def scoring_plays(game_id):
+    """(the scoring plays, a note about them or None), or (None, None) when the game's scoring summary wasn't captured."""
     import events
     try:
         draft = events.build_save_draft(game_id)
     except ValueError:
-        return None
-    return [{"quarter": p['quarter'], "clock": p['clock'], "team": p['team'], "text": p['text']} for p in draft['plays']]
+        return None, None
+    plays = [{"quarter": p['quarter'], "clock": p['clock'], "team": p['team'], "text": p['text']} for p in draft['plays']]
+    return plays, (draft.get('notes') or [None])[0]   # e.g. why an overtime game's totals come from the scoreboard
 
 def build_game(game_id):
     rows = league.query_rows("SELECT * FROM league_games WHERE game_id = ? AND played = 1", (game_id,))
@@ -88,9 +90,11 @@ def build_game(game_id):
     ranks = league.query_poll(game['week'] - 1)
     by_team = performers(game, teams)
     line = recap.box_score(game, teams, ranks)
+    plays, note = scoring_plays(game_id)
     return {
         "game_id": game_id, "week": game['week'], "postseason": game['week_type'] not in (None, "RegularSeason"),
         "teams": [{**row, "side": side, "performers": by_team.get(row['team']['id'], [])} for side, row in zip(("away", "home"), line)],
         "stats": team_stats(game),
-        "scoring": scoring_plays(game_id),
+        "scoring": plays,
+        "scoring_note": note,
     }

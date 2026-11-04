@@ -38,3 +38,4 @@ tr[data-game-id]:hover td { background: rgba(255, 255, 255, 0.04); }
 
 /* Bye weeks in schedules */
 .schedule-bye td { font-style: italic; letter-spacing: 0.5px; }
+.gm-note { margin: 0 0 10px; padding: 8px 12px; border-left: 3px solid var(--gold); background: var(--gold-soft); font-size: 13px; line-height: 1.5; color: var(--text); }
