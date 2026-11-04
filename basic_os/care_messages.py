@@ -154,6 +154,10 @@ def staff_emails(players, week, ctx, tuning):
         emails.append({"sender": "ad", "subject": f"{lore.conference_name()} Championship Game",
                        "body": f"Coach, we're playing for the {lore.conference_name()} title against {ctx['title_game']}. Moments like this "
                                "don't come around often at this school. The whole state will be watching. Proud of you and the guys.", "actions": []})
+    if ctx.get('playoff_berth'):
+        emails.append({"sender": "ad", "subject": "We're in the Playoff",
+                       "body": "Coach, the College Football Playoff. This school has never been there. The phones haven't stopped all "
+                               "morning. Whatever happens next, these guys made history. Let's go win one.", "actions": []})
     if ctx.get('conference_champs'):
         emails.append({"sender": "ad", "subject": "Conference champions",
                        "body": f"Coach, {lore.conference_name()} champions. Nobody can take that away from these guys. Get some rest, then let's "

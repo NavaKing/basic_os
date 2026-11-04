@@ -132,6 +132,8 @@ def describe_game(game):
     g['opponent_logo'] = opponent['logo']
     g['opponent_id'] = opponent['id']
     g['opponent_staff'] = opponent['staff']
+    us = league.query_user_team() or {}
+    g['event_name'] = league.bowl_name(us.get('team_id'), g.get('week_id')) if us else None   # "CFP First Round", "Sun Bowl"
     return g
 
 def team_media(name):

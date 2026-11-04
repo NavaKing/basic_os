@@ -169,6 +169,23 @@ class SeasonMilestones(unittest.TestCase):
         schedule = {g['week_id']: g for g in database.query_full_schedule()}
         self.assertTrue(care.team_standing(16, schedule).get('conference_champs'))
 
+    def test_a_playoff_berth_counts_instead_of_a_bowl(self):
+        conn = database.get_db_connection()
+        for table in ("league_teams", "league_bowls", "league_games", "care_state", "schedule_tracking"):
+            conn.execute(f"DELETE FROM {table}")
+        conn.execute("INSERT INTO league_teams (team_id, name, short_name, is_user) VALUES (142, 'Wyoming', 'WYO', 1)")
+        conn.execute("INSERT INTO league_games (game_id, week, week_type, home_id, away_id, played) VALUES (925, 17, 'BowlSeason1', 61, 142, 0)")
+        conn.execute("INSERT INTO league_bowls (game_id, week, week_type, name, home_id, away_id, played) VALUES (925, 17, 'BowlSeason1', 'CFP First Round', 61, 142, 0)")
+        conn.execute("INSERT INTO schedule_tracking (week_id, opponent_name, is_played, game_date) VALUES (17, 'LSU Tigers', 0, '2026-12-19')")
+        conn.commit()
+        conn.close()
+        standing = care.team_standing(17, {g['week_id']: g for g in database.query_full_schedule()})
+        self.assertTrue(standing.get('playoff_berth'))
+        self.assertNotIn('bowl_berth', standing)
+        self.assertIn("a College Football Playoff berth", care.team_boost(standing, tuning())[1])
+        self.assertEqual(league.bowl_name(142, 17), "CFP First Round")
+        self.assertTrue(league.is_playoff("CFP First Round") and not league.is_playoff("Sun Bowl"))
+
     def test_lore_facts_for_the_writers(self):
         import lore
         conn = database.get_db_connection()

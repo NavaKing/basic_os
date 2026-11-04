@@ -362,7 +362,11 @@ def team_standing(week, schedule):
             out['conference_champs'] = True
     us_id = (league.query_user_team() or {}).get('team_id')
     bowl = league.query_rows("SELECT 1 FROM league_games WHERE (home_id = ? OR away_id = ?) AND week_type LIKE 'Bowl%' LIMIT 1", (us_id, us_id)) if us_id else []
-    if bowl and get_state(f"bowl_{season}") is None:
+    playoff = league.query_rows("SELECT name FROM league_bowls WHERE (home_id = ? OR away_id = ?) AND (name LIKE '%CFP%' OR name LIKE '%Playoff%')",
+                                (us_id, us_id)) if us_id else []
+    if playoff and get_state(f"playoff_{season}") is None:
+        out['playoff_berth'] = True   # a playoff berth counts instead of a plain bowl berth
+    elif bowl and not playoff and get_state(f"bowl_{season}") is None:
         out['bowl_berth'] = True
     out['season'] = season
     if out['rank'] and best_before > 25:
@@ -408,6 +412,10 @@ def team_boost(ctx, tuning):
         add("morale", t['champions_morale'])
         add("focus", t['champions_focus'])
         reasons.append("winning the conference championship")
+    if ctx.get('playoff_berth'):
+        add("morale", t['playoff_morale'])
+        add("focus", t['playoff_focus'])
+        reasons.append("a College Football Playoff berth")
     if ctx.get('bowl_berth'):
         add("morale", t['bowl_morale'])
         reasons.append("a bowl berth")
@@ -499,7 +507,8 @@ def advance(week):
         games = game_results(w - 1, tuning)
         for p in players:
             p['game'] = games.get(p['save_id'], {"played": False, "standout": False, "award": None}) if games else None
-        for key, state in (("made_title_game", "title_game"), ("conference_champs", "champions"), ("bowl_berth", "bowl")):
+        for key, state in (("made_title_game", "title_game"), ("conference_champs", "champions"), ("bowl_berth", "bowl"),
+                           ("playoff_berth", "playoff")):
             if ctx.get(key):   # each season milestone lifts the team once
                 set_state(f"{state}_{ctx['season']}", w)
         events = care_messages.close_week(players, w, tuning)   # texts left on read
