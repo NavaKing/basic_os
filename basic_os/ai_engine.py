@@ -201,6 +201,37 @@ def parse_tweets(raw_tweets):
         raise ValueError("No valid tweets in model output.")
     return tweets[:TWEET_COUNT]
 
+# The College Football Playoff's rounds, in order (what the next win leads to)
+CFP_ROUNDS = ["CFP First Round", "CFP Quarterfinal", "CFP Semifinal", "CFP National Championship"]
+
+def hashtag(name):
+    """'CFP Quarterfinal' -> '#CFPQuarterfinal', 'Sun Bowl' -> '#SunBowl'."""
+    return "#" + re.sub(r"[^A-Za-z0-9]", "", name or "")
+
+def game_stakes(active_stats, last_played):
+    """The facts that make a game matter, for the dispatch and the campus feed: the record and ranking, what the last
+    game was (a bowl or playoff round), what this one is, its hashtag, and what a win leads to. '' in a plain week."""
+    import care, league
+    us = league.query_user_team() or {}
+    facts = []
+    wins, losses = database.query_season_record()
+    if wins + losses:
+        schedule = {g['week_id']: g for g in database.query_full_schedule()}
+        standing = care.team_standing(active_stats['week_id'] if active_stats else 1, schedule)
+        facts.append(f"{us.get('name', 'The team')} is {wins}-{losses}" + (f", ranked No. {standing['rank']}" if standing.get('rank') else "") + ".")
+    last_event = league.bowl_name(us.get('team_id'), last_played['week_id']) if last_played and us else None
+    if last_event and last_played['wyo_score'] is not None:
+        result = "won" if last_played['wyo_score'] > last_played['opp_score'] else "lost"
+        facts.append(f"The last game was the {last_event}: {us.get('name')} {result} against {last_played['opponent_name']}.")
+    event = league.bowl_name(us.get('team_id'), active_stats['week_id']) if active_stats and us else None
+    if event:
+        facts.append(f"This week's game is the {event} against {active_stats['opponent_name']}; posts about it use the hashtag {hashtag(event)}.")
+        if event in CFP_ROUNDS[:-1]:
+            facts.append(f"Win and {us.get('name')} advances to the {CFP_ROUNDS[CFP_ROUNDS.index(event) + 1]}; lose and the season is over.")
+        elif event == CFP_ROUNDS[-1]:
+            facts.append("Win and they're national champions.")
+    return " ".join(facts)
+
 def build_prev_context(last_played):
     if not last_played:
         return "No games recorded yet."
@@ -222,6 +253,9 @@ def generate_dynasty_content(selected_model, storyline_context="", player_lines=
     prev_context = build_prev_context(database.query_last_played_week())
 
     headline = f"CURRENT WEEK FOCUS: Preparing for Week {active_stats['week_id']} against {active_stats['opponent_name']}."
+    stakes = game_stakes(active_stats, database.query_last_played_week())
+    if stakes:
+        headline += f" What's at stake (use these facts, and the round's hashtag in posts about it): {stakes}"
     us = team.user_team()
     scouting = f" Scouting report on the opponent (use only these facts about them): {scouting_context}" if scouting_context else ""
     import rivals, presser, care_incidents
@@ -269,7 +303,8 @@ def generate_dynasty_content(selected_model, storyline_context="", player_lines=
         plan.append("One of the remaining posts is campus chatter, from a student or campus account, about how a player seems lately. " + mood)
     if off_field:
         plan.append("One of the remaining posts reacts to the off-field news, respectfully." + off_field)
-    plan.append(f"The remaining posts hype the upcoming Week {active_stats['week_id']} game vs {active_stats['opponent_name']}.")
+    plan.append(f"The remaining posts hype the upcoming Week {active_stats['week_id']} game vs {active_stats['opponent_name']}."
+                + (f" {stakes} Talk about what it means: the round, the stakes, the rankings." if stakes else ""))
     plan.append(f"Exactly {PHOTO_TWEETS} posts include a photo: give only those posts a \"photo\" field with one vivid sentence describing what the photo shows (the scene, people, action and setting). The other posts have no photo field.")
     tweet_prompt = (
         "IMPORTANT: every player mentioned is a man on a men's college football team, so always use he/him/his for players, whatever their first name. "

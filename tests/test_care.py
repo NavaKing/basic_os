@@ -218,6 +218,28 @@ class SeasonMilestones(unittest.TestCase):
         picked = [p['save_id'] for p in care_messages.texters([high, red, low], t, lambda k: random.Random(k))]
         self.assertEqual(sorted(picked), ["low", "red"])
 
+    def test_the_feed_gets_the_round_its_hashtag_and_the_stakes(self):
+        import ai_engine
+        conn = database.get_db_connection()
+        for table in ("league_teams", "league_bowls", "schedule_tracking", "league_polls"):
+            conn.execute(f"DELETE FROM {table}")
+        conn.execute("INSERT INTO league_teams (team_id, name, short_name, is_user) VALUES (142, 'Wyoming', 'WYO', 1)")
+        conn.executemany("INSERT INTO league_bowls (game_id, week, name, home_id, away_id, played) VALUES (?, ?, ?, ?, 142, ?)",
+                         [(925, 17, "CFP First Round", 61, 1), (926, 18, "CFP Quarterfinal", 87, 0)])
+        conn.executemany("INSERT INTO schedule_tracking (week_id, opponent_name, is_played, wyo_score, opp_score) VALUES (?, ?, ?, ?, ?)",
+                         [(17, "LSU Tigers", 1, 23, 21), (18, "Ohio State Buckeyes", 0, None, None)])
+        conn.commit()
+        conn.close()
+        stakes = ai_engine.game_stakes(database.query_active_week(), database.query_last_played_week())
+        self.assertIn("The last game was the CFP First Round: Wyoming won against LSU Tigers.", stakes)
+        self.assertIn("#CFPQuarterfinal", stakes)
+        self.assertIn("advances to the CFP Semifinal", stakes)
+        self.assertEqual(ai_engine.hashtag("Famous Idaho Potato Bowl"), "#FamousIdahoPotatoBowl")
+        conn = database.get_db_connection()
+        conn.execute("DELETE FROM league_bowls")
+        conn.commit()
+        conn.close()
+
     def test_lore_facts_for_the_writers(self):
         import lore
         conn = database.get_db_connection()
