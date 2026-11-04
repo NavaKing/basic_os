@@ -103,6 +103,18 @@ class ScorerText(unittest.TestCase):
         self.assertEqual(events.scorer_text({}, None, "home", 2), "Safety")
 
 
+class Overtime(unittest.TestCase):
+    def test_an_overtime_game_that_doesnt_add_up_gets_a_note(self):
+        draft = {"teams": [{"abbr": "HAW", "quarters": [14, 7, 7, 3, 3], "total": 34, "final": 36},
+                           {"abbr": "NEV", "quarters": [0, 0, 14, 17, 3], "total": 34, "final": 34}],
+                 "plays": [{"quarter": 5, "team": "HAW", "points": 3, "text": "Field goal"}], "warnings": ["HAW: the scoring plays add up to 34"]}
+        draft = events.settle_overtime(draft)
+        self.assertEqual((draft['warnings'], draft['teams'][0]['quarters'][4], draft['teams'][0]['total']), ([], 5, 36))
+        self.assertIn("overtime", draft['notes'][0])
+        regulation = {"teams": [{"abbr": "X", "quarters": [7, 0, 0, 0], "total": 7, "final": 9}], "plays": [{"quarter": 4}], "warnings": ["off"]}
+        self.assertEqual(events.settle_overtime(regulation)['warnings'], ["off"])   # a regulation game still warns
+
+
 class NameRemainingScorers(unittest.TestCase):
     """Unnamed touchdowns are filled from the game's stat lines only when one player is left who could have scored."""
 
