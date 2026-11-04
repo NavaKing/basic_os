@@ -167,8 +167,11 @@ def staff_emails(players, week, ctx, tuning):
                                "don't come around often at this school. The whole state will be watching. Proud of you and the guys.", "actions": []})
     if ctx.get('playoff_berth'):
         emails.append({"sender": "ad", "subject": "We're in the Playoff",
-                       "body": "Coach, the College Football Playoff. This school has never been there. The phones haven't stopped all "
-                               "morning. Whatever happens next, these guys made history. Let's go win one.", "actions": []})
+                       "body": "Coach, the College Football Playoff. " +
+                               ("This school has never been there. The phones haven't stopped all morning. Whatever happens next, these guys made history. "
+                                if any("never played in the College Football Playoff" in f for f in lore.school().get('facts') or [])
+                                else "The phones haven't stopped all morning. This is what you were brought here for. ") +
+                               "Let's go win one.", "actions": []})
     if ctx.get('conference_champs'):
         emails.append({"sender": "ad", "subject": "Conference champions",
                        "body": f"Coach, {lore.conference_name()} champions. Nobody can take that away from these guys. Get some rest, then let's "

@@ -13,5 +13,22 @@
       "Before this dynasty, Wyoming had never played in the College Football Playoff.",
       "Before this dynasty, Wyoming's most recent postseason win was the 2023 Arizona Bowl: 16-15 over Toledo on a field goal as time expired, Craig Bohl's last game as coach."
     ]
+  },
+  "TEX": {
+    "conference_name": "SEC",
+    "facts": [
+      "The Texas Longhorns football program represents the University of Texas at Austin in American football.",
+      "It is part of the wider Longhorns athletics program and competes at the NCAA Division I Football Bowl Subdivision (FBS) level as a member of the Southeastern Conference.",
+      "Texas conference titles (33): TIAA: 1913, 1914; SWC: 1916, 1918, 1920, 1928, 1930, 1942, 1943, 1945, 1950, 1952, 1953, 1959, 1961, 1962, 1963, 1968, 1969, 1970, 1971, 1972, 1973, 1975, 1977, 1983, 1990, 1994, 1995; Big 12: 1996, 2005, 2009, 2023.",
+      "Division titles: Big 12 South: 1996, 1999, 2001, 2002, 2005, 2008, 2009.",
+      "Bowl record: 33-27.",
+      "Home stadium: Darrell K Royal–Texas Memorial Stadium in Austin, Texas (capacity 100,119).",
+      "Rivals: Arkansas; Baylor; Oklahoma; Rice; TCU; Texas A&M; Texas Tech.",
+      "Fight song: Texas Fight; mascot: Bevo."
+    ],
+    "auto": true,
+    "reviewed": false,
+    "source": "https://en.wikipedia.org/wiki/Texas_Longhorns_football",
+    "fetched": "2026-11-04"
   }
 }

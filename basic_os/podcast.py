@@ -486,6 +486,10 @@ def generate_episode(selected_model, draft, request_hosts=None):
     try:
         progress.step("Writing the script")
         facts = game_facts(draft, ours, theirs, game) + season_facts(ours, week)
+        import career
+        past = career.context(opponent=theirs.get('name'))
+        if past:
+            facts.append(("season", spoken_names(past.strip())))
         title, summary, lines = write_script(selected_model, hosts, ours, theirs, week, facts)
 
         conn = database.get_db_connection()

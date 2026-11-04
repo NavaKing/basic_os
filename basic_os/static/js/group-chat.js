@@ -1,4 +1,4 @@
-// The WYO Group Chat in the phone's Messages app: the players' post-game messages and their answers to the coach,
+// The team group chat ("WYO Group Chat") in the phone's Messages app: the players' post-game messages and their answers to the coach,
 // arriving one at a time (paced by group_chat.py), with notifications, a typing indicator and a compose box.
 
 import { esc, setStatus, headshot, selectedModel } from './utils.js';
@@ -40,10 +40,15 @@ function firstName(m) {
     return m.me ? 'You' : (m.author.name || 'A teammate').split(' ')[0];
 }
 
+/** "WYO Group Chat": named after whichever school the coach is at now. */
+function chatTitle() {
+    return (document.getElementById('phone').dataset.teamName || 'Team') + ' Group Chat';
+}
+
 function groupAvatar() {
     const phone = document.getElementById('phone');
     const logo = phone.dataset.teamLogo;
-    return '<span class="group-avatar">' + (logo ? '<img src="' + esc(logo) + '" alt="">' : esc((phone.dataset.teamName || 'WYO').slice(0, 3))) + '</span>';
+    return '<span class="group-avatar">' + (logo ? '<img src="' + esc(logo) + '" alt="">' : esc((phone.dataset.teamName || 'Team').slice(0, 3))) + '</span>';
 }
 
 function bubbles() {
@@ -86,7 +91,7 @@ function typingLine() {
 function render(root) {
     if (root.dataset.view !== 'group') {
         root.dataset.view = 'group';
-        root.innerHTML = threadHeader('WYO Group Chat', groupAvatar()).replace('</span></div>',
+        root.innerHTML = threadHeader(chatTitle(), groupAvatar()).replace('</span></div>',
                 '<span class="thread-head-sub">' + esc(chat.members) + ' members</span></span>' +
                 '<button type="button" class="group-tool" data-chat-regenerate title="Write the last game\'s post-game chat again">&#8635;</button></div>') +
             '<div class="phone-scroll chat-scroll"><div class="chat group-chat" id="group_chat_list"></div><div id="group_chat_typing"></div>' +
@@ -131,7 +136,7 @@ function announceReactions(next, announce) {
         if (after.reduce((n, g) => n + g.count - (g.mine ? 1 : 0), 0) > before) {
             const g = after[after.length - 1];
             const who = g.names.filter(n => n !== 'You');
-            notify('WYO Group Chat', who[who.length - 1] + ' reacted ' + g.emoji + ' to "' + m.text.slice(0, 40) + (m.text.length > 40 ? '…' : '') + '"');
+            notify(chatTitle(), who[who.length - 1] + ' reacted ' + g.emoji + ' to "' + m.text.slice(0, 40) + (m.text.length > 40 ? '…' : '') + '"');
         }
     });
 }
@@ -147,7 +152,7 @@ function take(data, announce) {
     chat.writing = data.writing;
     chat.unread = data.unread;
     const open = root();
-    if (announce && !open) fresh.filter(m => !m.me).forEach(m => notify('WYO Group Chat', firstName(m) + ': ' + m.text));
+    if (announce && !open) fresh.filter(m => !m.me).forEach(m => notify(chatTitle(), firstName(m) + ': ' + m.text));
     if (open) {
         update(open, false);
         if (chat.unread) markRead();
@@ -171,7 +176,7 @@ export function initGroupChat() {
     const phone = document.getElementById('phone');
     if (!phone) return;
     addThread({
-        id: 'group', title: 'WYO Group Chat', icon: groupAvatar(), render,
+        id: 'group', title: chatTitle(), icon: groupAvatar(), render,
         unread: () => chat.unread,
         // The list row follows the newest message
         get preview() {

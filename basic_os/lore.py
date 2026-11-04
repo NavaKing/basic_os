@@ -39,7 +39,10 @@ def current_season():
 def dynasty_seasons():
     """One line per finished dynasty season ("2026: 12-1, 1st in the MW, finished No. 9, won the Sun Bowl")."""
     lines = []
+    import career
     for r in league.query_rows("SELECT * FROM program_seasons WHERE year < ? ORDER BY year", (current_season() or 9999,)):
+        if not career.coached_season(r['year']):   # this school's seasons under other coaches are school history, not the dynasty's
+            continue
         bowls = [b.replace("_", " ") for b in json.loads(r['bowls_json'] or "[]")]
         rank = f", finished No. {r['final_rank']}" if r['final_rank'] and r['final_rank'] <= 25 else ""
         place = {1: "1st", 2: "2nd", 3: "3rd"}.get(r['conf_standing'], f"{r['conf_standing']}th")
@@ -49,11 +52,12 @@ def dynasty_seasons():
 def dynasty_title_games():
     """This dynasty's conference title games, oldest first ("2026 Mountain West Championship Game: won 31-24 over UNLV"),
     from what player care recorded (title_game_<season> holds the game's week)."""
+    import career
     out = []
     rows = league.query_rows("SELECT state_key, state_value FROM care_state WHERE state_key LIKE 'title_game_%' ORDER BY state_key")
     for r in rows:
         year = r['state_key'].rsplit("_", 1)[-1]
-        if not year.isdigit():
+        if not year.isdigit() or not career.coached_season(year):   # a title game he coached at a previous school
             continue
         game = next(iter(league.query_rows("SELECT * FROM history_games WHERE season_year = ? AND week = ?", (int(year), int(r['state_value'])))), None)
         name = f"{year} {conference_name()} Championship Game"
@@ -67,7 +71,10 @@ def dynasty_title_games():
 
 def dynasty_postseason():
     """This season's finished bowl and playoff games ("2026 CFP First Round: won 23-21 over LSU Tigers")."""
+    import career
     us = league.query_user_team() or {}
+    if current_season() and not career.coached_season(current_season()):
+        return []   # he arrived after this school's bowl season: those games were someone else's
     teams = {t['team_id']: t for t in league.query_rows("SELECT team_id, name, nickname FROM league_teams")}
     out = []
     for b in league.query_rows("SELECT * FROM league_bowls WHERE (home_id = ? OR away_id = ?) AND played = 1 ORDER BY week",
