@@ -367,11 +367,20 @@ def sync_scoring(summaries):
     if not summaries:
         return 0
     played = query_rows("SELECT game_id, week, home_id, away_id, home_score, away_score FROM league_games WHERE played = 1")
-    rows = []
+    rows, unmatched = [], []
     for summary in summaries:
         candidates = [g for g in played if g['home_id'] == summary.get('homeId') and g['away_id'] == summary.get('awayId')]
         if not candidates:
-            continue
+            # The teams come from the players in the summary's snapshots, and that can miss (our own played games went
+            # uncaptured from Week 6 on). Fall back to the final score, when exactly one played game has it and at least
+            # one team agrees (or neither team could be identified).
+            ids = {summary.get('homeId'), summary.get('awayId')} - {None}
+            candidates = [g for g in played if g['home_score'] == summary.get('homeScore') and g['away_score'] == summary.get('awayScore')
+                          and (not ids or ids & {g['home_id'], g['away_id']})]
+            if len(candidates) != 1:
+                unmatched.append({"homeId": summary.get('homeId'), "awayId": summary.get('awayId'), "homeScore": summary.get('homeScore'),
+                                  "awayScore": summary.get('awayScore'), "plays": len(summary.get('plays') or [])})
+                continue
         # A rematch (conference title game) is possible: pick the game whose final the summary reaches
         game = min(candidates, key=lambda g: abs(g['home_score'] - summary['homeScore']) + abs(g['away_score'] - summary['awayScore']))
         rows.append((game['game_id'], game['week'], json.dumps(compact_plays(summary['plays'])), game['home_id'], game['away_id']))
@@ -379,6 +388,9 @@ def sync_scoring(summaries):
     conn.executemany("INSERT OR REPLACE INTO game_scoring (game_id, week, plays_json, home_id, away_id) VALUES (?, ?, ?, ?, ?)", rows)
     conn.commit()
     conn.close()
+    if unmatched:   # kept (with the sync status) so a summary that still can't be placed can be looked into
+        import save_sync
+        save_sync.set_state('scoring_unmatched', json.dumps(unmatched))
     return len(rows)
 
 def query_scoring_games(team_id=None):

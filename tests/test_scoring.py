@@ -200,6 +200,16 @@ class DraftFromSave(unittest.TestCase):
         self.assertEqual(totals, {"IU": 9, "RU": 14})
         self.assertEqual(draft['warnings'], [])
 
+    def test_a_summary_whose_teams_cant_be_read_is_placed_by_its_final_score(self):
+        import save_sync
+        plays = [save_row(1, 629, 0, 0, 0, 3), save_row(4, 30, 7, 9, 13, 9)]
+        # One team unreadable (our own played games): the final score and the other team place it
+        self.assertEqual(league.sync_scoring([{"homeId": 2, "awayId": None, "homeScore": 14, "awayScore": 9, "plays": plays}]), 1)
+        self.assertEqual([g['game_id'] for g in league.query_scoring_games()], [77])
+        # Neither the score nor a team fits: kept aside for a look instead of guessed
+        self.assertEqual(league.sync_scoring([{"homeId": 5, "awayId": 6, "homeScore": 50, "awayScore": 0, "plays": plays}]), 0)
+        self.assertEqual(json.loads(save_sync.get_state('scoring_unmatched'))[0]['homeScore'], 50)
+
     def test_stat_lines_name_the_scorer(self):
         conn = database.get_db_connection()
         conn.execute("INSERT INTO league_players (player_id, name, position, team_id) VALUES ('p1', 'Tyler Cross', 'HB', 1)")
