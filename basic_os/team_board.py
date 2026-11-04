@@ -112,7 +112,9 @@ def mood_words(p, tuning):
     lowest = min(care.NEEDS, key=lambda n: needs[n])
     if (p.get('game') or {}).get('award') == "national":
         return "on top of the world: he was just named Player of the Week"
-    if needs['morale'] >= 80:
+    if needs['morale'] >= 85:
+        return "on top of the world"
+    if needs['morale'] >= 75:
         return "feeling great and confident"
     if needs[lowest] < tuning['low_need']:
         return {"morale": "down and frustrated", "academics": "stressed, buried in schoolwork", "home": "homesick",

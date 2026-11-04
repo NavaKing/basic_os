@@ -262,10 +262,13 @@ def run_week(players, ctx, tuning, council, mentors, rng):
         if ctx.get('senior_day') and p['class'] == "Senior":
             drain['morale'] -= tuning['senior_day_morale']
         boost, trust, label = game_boost(p, tuning)
-        boost = {n: boost.get(n, 0) + team_lift.get(n, 0) for n in set(boost) | set(team_lift)}
+        ceiling = tuning['team']['ceiling']
         for need in NEEDS:
             pulled = p['needs'][need] - drain[need] + tuning['staff_rate'] * (tuning['staff_target'] - p['needs'][need])
-            p['needs'][need] = round(max(0, min(100, pulled + boost.get(need, 0))), 1)
+            value = pulled + boost.get(need, 0)
+            if team_lift.get(need) and value < ceiling:   # the team's success fills up to the ceiling, never past it
+                value = min(ceiling, value + team_lift[need])
+            p['needs'][need] = round(max(0, min(100, value)), 1)
         p['trust'] = min(100, p['trust'] + trust)
         if label:
             game_notes.append((p, label, boost, trust))

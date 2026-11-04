@@ -118,6 +118,16 @@ class TeamSuccess(unittest.TestCase):
         self.assertGreater(p['needs']['morale'], 60)   # a winning, ranked team's morale goes up
         self.assertTrue(any(kind == "team" for _, kind, _ in events))
 
+    def test_team_success_fills_up_to_the_ceiling_but_awards_go_past_it(self):
+        t = tuning()
+        ceiling = t['team']['ceiling']
+        p = player(needs={n: ceiling - 1 for n in care.NEEDS})
+        care.run_week([p], {"week": 1, "won": True, "streak": 12, "rank": 16}, t, [], {}, NO_RNG)
+        self.assertLessEqual(p['needs']['morale'], ceiling)
+        star = player(needs={n: ceiling - 1 for n in care.NEEDS}, game={"played": True, "standout": True, "award": "national"})
+        care.run_week([star], {"week": 1, "won": True, "streak": 12, "rank": 16}, t, [], {}, NO_RNG)
+        self.assertGreater(star['needs']['morale'], ceiling)
+
     def test_standing_from_the_schedule_and_polls(self):
         conn = database.get_db_connection()
         for table in ("schedule_tracking", "league_polls", "league_teams"):
