@@ -448,6 +448,35 @@ for the user to look over. The old school's block is kept. The dynasty's own con
 `title_game_<season>` and the archived games) are added after the history, so "the last time we played for a title"
 stays right.
 
+## Game-day boosts: care reaches the game (feature/game-day-boosts)
+
+**Tested in CFB27 first:** a copy of the dynasty (`DYNASTY-WYOCARETEST`) with Samuel Harris set to Hot plus Winning Time
+(Bronze), and Tyler Hughes set to Cold. The game honored all three: the Mentals page listed Winning Time, and Harris had
+the flame and Hughes the snowflake on the field.
+
+- **Tiers** (from the needs that count this week, trust and morale):
+  - good: needs 45+, trust 34+, morale 75+ → Hot + 1 perk
+  - great: needs 60+, trust 40+ → Hot + 2 perks
+  - excellent: needs 70+, trust 50+ → Hot + 3 perks
+  - cold: a need under 35 and trust under 25 → Cold
+
+  At most 10 Hot and 5 Cold a game, starters and the most-trusted first. Injured players aren't boosted.
+- **Perks:** Bronze, rolled from the any-position abilities (Home or Road Fan Favorite depending on the site; a
+  neutral site counts as a road crowd), plus the position group's own (OL/DL/DB Rally, Field General, Bell Cow, Clutch
+  Kicker). Never one he already has, at any tier, and only into empty slots. Hot Head is left out because its effect
+  isn't documented.
+- **One game only:** applying the next week's boosts takes the last week's out first, and Remove does it on its own.
+  A field is only put back while it still holds what the app wrote, so if the game re-rolled Hot/Cold, its value
+  stays. The originals are kept across consecutive weeks.
+- **Safety:**
+  - It writes only Hot/Cold and the mental slots (`save_reader/write_boosts.mjs` refuses anything else).
+  - Changes go to a temp copy, are verified, then the file is replaced.
+  - Both the save and the autosave are written.
+  - Every write backs up both files first (in `backups/saves`), and **Undo** restores them.
+  - Nothing is written while CollegeFB27.exe is running.
+- **Where:** the Care app's This week tab, under "Game day vs <opponent>": a preview, then **Write to save**,
+  **Remove boosts** and **Undo last write**.
+
 ## Build order (when un-tabled)
 
 1. **In-game test:** one edited Hot/Cold, ability, injury and heal, loaded in CFB27 to see what the game honours.

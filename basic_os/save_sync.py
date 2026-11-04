@@ -169,7 +169,7 @@ def sync_roster(dynasty):
                          media.player_portrait_file(p.get('assetName'), p.get('headAsset')),
                          p.get('redshirt'), p.get('transferChance'), p.get('goProChance'),
                          p.get('hometown'), p.get('homeState'), p.get('stars'), p.get('devTrait'), p.get('nil'), int(bool(p.get('captain'))),
-                         json.dumps(p.get('traits') or []), p.get('confidence'), p.get('hotCold')))
+                         json.dumps(p.get('traits') or []), p.get('confidence'), p.get('hotCold'), json.dumps(p.get('mentals') or [])))
 
     conn = roster.get_connection()
     # Drop placeholder players and anyone who has left the team in the save
@@ -178,8 +178,8 @@ def sync_roster(dynasty):
     conn.executemany("""
         INSERT INTO team_roster (save_id, player_name, position, jersey_num, health_status, injury_type, duration_weeks, depth_slot,
                                  overall, class_year, height_in, weight_lb, portrait_file, redshirt, transfer_chance, go_pro_chance,
-                                 hometown, home_state, stars, dev_trait, nil_value, captain, traits_json, confidence, hot_cold)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                 hometown, home_state, stars, dev_trait, nil_value, captain, traits_json, confidence, hot_cold, mentals_json)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(save_id) DO UPDATE SET
             player_name = excluded.player_name, position = excluded.position, jersey_num = excluded.jersey_num,
             health_status = excluded.health_status, injury_type = excluded.injury_type,
@@ -189,7 +189,8 @@ def sync_roster(dynasty):
             transfer_chance = excluded.transfer_chance, go_pro_chance = excluded.go_pro_chance,
             hometown = excluded.hometown, home_state = excluded.home_state, stars = excluded.stars,
             dev_trait = excluded.dev_trait, nil_value = excluded.nil_value, captain = excluded.captain,
-            traits_json = excluded.traits_json, confidence = excluded.confidence, hot_cold = excluded.hot_cold
+            traits_json = excluded.traits_json, confidence = excluded.confidence, hot_cold = excluded.hot_cold,
+            mentals_json = excluded.mentals_json
     """, rows)
     
     # Replace this season's stat lines; a player can have several records per game (e.g. offense + returns)

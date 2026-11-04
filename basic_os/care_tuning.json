@@ -393,5 +393,31 @@
     "bowl_win_home": 5,
     "alive_holiday_factor": 0.5,
     "riding_high": 80
+  },
+  "game_day": {
+    "_about": "Game-day boosts written into the save before a game. A player earns a tier from his needs (the ones that count this week), trust and morale: good = Hot + 1 Bronze mental ability, great = Hot + 2, excellent = Hot + 3. A neglected player (a need under cold.lowest_need_below and trust under cold.trust_below) starts Cold. At most max_hot Hot and max_cold Cold a game; injured players aren't boosted.",
+    "tiers": {
+      "excellent": {
+        "lowest_need": 70,
+        "trust": 50,
+        "morale": 75
+      },
+      "great": {
+        "lowest_need": 60,
+        "trust": 40,
+        "morale": 75
+      },
+      "good": {
+        "lowest_need": 45,
+        "trust": 34,
+        "morale": 75
+      }
+    },
+    "cold": {
+      "lowest_need_below": 35,
+      "trust_below": 25
+    },
+    "max_hot": 10,
+    "max_cold": 5
   }
 }

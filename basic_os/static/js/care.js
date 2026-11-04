@@ -97,6 +97,46 @@ function incidentCards(data) {
             '</li>').join('') + '</ol>';
 }
 
+// Game-day boosts: who starts Hot (with lent Bronze abilities) or Cold this game, written into the save on request
+let gameDay = null;
+
+function gameDayCard() {
+    const g = gameDay;
+    if (!g || g.week === null) return '';
+    const hot = g.players.filter(p => p.hot_cold === 'Hot');
+    const cold = g.players.filter(p => p.hot_cold === 'Cold');
+    const row = p => '<li class="gd-row"><span class="gd-flag">' + (p.hot_cold === 'Hot' ? '🔥' : '❄️') + '</span>' +
+        '<span class="gd-name">' + esc(p.name) + ' <span class="care-meta">' + esc(p.position) + (p.tier !== 'cold' ? ' &middot; ' + esc(p.tier) : '') + '</span></span>' +
+        '<span class="gd-perks">' + (p.perks.length ? p.perks.map(k => '<span class="care-flag">' + esc(k.ability) + '</span>').join(' ') : '') + '</span></li>';
+    const last = g.last;
+    const lastLine = !last ? '' :
+        last.status === 'applied' ? (last.stale ? '<p class="gd-warn">Week ' + esc(last.week) + '\'s boosts are still in your save. Applying this week\'s takes them out first.</p>'
+                                                : '<p class="care-meta">Written to the save ' + esc(last.applied_at.replace('T', ' at ')) + ' for ' + esc(last.players) + ' players.</p>')
+        : '<p class="care-meta">Last boosts (Week ' + esc(last.week) + ') ' + esc(last.status) + '.</p>';
+    const blocked = g.game_running ? 'Close College Football 27 first: while it\'s open it would overwrite the save.' : !g.save_found ? 'The dynasty save wasn\'t found.' : '';
+    return '<h3 class="care-section">Game day' + (g.opponent ? ' vs ' + esc(g.opponent) : '') + '</h3>' +
+        '<p class="muted care-note">Players you\'ve cared for well start Hot with Bronze mental abilities for this game only; neglected players start Cold. ' +
+            'Nothing changes in the game until you write it to the save.</p>' +
+        (g.players.length ? '<ul class="gd-list">' + [...hot, ...cold].map(row).join('') + '</ul>' : '<p class="muted care-note">Nobody has earned a boost yet this week.</p>') +
+        lastLine +
+        (blocked ? '<p class="gd-warn">' + esc(blocked) + '</p>' : '') +
+        '<div class="care-act-row">' +
+            '<button type="button" class="btn-secondary care-action" data-gd="apply"' + (blocked || !g.players.length ? ' disabled' : '') + '><span class="care-action-name">Write to save</span><span class="care-action-effect">backup first, this game only</span></button>' +
+            (last && last.status === 'applied' ? '<button type="button" class="btn-secondary care-action" data-gd="remove"' + (blocked ? ' disabled' : '') + '><span class="care-action-name">Remove boosts</span><span class="care-action-effect">take them back out</span></button>' +
+                '<button type="button" class="btn-secondary care-action" data-gd="undo"' + (blocked ? ' disabled' : '') + '><span class="care-action-name">Undo last write</span><span class="care-action-effect">restore the backup</span></button>' : '') +
+        '</div>';
+}
+
+async function loadGameDay(redraw) {
+    try {
+        const res = await fetch('/care/game-day');
+        gameDay = await res.json();
+        redraw();
+    } catch (err) {
+        console.error('BASIC_OS: game-day boosts failed to load', err);
+    }
+}
+
 function weekTab(data) {
     const g = data.groups;
     const warnings = [...g.now, ...g.close, ...g.fine].reduce((n, p) => n + p.warnings.length, 0);
@@ -113,7 +153,7 @@ function weekTab(data) {
            '</div>' +
            '<p class="muted care-note">Click a player to see all five needs and help. Hours refill when the save moves to the next week. ' +
                '&#9660; and &#9650; show how the last weekly update moved a need: the weekly drain, plus any lift from a big game.</p>' +
-           incidentCards(data) +
+           incidentCards(data) + gameDayCard() +
            '<h3 class="care-section care-section--low">Needs you now</h3>' +
            '<p class="muted care-note">A need under ' + data.low_need + ', or a warning sign.</p>' +
            list(g.now, 'Nobody is in the red.') +
@@ -220,6 +260,7 @@ export function initCare() {
     // Player care data arrives from the phone (static/js/phone.js) whenever anything changes it
     document.addEventListener('care:update', event => {
         data = event.detail;
+        if (data.started) loadGameDay(redraw);
         document.getElementById('care_kicker').textContent = data.started ? 'Care · Week ' + data.week + ' · ' + data.preset : 'Care';
         render(body, data);
     });
@@ -243,6 +284,7 @@ export function initCare() {
         const off = event.target.closest('[data-council-off]');
         const unpair = event.target.closest('[data-mentor-off]');
         const incident = event.target.closest('[data-incident]');
+        const gd = event.target.closest('[data-gd]');
         if (tab) {
             ui.tab = tab.dataset.careTab;
             setStatus(status, '');
@@ -262,6 +304,17 @@ export function initCare() {
             await post('council', { save_id: on.dataset.councilOn, on: true });
         } else if (off) {
             await post('council', { save_id: off.dataset.councilOff, on: false });
+        } else if (gd) {
+            const action = gd.dataset.gd;
+            if (action === 'apply' && !confirm('Write these game-day boosts into your dynasty save? A backup is made first, and last week\'s boosts are taken out.')) return;
+            if (action === 'undo' && !confirm('Put the save back exactly as it was before the last write?')) return;
+            setStatus(status, action === 'apply' ? 'Writing to the save…' : 'Working…');
+            const res = await fetch('/care/game-day/' + action, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+            const next = await res.json().catch(() => ({ error: 'HTTP ' + res.status }));
+            if (next.error) return setStatus(status, next.error, true);
+            gameDay = next;
+            setStatus(status, action === 'apply' ? 'Written. Load your dynasty and play: the boosts are in.' : action === 'remove' ? 'Boosts removed from the save.' : 'Undone: the save is back as it was.');
+            redraw();
         } else if (incident) {
             await post('incident', { incident_id: Number(incident.dataset.incident), response: incident.dataset.response });
         } else if (unpair) {

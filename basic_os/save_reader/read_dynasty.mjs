@@ -125,6 +125,8 @@ try {
       // Player care: personality traits that shape behaviour, confidence and how he starts the next game
       traits: PERSONA_TRAITS.filter(([field]) => player[field] === true).map(([, name]) => name),
       confidence: player.ConfidenceRating ?? null, hotCold: clean(player.StartingHotCold),
+      // The three mental ability slots (empty slots read "None"): the game-day boosts only fill empty ones
+      mentals: [1, 2, 3].map((i) => ({ slot: i, name: clean(player[`MentalAbility${i}`]), rank: clean(player[`MentalAbilityRank${i}`]) })),
       // The game's own odds (0-100) that he transfers or turns pro after the season
       transferChance: player.AbsoluteTransferChance ?? null,
       goProChance: player.AbsoluteGoProChance ?? null,
