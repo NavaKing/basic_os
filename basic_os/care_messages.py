@@ -149,6 +149,15 @@ def staff_emails(players, week, ctx, tuning):
                        "body": f"Coach, these guys are running low and could use a lighter week: {names}. "
                                "Resting one means fewer reps for him in practice this week (it doesn't change your depth chart).",
                        "actions": [{"key": "rest", "label": f"Rest {p['name']}", "targets": [p['save_id']]} for p in worn]})
+    import lore
+    if ctx.get('made_title_game'):
+        emails.append({"sender": "ad", "subject": f"{lore.conference_name()} Championship Game",
+                       "body": f"Coach, we're playing for the {lore.conference_name()} title against {ctx['title_game']}. Moments like this "
+                               "don't come around often at this school. The whole state will be watching. Proud of you and the guys.", "actions": []})
+    if ctx.get('conference_champs'):
+        emails.append({"sender": "ad", "subject": "Conference champions",
+                       "body": f"Coach, {lore.conference_name()} champions. Nobody can take that away from these guys. Get some rest, then let's "
+                               "talk about the bowl.", "actions": []})
     if ctx.get('first_ranked') or ctx.get('milestone'):
         what = "in the AP poll" if ctx.get('first_ranked') else ("No. 1 in the country" if ctx['milestone'] == 1 else f"in the top {ctx['milestone']}")
         emails.append({"sender": "ad", "subject": f"We're ranked No. {ctx['rank']}",

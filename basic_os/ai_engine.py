@@ -226,6 +226,8 @@ def generate_dynasty_content(selected_model, storyline_context="", player_lines=
     rivalry = rivals.prompt_context()
     presser_quotes = presser.dispatch_context()
     off_field = care_incidents.prompt_context()
+    import lore
+    history = lore.context()
 
     # Generate main article
     article_prompt = f"IMPORTANT: every player is a man on a men's college football team, so always use he/him/his for players, whatever their first name. Write an immersive 3-sentence game dispatch layout entry. Sentence 1 must summarize the dramatic outcome from the PREVIOUS game: {prev_context}. Sentences 2 and 3 must pivot directly into the game preparation strategy for the UPCOMING matchup: {headline} using {us['identity']}.{scouting}{rivalry}{presser_quotes} Do not output raw code strings or brackets."
@@ -233,6 +235,8 @@ def generate_dynasty_content(selected_model, storyline_context="", player_lines=
         article_prompt += f" Ongoing player storylines on the team: {storyline_context} Work a brief nod to one of these storylines into sentence 3, referring to players by name and position."
     if off_field:
         article_prompt += off_field + " Mention it briefly and respectfully in sentence 2 or 3."
+    if history:
+        article_prompt += history
 
     try:
         progress.step("Writing the dispatch")

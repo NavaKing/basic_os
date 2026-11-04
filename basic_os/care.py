@@ -262,10 +262,13 @@ def run_week(players, ctx, tuning, council, mentors, rng):
         if ctx.get('senior_day') and p['class'] == "Senior":
             drain['morale'] -= tuning['senior_day_morale']
         boost, trust, label = game_boost(p, tuning)
-        boost = {n: boost.get(n, 0) + team_lift.get(n, 0) for n in set(boost) | set(team_lift)}
+        ceiling = tuning['team']['ceiling']
         for need in NEEDS:
             pulled = p['needs'][need] - drain[need] + tuning['staff_rate'] * (tuning['staff_target'] - p['needs'][need])
-            p['needs'][need] = round(max(0, min(100, pulled + boost.get(need, 0))), 1)
+            value = pulled + boost.get(need, 0)
+            if team_lift.get(need) and value < ceiling:   # the team's success fills up to the ceiling, never past it
+                value = min(ceiling, value + team_lift[need])
+            p['needs'][need] = round(max(0, min(100, value)), 1)
         p['trust'] = min(100, p['trust'] + trust)
         if label:
             game_notes.append((p, label, boost, trust))
@@ -345,6 +348,23 @@ def team_standing(week, schedule):
         "SELECT media_rank FROM league_polls WHERE team_id = ? AND poll_week < ?", (us, week - 2))) if r]
     best_before = min(earlier) if earlier else 999
     out = {"streak": streak, "rank": rank if rank and rank <= 25 else None}
+    season = ((schedule.get(min(schedule)) or {}).get('game_date') or "")[:4] if schedule else ""
+    # The conference title game is a rematch late in the season (the save marks it as a regular-season week)
+    this = schedule.get(week)
+    earlier = {g['opponent_name'] for w, g in schedule.items() if w < 14}
+    if this and week >= 14 and this['opponent_name'] in earlier:
+        out['title_game'] = this['opponent_name']
+        if get_state(f"title_game_{season}") is None:
+            out['made_title_game'] = True
+    last = schedule.get(week - 1)
+    if last and week - 1 >= 14 and last['opponent_name'] in earlier and last['is_played'] and (last['wyo_score'] or 0) > (last['opp_score'] or 0):
+        if get_state(f"champions_{season}") is None:
+            out['conference_champs'] = True
+    us_id = (league.query_user_team() or {}).get('team_id')
+    bowl = league.query_rows("SELECT 1 FROM league_games WHERE (home_id = ? OR away_id = ?) AND week_type LIKE 'Bowl%' LIMIT 1", (us_id, us_id)) if us_id else []
+    if bowl and get_state(f"bowl_{season}") is None:
+        out['bowl_berth'] = True
+    out['season'] = season
     if out['rank'] and best_before > 25:
         out['first_ranked'] = True
     for threshold in load_tuning()['team']['milestones']:
@@ -380,6 +400,17 @@ def team_boost(ctx, tuning):
     elif ctx.get('milestone'):
         add("morale", t['milestone_morale'])
         reasons.append("the No. 1 ranking" if ctx['milestone'] == 1 else f"cracking the top {ctx['milestone']}")
+    if ctx.get('made_title_game'):
+        add("morale", t['title_game_morale'])
+        add("focus", t['title_game_focus'])
+        reasons.append("making the conference championship game")
+    if ctx.get('conference_champs'):
+        add("morale", t['champions_morale'])
+        add("focus", t['champions_focus'])
+        reasons.append("winning the conference championship")
+    if ctx.get('bowl_berth'):
+        add("morale", t['bowl_morale'])
+        reasons.append("a bowl berth")
     return boost, reasons
 
 def game_results(week, tuning):
@@ -468,6 +499,9 @@ def advance(week):
         games = game_results(w - 1, tuning)
         for p in players:
             p['game'] = games.get(p['save_id'], {"played": False, "standout": False, "award": None}) if games else None
+        for key, state in (("made_title_game", "title_game"), ("conference_champs", "champions"), ("bowl_berth", "bowl")):
+            if ctx.get(key):   # each season milestone lifts the team once
+                set_state(f"{state}_{ctx['season']}", w)
         events = care_messages.close_week(players, w, tuning)   # texts left on read
         events += care_incidents.close_week(players, w, tuning)   # incidents nobody answered
         events += run_week(players, ctx, tuning, council_ids(), mentor_map(), rng)
