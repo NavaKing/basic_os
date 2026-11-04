@@ -75,6 +75,14 @@ class Voices(unittest.TestCase):
         self.assertIn("his post this week:", prompts[0])
         self.assertEqual(out, [{"save_id": "wr1", "text": "bus ride was loud."}])
 
+    def test_numbers_from_a_players_old_post_dont_pass_as_this_weeks(self):
+        group_chat.execute("INSERT INTO chat_messages (week, save_id, kind, text, delivered_at) VALUES (0, 'wr1', 'postgame', ?, 1)",
+                           ("212 rush yards last time, wild",))
+        posts = {"posts": [{"author": "Eric Richardson", "text": "shoutout to sam for those 212 rush yards. bus ride was loud."}]}
+        with mock.patch.object(ai_engine, "call_ollama", side_effect=[json.dumps(posts), json.dumps({"replies": []})]):
+            out, _ = team_board.compose("test-model", 1)
+        self.assertEqual(out, [{"save_id": "wr1", "text": "bus ride was loud."}])
+
     def test_stat_lines_are_graded_like_college_football(self):
         self.assertEqual(team_board.grade({"RUSHATTEMPTS": 32, "RUSHYARDS": 212}), "great")
         self.assertEqual(team_board.grade({"RECEIVECATCHES": 6, "RECEIVEYARDS": 105}), "good")

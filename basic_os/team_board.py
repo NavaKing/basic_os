@@ -317,7 +317,13 @@ def compose(selected_model, week, posts_count=POSTS, replies_count=REPLIES):
     raw = ask(selected_model, prompt, by_name, "posts")
     if not raw:
         raise RuntimeError("The model didn't return any group chat messages. Is Ollama running?")
-    allowed = fact_check.spoken_numbers(prompt)
+    # Numbers from this week's facts only: a player's last post is in the prompt too, and its old numbers ("177 rush
+    # yards" from weeks ago) would otherwise pass as this game's
+    current = prompt
+    for c in people:
+        if c.get('previous'):
+            current = current.replace(c['previous'], "")
+    allowed = fact_check.spoken_numbers(current)
     posts = [{"author": r['author'], "text": clean(r['text'], people, allowed)} for r in raw[:posts_count]]
     posts = [p for p in posts if p['text'] and not repeats(p['text'], by_name[p['author']].get('previous'))]
 
