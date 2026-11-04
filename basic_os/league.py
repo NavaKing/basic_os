@@ -467,6 +467,14 @@ def query_awards(week):
 def query_heisman():
     return query_rows("SELECT * FROM league_heisman ORDER BY rank")
 
+def bowl_name(team_id, week):
+    """The bowl or playoff game a team plays in `week` ("CFP First Round", "Sun Bowl"), or None."""
+    rows = query_rows("SELECT name FROM league_bowls WHERE week = ? AND (home_id = ? OR away_id = ?) LIMIT 1", (week, team_id, team_id))
+    return rows[0]['name'] if rows and rows[0]['name'] else None
+
+def is_playoff(name):
+    return bool(name) and any(word in name for word in ("CFP", "Playoff", "National Championship"))
+
 def query_poll(poll_week):
     """{team_id: AP rank} for the poll released after poll_week, or {} if it was never captured."""
     return {r['team_id']: r['media_rank'] for r in query_rows("SELECT team_id, media_rank FROM league_polls WHERE poll_week = ?", (poll_week,))}

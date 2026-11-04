@@ -25,7 +25,7 @@
             {# Game of the week + forecast #}
             <div class="panel gotw">
                 {% if game %}
-                <div class="gotw-kicker">Week {{ game.week_id }} &middot; Game of the Week</div>
+                <div class="gotw-kicker">Week {{ game.week_id }} &middot; {{ game.event_name or 'Game of the Week' }}</div>
                 <div class="gotw-sides">
                     {{ gotw_side(us, us.name) }}
                     <div class="gotw-vs">{{ venue_word(game) }}</div>

@@ -12,6 +12,7 @@ import re
 import care
 import database
 import fact_check
+import league
 import media
 import roster
 import sentences
@@ -240,7 +241,10 @@ def game_facts():
             facts.append(f"Wyoming made the {lore.conference_name()} Championship Game and plays {standing['title_game']} for the title.")
         facts.append(lore.context().strip())
     if nxt and not nxt['is_played']:
-        facts.append(f"Next game: Week {nxt['week_id']} {'at' if nxt.get('site') == 'Away' else 'against'} {nxt['opponent_name']}.")
+        us_id = (league.query_user_team() or {}).get('team_id')
+        event = league.bowl_name(us_id, nxt['week_id']) if us_id else None
+        facts.append(f"Next game: Week {nxt['week_id']}{', the ' + event if event else ''}, {'at' if nxt.get('site') == 'Away' else 'against'} {nxt['opponent_name']}"
+                     + (" (a College Football Playoff game)" if league.is_playoff(event) else "") + ".")
     return " ".join(facts)
 
 def scrub(text, people):
