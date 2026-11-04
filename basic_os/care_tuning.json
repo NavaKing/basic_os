@@ -177,7 +177,8 @@
     "unanswered_drain": 6,
     "unanswered_trust": 3,
     "not_now_trust": 1,
-    "good_text_chance": 0.5
+    "good_text_chance": 0.5,
+    "big_win_texts": 2
   },
   "inbox": {
     "_about": "Staff emails each week. Actions cost coach hours like care actions; side_effects are need changes on the same players.",
@@ -361,7 +362,7 @@
     }
   },
   "team": {
-    "_about": "Team success lifts everyone after the weekly drain, so a winning team's needs can go up: a win, a win streak (streak_per_win for every straight win from streak_from on, up to streak_cap), being ranked, and once-only milestones (first time in the poll, then top 15, 10, 5 and No. 1). Team success alone fills a need up to ceiling; individual moments (awards, the coach's shout-outs) can go past it. Season milestones, once a season: reaching the conference title game, winning it, and a bowl berth.",
+    "_about": "Team success lifts everyone after the weekly drain, so a winning team's needs can go up: a win, a win streak (streak_per_win for every straight win from streak_from on, up to streak_cap), being ranked, and once-only milestones (first time in the poll, then top 15, 10, 5 and No. 1). Team success alone fills a need up to ceiling; individual moments (awards, the coach's shout-outs) can go past it. Season milestones, once a season: reaching the conference title game, winning it, and a bowl berth. Postseason wins lift everyone (a playoff win: morale, focus and home life, because families call and the state is buzzing). While the team still has a postseason game ahead, holiday homesickness is multiplied by alive_holiday_factor, and players with morale of riding_high or more don't send worried texts unless a need is in the red.",
     "win_morale": 3,
     "win_focus": 2,
     "streak_from": 3,
@@ -384,6 +385,13 @@
     "champions_focus": 5,
     "bowl_morale": 6,
     "playoff_morale": 12,
-    "playoff_focus": 5
+    "playoff_focus": 5,
+    "playoff_win_morale": 15,
+    "playoff_win_focus": 5,
+    "playoff_win_home": 8,
+    "bowl_win_morale": 8,
+    "bowl_win_home": 5,
+    "alive_holiday_factor": 0.5,
+    "riding_high": 80
   }
 }

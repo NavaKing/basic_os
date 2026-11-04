@@ -173,7 +173,8 @@ def drain_for(player, ctx, tuning):
         d['morale'] += m['injured_morale']
     d['academics'] += (m['exam_week_academics'] if ctx.get('exam') else 0) + (m['away_game_academics'] if ctx.get('away') else 0)
     d['home'] += {0: 0, 1: m['out_of_state_home'], 2: m['far_from_home_home']}[player['distance']]
-    d['home'] += m['holiday_week_home'] if ctx.get('holiday') else 0
+    # Holidays away from home hurt, but less on a postseason run: families travel to the games and the team stays busy
+    d['home'] += m['holiday_week_home'] * (tuning['team']['alive_holiday_factor'] if ctx.get('postseason_alive') else 1) if ctx.get('holiday') else 0
     d['focus'] += m['undisciplined_focus'] if "Undisciplined" in player['traits'] else 0
     d['focus'] += m['disciplined_focus'] if "Disciplined" in player['traits'] else 0
     d['focus'] += m['star_focus'] if player['dev'] in ("Star", "Elite") else 0
@@ -369,6 +370,17 @@ def team_standing(week, schedule):
     elif bowl and not playoff and get_state(f"bowl_{season}") is None:
         out['bowl_berth'] = True
     out['season'] = season
+    # The postseason: the game just played (if it was a bowl or a playoff game) and whether there's another one ahead
+    played_weeks = [w for w, g in schedule.items() if w < week and g['is_played']]
+    ours = league.query_rows("SELECT week, name, home_id, home_score, away_score, played FROM league_bowls WHERE home_id = ? OR away_id = ?",
+                             (us_id, us_id)) if us_id else []
+    last_bowl = next((b for b in ours if played_weeks and b['week'] == max(played_weeks) and b['played']), None)
+    if last_bowl and last_bowl['home_score'] is not None:
+        ours_score = last_bowl['home_score'] if last_bowl['home_id'] == us_id else last_bowl['away_score']
+        theirs = last_bowl['away_score'] if last_bowl['home_id'] == us_id else last_bowl['home_score']
+        if ours_score > theirs:
+            out['playoff_win' if league.is_playoff(last_bowl['name']) else 'bowl_win'] = last_bowl['name']
+    out['postseason_alive'] = any(not b['played'] for b in ours)
     if out['rank'] and best_before > 25:
         out['first_ranked'] = True
     for threshold in load_tuning()['team']['milestones']:
@@ -412,6 +424,15 @@ def team_boost(ctx, tuning):
         add("morale", t['champions_morale'])
         add("focus", t['champions_focus'])
         reasons.append("winning the conference championship")
+    if ctx.get('playoff_win'):
+        add("morale", t['playoff_win_morale'])
+        add("focus", t['playoff_win_focus'])
+        add("home", t['playoff_win_home'])
+        reasons.append(f"a College Football Playoff win ({ctx['playoff_win']})")
+    elif ctx.get('bowl_win'):
+        add("morale", t['bowl_win_morale'])
+        add("home", t['bowl_win_home'])
+        reasons.append(f"winning the {ctx['bowl_win']}")
     if ctx.get('playoff_berth'):
         add("morale", t['playoff_morale'])
         add("focus", t['playoff_focus'])
