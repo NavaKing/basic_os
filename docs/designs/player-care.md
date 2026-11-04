@@ -429,7 +429,8 @@ about being homesick right after the program's first playoff win, because holida
 made home life everyone's lowest need. Now:
 - **A playoff win:** morale +15, focus +5, home life +8 (families calling, the state buzzing).
 - **A bowl win:** morale +8, home life +5.
-- **A postseason run:** while a bowl or playoff game is still ahead, holiday homesickness is halved.
+- **A postseason run:** while a bowl game is still ahead, holiday homesickness is halved. **On a playoff run, home life
+  doesn't drain at all**: the players are on the road chasing a title, and wins on the run still add to it.
 - **Riding high:** a player at morale 80 or more doesn't text a worried text unless a need is in the red (under 35).
 - **Hype texts:** after a big win, a couple of players text hype instead.
 - **Lore:** it records the dynasty's postseason results.
