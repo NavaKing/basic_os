@@ -185,6 +185,11 @@ class SeasonMilestones(unittest.TestCase):
         self.assertIn("a College Football Playoff berth", care.team_boost(standing, tuning())[1])
         self.assertEqual(league.bowl_name(142, 17), "CFP First Round")
         self.assertTrue(league.is_playoff("CFP First Round") and not league.is_playoff("Sun Bowl"))
+        conn = database.get_db_connection()
+        conn.execute("DELETE FROM league_bowls")   # later tests would think their team is on a playoff run
+        conn.execute("DELETE FROM league_games")
+        conn.commit()
+        conn.close()
 
     def test_a_playoff_win_lifts_home_and_a_run_eases_holiday_homesickness(self):
         t = tuning()
@@ -194,6 +199,7 @@ class SeasonMilestones(unittest.TestCase):
         alone = care.drain_for(far, {"holiday": True}, t)['home']
         alive = care.drain_for(far, {"holiday": True, "postseason_alive": True}, t)['home']
         self.assertLess(alive, alone)
+        self.assertEqual(care.drain_for(far, {"holiday": True, "postseason_alive": True, "playoff_alive": True}, t)['home'], 0)   # a playoff run: no homesickness
 
     def test_players_riding_high_dont_send_worried_texts(self):
         import care_messages, random

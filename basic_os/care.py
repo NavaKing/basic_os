@@ -185,6 +185,8 @@ def drain_for(player, ctx, tuning):
             d[need] *= tuning['game']['bench_drain_factor']
         d['health'] *= tuning['game']['bench_health_factor']
     trusting = 1 - tuning['trust_drain_relief'] * player['trust'] / 100  # a player who trusts the coach copes better
+    if ctx.get('playoff_alive'):   # on a playoff run nobody's homesick: the team is on the road chasing a title
+        d['home'] = 0
     return {need: max(0, d[need]) * tuning['drain_scale'] * player['temperament'][need] * trusting for need in NEEDS}
 
 def game_boost(player, tuning):
@@ -381,6 +383,7 @@ def team_standing(week, schedule):
         if ours_score > theirs:
             out['playoff_win' if league.is_playoff(last_bowl['name']) else 'bowl_win'] = last_bowl['name']
     out['postseason_alive'] = any(not b['played'] for b in ours)
+    out['playoff_alive'] = any(not b['played'] and league.is_playoff(b['name']) for b in ours)
     if out['rank'] and best_before > 25:
         out['first_ranked'] = True
     for threshold in load_tuning()['team']['milestones']:
