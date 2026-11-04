@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}BASIC OS - Choose a dynasty{% endblock %}
+{% block content %}
+<main class="choose">
+    <h1 class="choose-title">Choose a dynasty</h1>
+    <p class="choose-note">Which College Football 27 save should BASIC OS follow? Each save keeps its own stories, care, group chat and history.</p>
+    {% if saves %}
+    <form id="choose_form" class="choose-list">
+        {% for s in saves %}
+        <label class="choose-save{% if s.name == last %} is-last{% endif %}">
+            <input type="radio" name="save" value="{{ s.name }}"{% if s.name == last %} checked{% endif %}>
+            <span class="choose-save-text">
+                <span class="choose-save-name">{{ s.label }}{% if s.name == last %} <span class="choose-tag">Last opened</span>{% endif %}</span>
+                <span class="choose-save-team">{% if s.has_data %}{{ s.team }}{% else %}New to BASIC OS: its data is built from the save on first load{% endif %}</span>
+                <span class="choose-save-meta">Played {{ s.played }}{% if s.status %} &middot; {{ s.status }}{% endif %}</span>
+            </span>
+        </label>
+        {% endfor %}
+        <button type="submit" id="choose_load">Load dynasty</button>
+        <p class="choose-error" id="choose_error" role="alert" hidden></p>
+    </form>
+    {% else %}
+    <p class="choose-error">No saves found in {{ saves_dir }}.</p>
+    <button type="button" id="choose_keep">Continue with {{ current.label }}</button>
+    {% endif %}
+</main>
+{% endblock %}
+{% block scripts %}
+<script type="module" src="{{ url_for('static', filename='js/choose.js') }}"></script>
+{% endblock %}

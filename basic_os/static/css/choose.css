@@ -1,0 +1,19 @@
+/* The dynasty chooser (templates/choose.html) and the header's Switch dynasty link */
+.choose { max-width: 620px; margin: 8vh auto 40px; padding: 0 16px; }
+.choose-title { margin: 0 0 6px; font-family: var(--font-display); font-size: 34px; letter-spacing: 1px; text-transform: uppercase; color: var(--gold); }
+.choose-note { margin: 0 0 22px; color: var(--text-dim); font-size: 14px; line-height: 1.5; }
+.choose-list { display: grid; gap: 10px; }
+.choose-save { display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; border: 1px solid var(--border); border-radius: var(--radius);
+               background: var(--panel); cursor: pointer; }
+.choose-save:hover { background: var(--panel-raised); }
+.choose-save.is-picked { border-color: var(--gold); }
+.choose-save input { width: auto; margin: 3px 0 0; accent-color: var(--gold); }
+.choose-save-text { display: grid; gap: 3px; min-width: 0; }
+.choose-save-name { color: #fff; font-weight: 600; font-size: 16px; overflow-wrap: anywhere; }
+.choose-save-team { color: var(--text); font-size: 13px; }
+.choose-save-meta { color: var(--text-muted); font-size: 12px; }
+.choose-tag { margin-left: 6px; padding: 1px 7px; border-radius: 10px; background: var(--gold-soft); color: var(--gold); font-size: 11px; font-weight: 500; }
+.choose-list button, #choose_keep { justify-self: start; width: auto; margin-top: 6px; padding: 10px 20px; }
+.choose-error { color: var(--loss); font-size: 13px; }
+
+.dynasty-switch { color: var(--gold); text-decoration: underline; }

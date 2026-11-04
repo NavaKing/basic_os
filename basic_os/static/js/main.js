@@ -21,11 +21,26 @@ import { initGames } from './game.js';
 import { initRivals } from './rivals.js';
 import { initPresser } from './presser.js';
 import { applyTeamColors } from './utils.js';
+import { TAB_KEY } from './choose-key.js';
 
 const page = JSON.parse(document.getElementById('page_data').textContent);
 
+/** The chooser shows every time the app opens: a tab that didn't pick this dynasty (a new tab, a reopened browser,
+ *  or another tab switched to a different save) goes back to it first. */
+function dynastyChosen() {
+    if (!page.dynasty || page.dynasty.fixed) return true;
+    try {
+        return sessionStorage.getItem(TAB_KEY) === page.dynasty.name;
+    } catch (err) {
+        return true;   // no storage here: the server already asked once this launch
+    }
+}
+const leaving = !dynastyChosen();
+if (leaving) location.replace('/choose');
+
 /** Starts one component; an error in one tab is logged instead of stopping every tab after it. */
 function start(name, fn) {
+    if (leaving) return;
     try {
         fn();
     } catch (err) {

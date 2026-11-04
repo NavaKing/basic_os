@@ -32,9 +32,10 @@ import care_messages
 import care_incidents
 import group_chat
 import game_day
+import dynasty
 import os
 from urllib.parse import urlsplit
-from flask import Flask, Response, render_template, request, jsonify, send_from_directory, abort, url_for
+from flask import Flask, Response, render_template, request, jsonify, send_from_directory, abort, url_for, redirect
 
 app = Flask(__name__)
 # Screenshots for the podcast arrive as base64 images; nothing legitimate comes close to this
@@ -70,6 +71,35 @@ def only_local_requests():
         origin = request.headers.get("Origin")
         if origin and host_name(urlsplit(origin).netloc) not in LOCAL_HOSTS:
             abort(403)
+
+# ---------- Which dynasty ----------
+# Every time the app starts it asks which save to follow before showing anything (each save has its own data)
+CHOOSER_ENDPOINTS = {"static", "choose", "choose_pick"}
+
+@app.before_request
+def dynasty_chosen():
+    if dynasty.state['chosen'] or request.endpoint in CHOOSER_ENDPOINTS:
+        return None
+    if request.method == "GET" and (request.path == "/" or "text/html" in request.headers.get("Accept", "")):
+        return redirect(url_for('choose'))
+    return jsonify({"error": "Pick a dynasty first.", "choose": url_for('choose')}), 409
+
+@app.route('/choose')
+def choose():
+    current = dynasty.current()
+    return render_template('choose.html', saves=dynasty.saves(), last=dynasty.state['current'] or dynasty.last(),
+                           current=current, saves_dir=dynasty.SAVES_DIR)
+
+@app.route('/choose', methods=['POST'])
+def choose_pick():
+    data = request.get_json(silent=True) or {}
+    try:
+        if data.get('keep'):
+            dynasty.state['chosen'] = True   # no saves folder: carry on with the save the app was already set to
+            return jsonify({"current": dynasty.current()})
+        return jsonify({"current": dynasty.switch(str(data.get('name') or ""))})
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
 
 @app.after_request
 def security_headers(response):
@@ -202,6 +232,7 @@ def home():
         recap_weeks=recap.available_weeks(),
         recap=recap.build_recap(recap.default_week()) if recap.default_week() is not None else None,
         sync_status=sync_status,
+        dynasty=dynasty.current(),
         scoreboard=recap.scoreboard()
     )
 

@@ -120,11 +120,19 @@ cd basic_os
 python app.py
 ```
 
+### Choosing a dynasty
+
+Every time the app opens it asks which dynasty save to follow, listing each `DYNASTY-` save in the game's saves folder
+(most recently played first, the last one you opened preselected). Each save keeps its own data: `DYNASTY-WYOYEAR1` uses
+`basic_os\dynasty_data.db` and `basic_os\backups`, and any other save gets `basic_os\dynasties\<save>.db` and
+`basic_os\backups\dynasties\<save>\`, built from the save the first time you pick it. **Switch dynasty** in the header
+goes back to the chooser. Setting `DYNASTY_SAVE_FILE` or `BASIC_OS_DB` fixes the dynasty and skips the chooser.
+
 ### Configuration
 
 | Environment variable | Default | Purpose |
 |---|---|---|
-| `DYNASTY_SAVE_FILE` | `~\Documents\EA SPORTS College Football 27\saves\DYNASTY-WYOYEAR1` | The dynasty save to read (the newer of it and its `-AUTOSAVE` is used). |
+| `DYNASTY_SAVE_FILE` | `~\Documents\EA SPORTS College Football 27\saves\DYNASTY-WYOYEAR1` | The dynasty save to read (the newer of it and its `-AUTOSAVE` is used). Set it to skip the chooser. |
 | `COMFYUI_DIR` | `~\ComfyUI_windows_portable` | Portable ComfyUI folder (started on demand). |
 | `COMFYUI_URL` | `http://127.0.0.1:8188` | ComfyUI API address. |
 | `CFB_PORTRAIT_DIR` | `C:\Program Files (x86)\Steam\steamapps\common\SMG CFB27` | Folder holding the portrait packs. |

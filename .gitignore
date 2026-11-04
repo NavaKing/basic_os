@@ -10,6 +10,8 @@ node_modules/
 *.db-journal
 basic_os/data_exports/
 basic_os/game_saves/
+basic_os/dynasties/
+basic_os/dynasties.json
 
 # Generated at runtime
 basic_os/static/generated/
