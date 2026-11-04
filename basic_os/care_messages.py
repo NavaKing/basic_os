@@ -101,14 +101,14 @@ def close_week(players, week, tuning):
     execute("UPDATE care_emails SET status = 'expired' WHERE status = 'open' AND week < ?", (week,))
     return events
 
-def texters(players, tuning, rng):
+def texters(players, tuning, rng, ctx=None):
     """Who texts this week: the players whose lowest need is under the phone line, lowest first with a little luck."""
     t = tuning['phone']
     # A player riding high (a big win, a title run) doesn't text the coach about a slipping need unless it's in the red
     high, red = tuning['team']['riding_high'], tuning['low_need']
-    slipping = [p for p in players if min(p['needs'].values()) < t['text_below']
-                and not (p['needs']['morale'] >= high and min(p['needs'].values()) >= red)]
-    slipping.sort(key=lambda p: min(p['needs'].values()) - rng(p['save_id'] + "phone").uniform(0, t['luck']))
+    low = lambda p: min(care.worries(p['needs'], ctx).values())
+    slipping = [p for p in players if low(p) < t['text_below'] and not (p['needs']['morale'] >= high and low(p) >= red)]
+    slipping.sort(key=lambda p: low(p) - rng(p['save_id'] + "phone").uniform(0, t['luck']))
     return slipping[:t['max_texts']]
 
 def new_week(players, week, ctx, tuning, rng):
@@ -116,8 +116,8 @@ def new_week(players, week, ctx, tuning, rng):
     t = tuning['phone']
     conn = database.get_db_connection()
     used = set()   # two players never send the same text in one week (while there are others left)
-    for p in texters(players, tuning, rng):
-        need = min(care.NEEDS, key=lambda n: p['needs'][n])
+    for p in texters(players, tuning, rng, ctx):
+        need = care.worst(p['needs'], ctx)
         mood = "low" if p['needs'][need] < tuning['low_need'] else "watch"
         options = [text for text in TEXTS[need][mood] if text not in used] or TEXTS[need][mood]
         text = rng(p['save_id'] + "text").choice(options)

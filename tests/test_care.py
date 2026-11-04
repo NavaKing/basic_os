@@ -201,6 +201,14 @@ class SeasonMilestones(unittest.TestCase):
         self.assertLess(alive, alone)
         self.assertEqual(care.drain_for(far, {"holiday": True, "postseason_alive": True, "playoff_alive": True}, t)['home'], 0)   # a playoff run: no homesickness
 
+    def test_home_life_isnt_a_worry_on_a_playoff_run(self):
+        needs = {"morale": 80, "academics": 60, "home": 30, "focus": 70, "health": 55}
+        self.assertEqual(care.worst(needs, {}), "home")
+        self.assertEqual(care.worst(needs, {"playoff_alive": True}), "health")
+        t = tuning()
+        homesick = player(needs=needs)
+        self.assertGreater(care.warning_chance(homesick, {}, t), care.warning_chance(homesick, {"playoff_alive": True}, t))
+
     def test_players_riding_high_dont_send_worried_texts(self):
         import care_messages, random
         t = tuning()

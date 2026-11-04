@@ -107,10 +107,10 @@ def initialize_tables():
     conn.commit()
     conn.close()
 
-def mood_words(p, tuning):
+def mood_words(p, tuning, ctx=None):
     """How a player is doing, in plain words for the prompt (from player care)."""
     needs = p['needs']
-    lowest = min(care.NEEDS, key=lambda n: needs[n])
+    lowest = care.worst(needs, ctx)
     if (p.get('game') or {}).get('award') == "national":
         return "on top of the world: he was just named Player of the Week"
     if needs['morale'] >= 85:
@@ -131,11 +131,12 @@ def cast(week, everyone=False):
     players = care.load_players() if care.get_state("week") is not None else []
     games = care.game_results(week, tuning) if week else {}
     jerseys = {p['save_id']: p.get('jersey_num') for p in roster.query_full_roster()}
+    ctx = care.week_context(int(care.get_state("week"))) if care.get_state("week") is not None else {}
     out = []
     for p in players:
         stats = roster.query_player_week_stats(p['save_id'], week) if week else {}
         p['game'] = games.get(p['save_id'])
-        mood = mood_words(p, tuning)
+        mood = mood_words(p, tuning, ctx)
         out.append({"save_id": p['save_id'], "name": p['name'], "position": p['position'], "class": p['class'], "jersey": jerseys.get(p['save_id']),
                     "portrait": p['portrait'], "line": roster.format_stat_line(stats) if stats else "", "impact": impact(stats),
                     "grade": grade(stats) if stats and stats.get('DOWNSPLAYED') else None, "voice": voice(p['save_id']),

@@ -210,13 +210,22 @@ def game_boost(player, tuning):
         trust, label = g['conference_player_of_week_trust'], "Conference Player of the Week"
     return boost, trust, label
 
+def worries(needs, ctx):
+    """The needs that count as a worry this week: on a playoff run home life doesn't (the team is on the road chasing
+    a title), so it can't be a player's worst need, a reason to text, a warning sign or a "Homesick" tag."""
+    return {n: v for n, v in needs.items() if not (n == "home" and (ctx or {}).get('playoff_alive'))}
+
+def worst(needs, ctx):
+    concerns = worries(needs, ctx)
+    return min(concerns, key=concerns.get)
+
 def warning_chance(player, ctx, tuning):
     """This week's chance of a warning sign: a small base, plus each low need (Focus counts double), scaled by persona,
     big wins, and trust. Players whose needs are fine almost never act out."""
     w = tuning['warning']
     chance = tuning['warning_chance']
-    for need in NEEDS:
-        if player['needs'][need] < tuning['low_need']:
+    for need, value in worries(player['needs'], ctx).items():
+        if value < tuning['low_need']:
             chance += w['low_need_chance'] + (w['low_focus_chance'] if need == "focus" else 0)
     factor = 1.0
     factor *= w['undisciplined'] if "Undisciplined" in player['traits'] else 1
@@ -232,7 +241,7 @@ def pick_care_list(players, ctx, tuning, council):
         importance = 1.3 if p['starter'] else 1.0
         importance += 0.2 if p['save_id'] in council else 0
         importance += 0.2 if p['dev'] in ("Impact", "Star", "Elite") else 0
-        urgency = (100 - min(p['needs'].values())) + 15 * len(p.get('warnings', [])) + (15 if p['birthday_week'] == ctx.get('week_of_year') else 0)
+        urgency = (100 - min(worries(p['needs'], ctx).values())) + 15 * len(p.get('warnings', [])) + (15 if p['birthday_week'] == ctx.get('week_of_year') else 0)
         return importance * urgency
     return [p['save_id'] for p in sorted(players, key=score, reverse=True)[:tuning['care_list_size']]]
 
@@ -276,7 +285,7 @@ def run_week(players, ctx, tuning, council, mentors, rng):
         if label:
             game_notes.append((p, label, boost, trust))
         if rng(p['save_id']).random() < warning_chance(p, ctx, tuning):
-            need = min(NEEDS, key=lambda n: p['needs'][n])
+            need = worst(p['needs'], ctx)
             text = rng(p['save_id'] + need).choice(WARNING_SIGNS[need])
             p.setdefault('warnings', []).append({"need": need, "text": text})
             events.append((p['save_id'], "warning", f"{p['name']}: {text} ({NEED_LABELS[need]} {round(p['needs'][need])})."))
@@ -692,7 +701,7 @@ def dashboard():
     # Everyone, most urgent first, split into who needs the coach now, who is slipping, and everyone else
     ranked = pick_care_list(players, ctx, {**tuning, "care_list_size": len(players)}, council)
     def group(p):
-        lowest = min(p['needs'].values())
+        lowest = min(worries(p['needs'], ctx).values())
         return "now" if p['warnings'] or lowest < tuning['low_need'] else "close" if lowest < tuning['watch_need'] else "fine"
     games = game_results(week - 1, tuning)
     def view(p):
@@ -706,7 +715,7 @@ def dashboard():
             flags.append("Captain")
         if p['birthday_week'] == ctx.get('week_of_year'):
             flags.append("Birthday this week")
-        if p['distance'] and p['needs']['home'] < tuning['homesick_below']:
+        if p['distance'] and p['needs']['home'] < tuning['homesick_below'] and not ctx.get('playoff_alive'):
             flags.append("Homesick")
         flags += [t for t in p['traits'] if t in ("Disciplined", "Undisciplined")]
         if p['injured']:
@@ -717,8 +726,10 @@ def dashboard():
         return {"save_id": p['save_id'], "name": p['name'], "position": p['position'], "class": p['class'], "overall": p['overall'],
                 "portrait": p['portrait'], "needs": {n: round(p['needs'][n]) for n in NEEDS}, "trust": p['trust'], "flags": flags,
                 "warnings": [w['text'] for w in p['warnings']], "mentor": mentor['name'] if mentor else None,
-                "lowest": min(NEEDS, key=lambda n: p['needs'][n]), "change": p['change']}
-    calendar = [label for key, label in (("exam", "Exam week: academics drain faster"), ("holiday", "Holiday week: players far from home miss it"),
+                "lowest": worst(p['needs'], ctx), "change": p['change']}
+    calendar = [label for key, label in (("exam", "Exam week: academics drain faster"),
+                                          ("holiday", "Holiday week" if ctx.get('playoff_alive') else "Holiday week: players far from home miss it"),
+                                          ("playoff_alive", "Playoff run: nobody's homesick on the road to a title"),
                                           ("senior_day", "Senior day this week"), ("big_win", "Big win last week: focus slips")) if ctx.get(key)]
     suggestions = [p['save_id'] for p in sorted(players, key=lambda p: ({"Senior": 0, "Junior": 1}.get(p['class'], 2), -p['overall']))[:6]]
     return {
@@ -754,9 +765,11 @@ def mood_hints(limit=2):
     tuning = load_tuning()
     players = [p for p in load_players() if p['starter'] or p['dev'] in ("Impact", "Star", "Elite")]  # players fans would notice
     hints = []
-    worried = sorted((p for p in players if min(p['needs'].values()) < tuning['watch_need']), key=lambda p: min(p['needs'].values()))
+    ctx = week_context(int(get_state("week")))
+    worried = sorted((p for p in players if min(worries(p['needs'], ctx).values()) < tuning['watch_need']),
+                     key=lambda p: min(worries(p['needs'], ctx).values()))
     for p in worried[:max(1, limit - 1)]:   # leave room for someone riding high
-        hints.append((p, MOOD_SIGNS[min(NEEDS, key=lambda n: p['needs'][n])]))
+        hints.append((p, MOOD_SIGNS[worst(p['needs'], ctx)]))
     games = game_results(int(get_state("week")) - 1, tuning)
     high = sorted((p for p in players if p not in worried and (p['needs']['morale'] >= 85 or (games.get(p['save_id']) or {}).get('award'))),
                   key=lambda p: -p['needs']['morale'])
