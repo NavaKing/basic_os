@@ -34,6 +34,8 @@ TEXTS = {
                "low": ["coach I'm beat up. really need a break", "can barely get out of bed, body's done",
                        "I'm running on empty coach"]},
 }
+BIG_WIN_TEXTS = ["COACH WE DID IT 🔥🔥", "bro i'm still shaking. what a night coach", "can't sleep. we really just did that",
+                 "my phone has not stopped buzzing lol. thank you coach", "best night of my life coach. not done yet tho"]
 GOOD_TEXTS = ["COACH!! did you see that?? 🔥", "Player of the Week!! thank you for believing in me coach",
               "still buzzing from Saturday coach. let's keep it going"]
 
@@ -102,7 +104,10 @@ def close_week(players, week, tuning):
 def texters(players, tuning, rng):
     """Who texts this week: the players whose lowest need is under the phone line, lowest first with a little luck."""
     t = tuning['phone']
-    slipping = [p for p in players if min(p['needs'].values()) < t['text_below']]
+    # A player riding high (a big win, a title run) doesn't text the coach about a slipping need unless it's in the red
+    high, red = tuning['team']['riding_high'], tuning['low_need']
+    slipping = [p for p in players if min(p['needs'].values()) < t['text_below']
+                and not (p['needs']['morale'] >= high and min(p['needs'].values()) >= red)]
     slipping.sort(key=lambda p: min(p['needs'].values()) - rng(p['save_id'] + "phone").uniform(0, t['luck']))
     return slipping[:t['max_texts']]
 
@@ -124,6 +129,12 @@ def new_week(players, week, ctx, tuning, rng):
         if game.get('award') == "national" or (game.get('award') and rng(p['save_id'] + "good").random() < t['good_text_chance']):
             conn.execute("INSERT INTO care_messages (week, save_id, kind, need, text) VALUES (?, ?, 'good', 'morale', ?)",
                          (week, p['save_id'], rng(p['save_id'] + "goodtext").choice(GOOD_TEXTS)))
+    if ctx.get('playoff_win') or ctx.get('bowl_win') or ctx.get('conference_champs'):
+        hype = sorted((p for p in players if p['needs']['morale'] >= tuning['team']['riding_high']),
+                      key=lambda p: rng(p['save_id'] + "hype").random())[:t['big_win_texts']]
+        lines = rng("hype-lines").sample(BIG_WIN_TEXTS, len(BIG_WIN_TEXTS))
+        for p, text in zip(hype, lines):
+            conn.execute("INSERT INTO care_messages (week, save_id, kind, need, text) VALUES (?, ?, 'good', 'morale', ?)", (week, p['save_id'], text))
     for email in staff_emails(players, week, ctx, tuning):
         conn.execute("INSERT INTO care_emails (week, sender, subject, body, actions_json) VALUES (?, ?, ?, ?, ?)",
                      (week, email['sender'], email['subject'], email['body'], json.dumps(email['actions'])))

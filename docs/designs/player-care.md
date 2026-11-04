@@ -424,6 +424,16 @@ every need went down every week: a win only slowed morale's drain. Now every pla
 On the real roster, a 12-0 ranked team jumps to about 83 morale and holds around 88-90 ("on top of the world" in the
 group chat). Academics, home life and health still drain, so care still matters for them.
 
+**Big moments (feature/care-big-moments, after the CFP First Round win at No. 6 LSU):** the whole roster was texting
+about being homesick right after the program's first playoff win, because holiday week plus mostly out-of-state players
+made home life everyone's lowest need. Now:
+- **A playoff win:** morale +15, focus +5, home life +8 (families calling, the state buzzing).
+- **A bowl win:** morale +8, home life +5.
+- **A postseason run:** while a bowl or playoff game is still ahead, holiday homesickness is halved.
+- **Riding high:** a player at morale 80 or more doesn't text a worried text unless a need is in the red (under 35).
+- **Hype texts:** after a big win, a couple of players text hype instead.
+- **Lore:** it records the dynasty's postseason results.
+
 **School lore:** `school_lore.json` holds real program history (14 conference titles, the last in 1993; never a Mountain
 West title; the 2016 MW title game; the 1967 Sugar Bowl team and its No. 5 peak). `lore.py` adds the dynasty's finished
 seasons from the save. The group chat and the dispatch get it as facts, and history years are allowed in players'

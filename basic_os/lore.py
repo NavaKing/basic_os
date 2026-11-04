@@ -65,10 +65,26 @@ def dynasty_title_games():
             out.append(f"{name}: being played this season")
     return out
 
+def dynasty_postseason():
+    """This season's finished bowl and playoff games ("2026 CFP First Round: won 23-21 over LSU Tigers")."""
+    us = league.query_user_team() or {}
+    teams = {t['team_id']: t for t in league.query_rows("SELECT team_id, name, nickname FROM league_teams")}
+    out = []
+    for b in league.query_rows("SELECT * FROM league_bowls WHERE (home_id = ? OR away_id = ?) AND played = 1 ORDER BY week",
+                               (us.get('team_id'), us.get('team_id'))):
+        home = b['home_id'] == us.get('team_id')
+        ours, theirs = (b['home_score'], b['away_score']) if home else (b['away_score'], b['home_score'])
+        other = teams.get(b['away_id'] if home else b['home_id']) or {}
+        name = f"{other.get('name', 'their opponent')} {other.get('nickname') or ''}".strip()
+        year = (b['game_date'] or "")[:4] or str(current_season() or "")
+        result = f"won {ours}-{theirs} over" if ours > theirs else f"lost {theirs}-{ours} to"
+        out.append(f"{year} {b['name']}: {result} {name}")
+    return out
+
 def context():
     """A fact block for prompts ("" when there's nothing): the school's history, then this dynasty's own story."""
     facts = list(school().get('facts') or [])
-    titles = dynasty_title_games()
+    titles = dynasty_title_games() + dynasty_postseason()
     if titles:
         facts.append("In this dynasty (newer than anything above, so it's the most recent): " + "; ".join(titles) + ".")
     seasons = dynasty_seasons()

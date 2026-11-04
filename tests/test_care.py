@@ -186,6 +186,24 @@ class SeasonMilestones(unittest.TestCase):
         self.assertEqual(league.bowl_name(142, 17), "CFP First Round")
         self.assertTrue(league.is_playoff("CFP First Round") and not league.is_playoff("Sun Bowl"))
 
+    def test_a_playoff_win_lifts_home_and_a_run_eases_holiday_homesickness(self):
+        t = tuning()
+        boost, reasons = care.team_boost({"playoff_win": "CFP First Round"}, t)
+        self.assertEqual(boost['home'], t['team']['playoff_win_home'])
+        far = player(distance=2)
+        alone = care.drain_for(far, {"holiday": True}, t)['home']
+        alive = care.drain_for(far, {"holiday": True, "postseason_alive": True}, t)['home']
+        self.assertLess(alive, alone)
+
+    def test_players_riding_high_dont_send_worried_texts(self):
+        import care_messages, random
+        t = tuning()
+        high = player("high", needs={**{n: 50 for n in care.NEEDS}, "morale": 92})       # slipping home life, but on a high
+        red = player("red", needs={**{n: 50 for n in care.NEEDS}, "morale": 92, "home": 20})   # in the red: still texts
+        low = player("low", needs={n: 45 for n in care.NEEDS})
+        picked = [p['save_id'] for p in care_messages.texters([high, red, low], t, lambda k: random.Random(k))]
+        self.assertEqual(sorted(picked), ["low", "red"])
+
     def test_lore_facts_for_the_writers(self):
         import lore
         conn = database.get_db_connection()
