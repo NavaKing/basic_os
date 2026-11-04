@@ -10,6 +10,8 @@ import progress
 import fact_check
 
 TWEET_COUNT = 8
+# The one model the app writes with (the header's dropdown offers it; requests that don't name a model use it)
+DEFAULT_MODEL = "gemma3:27b"
 PHOTO_TWEETS = 3  # how many tweets get a generated photo
 HERO_SIZE = (1536, 640)  # wide banner for the story column
 PHOTO_STYLE = "Candid smartphone photo posted to social media by a college football fan: {photo} {team} football, {colors} team colors. Photorealistic, natural lighting."
