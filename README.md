@@ -75,7 +75,7 @@ save_reader/read_dynasty.mjs  ──JSON──▶  Flask app (app.py)  ◀──
 | Python 3.13 | `pip install -r requirements.txt` (Flask, requests, edge-tts, Pillow for compact WebP photos and logos). |
 | Node.js 20+ | For the save reader (`npm install` in `basic_os/save_reader`). |
 | CFB27 (the game) | A dynasty save in `Documents\EA SPORTS College Football 27\saves`. |
-| [Ollama](https://ollama.com) | A text model (tested with `gemma3:12b`) and a **vision** model for the podcast screenshots (tested with `cfb-gemma`, a Gemma 3 build with vision). |
+| [Ollama](https://ollama.com) | `gemma3:27b` (about 17 GB; it writes everything and reads the podcast screenshots, since it can see images). It was picked over `gemma3:12b`, `cfb-gemma` and `mistral-small3.2:24b` in a side-by-side test of the group chat: it follows the facts and the guardrails best. A GPU with about 20 GB of memory runs it fully. |
 | [ComfyUI](https://github.com/comfyanonymous/ComfyUI) portable + FLUX.1 schnell | `flux1-schnell-fp8.safetensors` in `ComfyUI\models\checkpoints`. Optional: without it, posts and stories have no photos. |
 | ReActor (optional) | Face swap for player photos; install with `scripts\install_face_swap.ps1`. |
 | Player & coach portrait packs (optional) | The SMG CFB27 portrait packs (`Player Portraits`, `coachportraits`). Without them, avatars fall back to initials. |
@@ -101,7 +101,7 @@ cd ..
 python media.py
 ```
 
-Pull the Ollama models you want to use, for example `ollama pull gemma3:12b`.
+Pull the model: `ollama pull gemma3:27b`. To try another, change `DEFAULT_MODEL` in `basic_os/ai_engine.py` and the option in `templates/partials/header.html`.
 
 Optional face swap (close ComfyUI first):
 

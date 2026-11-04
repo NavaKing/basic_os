@@ -252,7 +252,7 @@ def weekly_recap(week):
 
 @app.route('/generate', methods=['POST'])
 def generate_lore():
-    selected_model = request.json.get('model', 'gemma3:12b')
+    selected_model = request.json.get('model', ai_engine.DEFAULT_MODEL)
     progress.start()
     try:
         progress.step("Syncing the save")
@@ -291,7 +291,7 @@ def coach_plan(week):
 @app.route('/coaches/plan/<int:week>/generate', methods=['POST'])
 def generate_coach_plan(week):
     try:
-        return jsonify(gameplan.generate_plan(request.json.get('model', 'gemma3:12b'), week))
+        return jsonify(gameplan.generate_plan(request.json.get('model', ai_engine.DEFAULT_MODEL), week))
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -304,14 +304,14 @@ def phone_chat_action(action):
     body = request.json or {}
     try:
         if action == "send":
-            return jsonify(group_chat.send(body.get('text'), body.get('model') or 'gemma3:12b'))
+            return jsonify(group_chat.send(body.get('text'), body.get('model') or ai_engine.DEFAULT_MODEL))
         if action == "read":
             group_chat.mark_read()
             return jsonify({"ok": True})
         if action == "react":
             return jsonify(group_chat.react(int(body.get('msg_id') or 0), body.get('emoji')))
         if action == "regenerate":
-            return jsonify({"started": group_chat.start_postgame(body.get('model') or 'gemma3:12b', force=True)})
+            return jsonify({"started": group_chat.start_postgame(body.get('model') or ai_engine.DEFAULT_MODEL, force=True)})
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
     abort(404)
@@ -319,7 +319,7 @@ def phone_chat_action(action):
 @app.route('/coaches/news/generate', methods=['POST'])
 def generate_coach_news():
     try:
-        return jsonify(coaches.generate_news(request.json.get('model', 'gemma3:12b')))
+        return jsonify(coaches.generate_news(request.json.get('model', ai_engine.DEFAULT_MODEL)))
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -380,14 +380,14 @@ def podcast_preview():
 @app.route('/podcast/generate', methods=['POST'])
 def generate_podcast():
     try:
-        return jsonify(podcast.generate_episode(request.json.get('model', 'gemma3:12b'), request.json.get('draft'), request.json.get('hosts')))
+        return jsonify(podcast.generate_episode(request.json.get('model', ai_engine.DEFAULT_MODEL), request.json.get('draft'), request.json.get('hosts')))
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 @app.route('/podcast/weekly/generate', methods=['POST'])
 def generate_weekly_podcast():
     try:
-        return jsonify(podcast.generate_weekly_episode(request.json.get('model', 'gemma3:12b'), request.json.get('week'), request.json.get('hosts')))
+        return jsonify(podcast.generate_weekly_episode(request.json.get('model', ai_engine.DEFAULT_MODEL), request.json.get('week'), request.json.get('hosts')))
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -418,7 +418,7 @@ def generate_progress():
 
 @app.route('/storylines', methods=['POST'])
 def new_storyline():
-    selected_model = request.json.get('model', 'gemma3:12b')
+    selected_model = request.json.get('model', ai_engine.DEFAULT_MODEL)
     try:
         storylines.create_storyline(selected_model)
     except Exception as e:
@@ -427,7 +427,7 @@ def new_storyline():
 
 @app.route('/storylines/from-game', methods=['POST'])
 def storylines_from_game():
-    selected_model = request.json.get('model', 'gemma3:12b')
+    selected_model = request.json.get('model', ai_engine.DEFAULT_MODEL)
     try:
         created = storylines.create_storylines_from_game(selected_model)
     except Exception as e:
@@ -436,7 +436,7 @@ def storylines_from_game():
 
 @app.route('/storylines/<int:storyline_id>/resolve', methods=['POST'])
 def resolve_storyline(storyline_id):
-    selected_model = request.json.get('model', 'gemma3:12b')
+    selected_model = request.json.get('model', ai_engine.DEFAULT_MODEL)
     try:
         storylines.resolve_storyline(storyline_id, request.json.get('action'), selected_model)
     except Exception as e:
@@ -451,21 +451,21 @@ def all_conference_teams(name):
 @app.route('/awards/heisman/generate', methods=['POST'])
 def generate_heisman_column():
     try:
-        return jsonify({"column": awards.generate_heisman_column(request.json.get('model', 'gemma3:12b'))})
+        return jsonify({"column": awards.generate_heisman_column(request.json.get('model', ai_engine.DEFAULT_MODEL))})
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
 @app.route('/offseason/signing-day/generate', methods=['POST'])
 def generate_signing_day():
     try:
-        return jsonify({"column": offseason.generate_signing_day(request.json.get('model', 'gemma3:12b'))})
+        return jsonify({"column": offseason.generate_signing_day(request.json.get('model', ai_engine.DEFAULT_MODEL))})
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
 @app.route('/rivals/issue/generate', methods=['POST'])
 def generate_rivalry_issue():
     try:
-        return jsonify({"column": rivals.generate_issue(request.json.get('model', 'gemma3:12b'))})
+        return jsonify({"column": rivals.generate_issue(request.json.get('model', ai_engine.DEFAULT_MODEL))})
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
@@ -473,7 +473,7 @@ def generate_rivalry_issue():
 def press_conference():
     try:
         if request.method == 'POST':
-            return jsonify({"transcript": presser.ask(request.json.get('model', 'gemma3:12b'), request.json.get('role'), request.json.get('question'))})
+            return jsonify({"transcript": presser.ask(request.json.get('model', ai_engine.DEFAULT_MODEL), request.json.get('role'), request.json.get('question'))})
         if request.method == 'DELETE':
             presser.clear_week()
         return jsonify({"transcript": presser.transcript()})
@@ -483,7 +483,7 @@ def press_conference():
 @app.route('/presser/questions', methods=['POST'])
 def press_questions():
     try:
-        return jsonify({"questions": presser.suggest_questions(request.json.get('model', 'gemma3:12b'))})
+        return jsonify({"questions": presser.suggest_questions(request.json.get('model', ai_engine.DEFAULT_MODEL))})
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
@@ -513,7 +513,7 @@ def care_action(action):
         if action == "reply":
             return jsonify(care_messages.reply(int(body.get('message_id') or 0), body.get('choice')))
         if action == "reply_text":
-            return jsonify(care_messages.reply_text(int(body.get('message_id') or 0), body.get('text'), body.get('model') or 'gemma3:12b'))
+            return jsonify(care_messages.reply_text(int(body.get('message_id') or 0), body.get('text'), body.get('model') or ai_engine.DEFAULT_MODEL))
         if action == "email":
             return jsonify(care_messages.email_action(int(body.get('email_id') or 0), body.get('action')))
         if action == "incident":

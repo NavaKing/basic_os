@@ -87,7 +87,7 @@ def vision_model(preferred=None):
         info = requests.post(f"{OLLAMA}/api/show", json={"model": name}, timeout=10).json()
         if "vision" in (info.get('capabilities') or []):
             return name
-    raise RuntimeError("None of your Ollama models can read images. cfb-gemma or another Gemma 3 vision model is needed.")
+    raise RuntimeError("None of your Ollama models can read images. gemma3:27b (ollama pull gemma3:27b) or another Gemma 3 vision model is needed.")
 
 def ask_image(model, path, prompt):
     with open(path, "rb") as f:
