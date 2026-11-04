@@ -7,6 +7,7 @@ import threading
 import backups
 import care
 import history
+import lore
 import database
 import league
 import roster
@@ -79,6 +80,7 @@ def _sync_if_changed():
         league.sync_rivalries(dynasty.get('rivalries'))
         history.sync(dynasty)
         care.advance(care.current_week())  # the week of our next game, now that the schedule is synced
+        lore.check_school()   # a new school (new dynasty, or the coach moved on): fetch its history in the background
         recruiting.sync_recruiting(dynasty.get('recruiting'), dynasty['league']['userTeamId'], dynasty['currentWeek'])
     except Exception as e:
         # The version isn't stored, so the next page load tries again (e.g. if the game was mid-write)

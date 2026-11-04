@@ -1,9 +1,9 @@
 {
-  "_about": "Real program history the app's writers (group chat, dispatch, campus feed) are given as facts, so they never have to guess. Edit freely: add facts, or a new team's block if you start another dynasty. Your dynasty's own seasons are added automatically from the save. Sources: Wikipedia, 'Wyoming Cowboys football' and '2016 Mountain West Conference Football Championship Game' (checked November 2026).",
+  "_about": "Real program history the app's writers (group chat, dispatch, campus feed) are given as facts, so they never have to guess. WYO was researched by hand; a school you start coaching later is fetched from Wikipedia automatically (\"auto\": true, \"reviewed\": false) - look it over and edit freely. What your dynasty does (title games, finished seasons) is added from the save.",
   "WYO": {
     "conference_name": "Mountain West",
     "facts": [
-      "The last time Wyoming played for a conference title: the 2016 Mountain West Championship Game, a 27-24 home loss to San Diego State in Laramie. The last time Wyoming won a conference title: 1993, in the WAC.",
+      "Before this dynasty, the last time Wyoming played for a conference title was the 2016 Mountain West Championship Game, a 27-24 home loss to San Diego State in Laramie; the last time it won one was 1993, in the WAC.",
       "Wyoming has won 14 conference championships: seven in the Skyline Conference (1949, 1950, 1956, 1958, 1959, 1960, 1961) and seven in the WAC (1966, 1967, 1968, 1976, 1987, 1988, 1993).",
       "Wyoming's last conference title was in 1993, in the WAC. It has never won a Mountain West title since joining the conference in 1999.",
       "Wyoming's previous Mountain West Championship Game was in 2016: the Cowboys hosted it in Laramie and lost 27-24 to San Diego State.",
