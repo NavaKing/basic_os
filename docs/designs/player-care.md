@@ -429,6 +429,14 @@ West title; the 2016 MW title game; the 1967 Sugar Bowl team and its No. 5 peak)
 seasons from the save. The group chat and the dispatch get it as facts, and history years are allowed in players'
 messages (other numbers aren't). A model can't know a school's history; it has to be given the facts.
 
+**A new school:** after each sync, `lore.check_school()` looks for the coach's current school in the file. If it's there
+(he stayed), nothing happens. If it's missing (a new dynasty, or he moved on), the school's Wikipedia page is fetched in
+the background: the summary (minus the real head coach), conference and division titles, all-time and bowl records
+(only when they're plain numbers), the stadium, rivals and fight song. It's saved with `"auto": true, "reviewed": false`
+for the user to look over. The old school's block is kept. The dynasty's own conference title games (from player care's
+`title_game_<season>` and the archived games) are added after the history, so "the last time we played for a title"
+stays right.
+
 ## Build order (when un-tabled)
 
 1. **In-game test:** one edited Hot/Cold, ability, injury and heal, loaded in CFB27 to see what the game honours.
