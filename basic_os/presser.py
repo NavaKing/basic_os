@@ -101,6 +101,11 @@ def week_facts(role):
     off_field = care_incidents.prompt_context()
     if off_field:
         facts.append(off_field.strip())
+    if role == "hc":   # reporters ask the head coach about his old job
+        import career
+        past = career.context(opponent=game['opponent_name'] if game and not game['is_played'] else None)
+        if past:
+            facts.append(past.strip() + " A reporter may ask him about it.")
     row = league.query_user_team() or {}
     if role == "oc" and row.get('off_rank'):
         facts.append(f"The offense ranks No. {row['off_rank']} nationally.")

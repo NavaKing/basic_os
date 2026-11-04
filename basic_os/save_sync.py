@@ -6,6 +6,7 @@ import subprocess
 import threading
 import backups
 import care
+import career
 import history
 import lore
 import database
@@ -80,6 +81,7 @@ def _sync_if_changed():
         league.sync_rivalries(dynasty.get('rivalries'))
         history.sync(dynasty)
         care.advance(care.current_week())  # the week of our next game, now that the schedule is synced
+        career.record((dynasty.get('phase') or {}).get('seasonYear'), dynasty['currentWeek'])   # his season here, or a new job
         lore.check_school()   # a new school (new dynasty, or the coach moved on): fetch its history in the background
         recruiting.sync_recruiting(dynasty.get('recruiting'), dynasty['league']['userTeamId'], dynasty['currentWeek'])
     except Exception as e:

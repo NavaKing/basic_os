@@ -24,7 +24,7 @@ TABLE_SETUP = [("database", "initialize_database_tables"), ("roster", "initializ
                ("recruiting", "initialize_recruiting_tables"), ("rivals", "initialize_rival_tables"), ("scouting", "initialize_scouting_table"),
                ("storylines", "initialize_storyline_tables"), ("care", "initialize_care_tables"), ("care_messages", "initialize_tables"),
                ("care_incidents", "initialize_tables"), ("team_board", "initialize_tables"), ("group_chat", "initialize_tables"),
-               ("game_day", "initialize_tables")]
+               ("game_day", "initialize_tables"), ("career", "initialize_tables")]
 
 state = {"current": None, "chosen": FIXED}
 

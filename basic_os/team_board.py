@@ -230,20 +230,25 @@ def game_facts():
     last = database.query_last_played_week()
     nxt = database.query_active_week()
     facts = [ai_engine.build_prev_context(last)] if last else []
+    us_name = (league.query_user_team() or {}).get('name') or "The team"
     wins, losses = database.query_season_record()
     if wins + losses:
         now = nxt['week_id'] if nxt and not nxt['is_played'] else ((last['week_id'] + 1) if last else 1)   # this week's poll
         standing = care.team_standing(now, {g['week_id']: g for g in database.query_full_schedule()})
-        facts.append(f"Wyoming is {wins}-{losses}" + (f", on {care.a_or_an(standing['streak'])} {standing['streak']}-game win streak" if standing['streak'] >= 3 else "") +
+        facts.append(f"{us_name} is {wins}-{losses}" + (f", on {care.a_or_an(standing['streak'])} {standing['streak']}-game win streak" if standing['streak'] >= 3 else "") +
                      (f", ranked No. {standing['rank']} in the AP poll" + (" for the first time, a huge milestone for the school" if standing.get('first_ranked') else "")
                       if standing['rank'] else "") + ".")
         import lore
         if standing.get('title_game'):
-            facts.append(f"Wyoming made the {lore.conference_name()} Championship Game and plays {standing['title_game']} for the title.")
+            facts.append(f"{us_name} made the {lore.conference_name()} Championship Game and plays {standing['title_game']} for the title.")
         facts.append(lore.context().strip())
     if nxt and not nxt['is_played']:
         us_id = (league.query_user_team() or {}).get('team_id')
         event = league.bowl_name(us_id, nxt['week_id']) if us_id else None
+        import career
+        past = career.context(opponent=nxt['opponent_name'], audience="players")
+        if past:
+            facts.append(past.strip())
         facts.append(f"Next game: Week {nxt['week_id']}{', the ' + event if event else ''}, {'at' if nxt.get('site') == 'Away' else 'against'} {nxt['opponent_name']}"
                      + (" (a College Football Playoff game)" if league.is_playoff(event) else "") + ".")
     return " ".join(facts)
@@ -267,7 +272,9 @@ def bad_number(text):
     """A number in a player's message that isn't a year from the school's history ("'93", "2016" are fine; stats aren't:
     they get credited to the wrong player)."""
     import lore
-    years = set(re.findall(r"\b(?:19|20)\d{2}\b", lore.context()))
+    import career
+    known = lore.context() + " " + " ".join(str(y) for s in career.stints() for y in s['years'])
+    years = set(re.findall(r"\b(?:19|20)\d{2}\b", known))
     for year in years:
         text = re.sub(r"\b" + year + r"\b|['’]" + year[2:] + r"\b", "", text)
     return bool(re.search(r"\d", text))
@@ -310,7 +317,7 @@ def compose(selected_model, week, posts_count=POSTS, replies_count=REPLIES):
     facts = game_facts()
 
     prompt = (f"{GUARDRAILS} Facts: {facts} The players: {roster_text}. "
-              f"Write {posts_count} messages for the Wyoming team group chat after the game, each by a different player from the list "
+              f"Write {posts_count} messages for the {(league.query_user_team() or {}).get('name') or 'team'} team group chat after the game, each by a different player from the list "
               "(use the exact name as author). "
               "Each message fits his own stat line and mood: a big game sounds proud and thanks teammates, a quiet or bench week sounds "
               "humble or hungry, a low mood shows a little in the tone without saying why. Never write the 'how he feels' words themselves. "

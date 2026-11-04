@@ -262,8 +262,9 @@ def generate_dynasty_content(selected_model, storyline_context="", player_lines=
     rivalry = rivals.prompt_context()
     presser_quotes = presser.dispatch_context()
     off_field = care_incidents.prompt_context()
-    import lore
+    import lore, career
     history = lore.context()
+    past = career.context(opponent=active_stats['opponent_name'])
 
     # Generate main article
     article_prompt = f"IMPORTANT: every player is a man on a men's college football team, so always use he/him/his for players, whatever their first name. Write an immersive 3-sentence game dispatch layout entry. Sentence 1 must summarize the dramatic outcome from the PREVIOUS game: {prev_context}. Sentences 2 and 3 must pivot directly into the game preparation strategy for the UPCOMING matchup: {headline} using {us['identity']}.{scouting}{rivalry}{presser_quotes} Do not output raw code strings or brackets."
@@ -273,6 +274,8 @@ def generate_dynasty_content(selected_model, storyline_context="", player_lines=
         article_prompt += off_field + " Mention it briefly and respectfully in sentence 2 or 3."
     if history:
         article_prompt += history
+    if past:
+        article_prompt += past + " Work it into sentence 2 or 3 if it fits."
 
     try:
         progress.step("Writing the dispatch")
@@ -303,6 +306,9 @@ def generate_dynasty_content(selected_model, storyline_context="", player_lines=
         plan.append("One of the remaining posts is campus chatter, from a student or campus account, about how a player seems lately. " + mood)
     if off_field:
         plan.append("One of the remaining posts reacts to the off-field news, respectfully." + off_field)
+    if past:
+        plan.append("One of the remaining posts, from a national sports show, a beat writer or a fan of one of his old schools, "
+                    "brings up the head coach's past." + past)
     plan.append(f"The remaining posts hype the upcoming Week {active_stats['week_id']} game vs {active_stats['opponent_name']}."
                 + (f" {stakes} Talk about what it means: the round, the stakes, the rankings." if stakes else ""))
     plan.append(f"Exactly {PHOTO_TWEETS} posts include a photo: give only those posts a \"photo\" field with one vivid sentence describing what the photo shows (the scene, people, action and setting). The other posts have no photo field.")
