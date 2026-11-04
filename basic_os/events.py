@@ -417,6 +417,23 @@ def build_save_draft(game_id):
         name_remaining_scorers([p for p in out if p['team'] == abbr[team_id]], game_touchdowns(game_id, team_id))
     draft_teams = [{"abbr": abbr[t['team_id']], "name": t['name'], "team_id": t['team_id']} for t in (away, home)]
     draft = build_draft(draft_teams, out, {abbr[game['away_id']].upper(): game['away_score'], abbr[game['home_id']].upper(): game['home_score']})
+    return settle_overtime(draft)
+
+def settle_overtime(draft):
+    """The save doesn't record every overtime play (the two-point shootout from the third overtime on goes missing or
+    gets garbled), so when an overtime game's plays don't add up, its overtime column shows the scoreboard's points
+    and a note says why, instead of a warning about a misread play."""
+    if not any(p['quarter'] >= 5 for p in draft['plays']) or not draft['warnings']:
+        return draft
+    for t in draft['teams']:
+        if t.get('final') is not None and t['total'] != t['final']:
+            while len(t['quarters']) < 5:
+                t['quarters'].append(0)
+            t['quarters'][4] += t['final'] - t['total']
+            t['total'] = t['final']
+    draft['warnings'] = []
+    draft['notes'] = ["This game went to overtime. The save doesn't record every overtime play (the two-point shootout "
+                      "especially), so the overtime column shows the scoreboard's points; the overtime plays listed may be incomplete."]
     return draft
 
 def saved_games():
