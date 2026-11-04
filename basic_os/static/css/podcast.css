@@ -105,3 +105,4 @@
     .pod-archive-item { grid-template-columns: 84px minmax(0, 1fr); }
     .pod-archive-cover { width: 84px; height: 84px; }
 }
+.pod-note { padding: 10px 12px; border-left: 3px solid var(--gold); background-color: var(--gold-soft); font-size: 13px; margin-bottom: 10px; }

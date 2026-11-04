@@ -33,9 +33,10 @@ function performers(team) {
     return '<section class="gm-perf"><h4>' + teamLogo(team.team) + esc(team.team.name) + '</h4><ul>' + list + '</ul></section>';
 }
 
-function scoring(plays) {
+function scoring(plays, note) {
     if (!plays) return '';
-    return '<section class="pp-section"><h3>Scoring plays</h3><ol class="gm-scoring">' + plays.map(p =>
+    return '<section class="pp-section"><h3>Scoring plays</h3>' + (note ? '<p class="gm-note">' + esc(note) + '</p>' : '') +
+        '<ol class="gm-scoring">' + plays.map(p =>
         '<li><span class="gm-when">' + (p.quarter === 5 ? 'OT' : 'Q' + esc(p.quarter)) + ' &middot; ' + esc(p.clock) + '</span>' +
         '<span class="gm-who">' + esc(p.team) + '</span>' + esc(p.text) + '</li>').join('') + '</ol></section>';
 }
@@ -52,7 +53,7 @@ function render(dialog, g) {
             lineScore(g.teams) +
             '<section class="pp-section"><h3>Team stats</h3>' + teamStats(g.stats, g.teams) + '</section>' +
             '<section class="pp-section"><h3>Top performers</h3><div class="gm-perfs">' + performers(away) + performers(home) + '</div></section>' +
-            scoring(g.scoring) +
+            scoring(g.scoring, g.scoring_note) +
         '</div>';
     applyTeamColors(dialog);
     dialog.querySelector('.team-dialog-close').addEventListener('click', () => dialog.close());

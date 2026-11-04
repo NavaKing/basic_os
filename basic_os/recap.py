@@ -51,7 +51,12 @@ def box_score(game, teams, ranks):
     rows = []
     for side in ('away', 'home'):
         team = teams[game[f'{side}_id']]
-        rows.append({"team": team_view(team, ranks.get(team['team_id'])), "quarters": game[f'{side}_quarters'] or [],
+        quarters = list(game[f'{side}_quarters'] or [])
+        total = game[f'{side}_score']
+        # The save keeps four quarters; overtime points are whatever the total has beyond them
+        if quarters and total is not None and sum(quarters) < total and len(quarters) == 4:
+            quarters.append(total - sum(quarters))
+        rows.append({"team": team_view(team, ranks.get(team['team_id'])), "quarters": quarters,
                      "total": game[f'{side}_score'], "won": game[f'{side}_score'] > game[f"{'home' if side == 'away' else 'away'}_score"]})
     return rows
 

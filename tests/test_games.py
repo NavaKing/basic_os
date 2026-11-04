@@ -49,6 +49,18 @@ class BoxScore(unittest.TestCase):
         self.assertEqual([(p['label'], p['line']) for p in away['performers']], [("Tackles", "11 tkl")])
         self.assertIsNone(g['scoring'])  # no scoring summary captured for this game
 
+    def test_overtime_points_get_their_own_column(self):
+        execute("UPDATE league_games SET home_score = 30, home_quarters = '[0, 7, 0, 17]', away_quarters = '[0, 3, 0, 21]', away_score = 27 WHERE game_id = 606")
+        away, home = games.build_game(606)['teams']
+        self.assertEqual((home['quarters'], away['quarters']), ([0, 7, 0, 17, 6], [0, 3, 0, 21, 3]))
+
+    def test_overtime_note_reaches_the_box_score(self):
+        from unittest import mock
+        draft = {"plays": [{"quarter": 5, "clock": "15:00", "team": "WYO", "text": "Field goal"}], "notes": ["This game went to overtime."]}
+        with mock.patch.object(events, "build_save_draft", return_value=draft):
+            g = games.build_game(606)
+        self.assertEqual((g['scoring'][0]['text'], g['scoring_note']), ("Field goal", "This game went to overtime."))
+
     def test_unplayed_and_route(self):
         self.assertIsNone(games.build_game(700))
         from app import app

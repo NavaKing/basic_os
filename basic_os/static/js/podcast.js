@@ -114,7 +114,9 @@ function reviewForm(draft) {
             t.quarters.slice(0, 4).map(q => '<td>' + esc(q) + '</td>').join('') + '<td>' + esc(t.total) + '</td>' +
             '<td><input class="ev-final" data-team="' + i + '" value="' + esc(t.final) + '" size="3"></td></tr>').join('') + '</tbody></table>';
     return '<h3>Check what was read</h3>' +
-        (draft.warnings.length ? '<div class="pod-warning">' + draft.warnings.map(esc).join('<br>') + '</div>' : '<div class="pod-ok">The scoring plays add up to the final score.</div>') +
+        (draft.warnings.length ? '<div class="pod-warning">' + draft.warnings.map(esc).join('<br>') + '</div>' :
+         draft.notes && draft.notes.length ? '<div class="pod-note">' + draft.notes.map(esc).join('<br>') + '</div>' :
+         '<div class="pod-ok">The scoring plays add up to the final score.</div>') +
         board +
         '<table class="pod-plays"><thead><tr><th>Qtr</th><th>Team</th><th>Scoring play</th><th>Clock</th><th>Pts</th><th></th></tr></thead><tbody>' + rows + '</tbody></table>' +
         '<div class="pod-actions"><button type="button" class="btn-secondary" id="pod_add">Add a play</button>' +
