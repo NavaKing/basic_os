@@ -6,7 +6,7 @@
     {% if us.logo %}<img class="site-header-logo" src="{{ us.logo }}" alt="{{ us.name }}"{% if us.id %} data-team-id="{{ us.id }}" title="Team page"{% endif %}>{% endif %}
     <div class="site-header-text">
         <h1 class="site-title">{{ us.full_name }} <span class="site-year">{{ season_year }}</span></h1>
-        <p class="site-subtitle">{{ us.full_name }} Football Custom Local Companion Engine{% if sync_status %} &middot; {{ sync_status }}{% endif %}</p>
+        <p class="site-subtitle">{{ us.full_name }} Football Custom Local Companion Engine{% if sync_status %} &middot; {{ sync_status }}{% endif %}{% if dynasty and not dynasty.fixed %} &middot; {{ dynasty.label }} <a class="dynasty-switch" href="/choose">Switch dynasty</a>{% endif %}</p>
     </div>
     <div class="generator">
         <select id="model_select" aria-label="AI model">
