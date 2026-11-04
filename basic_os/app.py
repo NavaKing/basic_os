@@ -31,6 +31,7 @@ import care
 import care_messages
 import care_incidents
 import group_chat
+import game_day
 import os
 from urllib.parse import urlsplit
 from flask import Flask, Response, render_template, request, jsonify, send_from_directory, abort, url_for
@@ -296,6 +297,23 @@ def generate_coach_plan(week):
         return jsonify(gameplan.generate_plan(request.json.get('model', ai_engine.DEFAULT_MODEL), week))
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+@app.route('/care/game-day')
+def care_game_day():
+    return jsonify(game_day.status())
+
+@app.route('/care/game-day/<action>', methods=['POST'])
+def care_game_day_action(action):
+    try:
+        if action == "apply":
+            return jsonify(game_day.apply())
+        if action == "remove":
+            return jsonify(game_day.remove())
+        if action == "undo":
+            return jsonify(game_day.undo())
+    except (ValueError, RuntimeError) as e:
+        return jsonify({"error": str(e)}), 400
+    abort(404)
 
 @app.route('/phone/chat')
 def phone_chat():

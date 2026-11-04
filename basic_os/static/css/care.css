@@ -132,3 +132,11 @@
 .off-field-week { display: inline-block; min-width: 44px; color: var(--gold); font-size: 12px; }
 .off-field-sub { margin: 10px 0 4px; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: var(--text-dim); }
 .off-field-note { margin: 0; font-size: 12px; }
+
+/* Game-day boosts (top of This week) */
+.gd-list { list-style: none; margin: 0 0 8px; padding: 0; }
+.gd-row { display: grid; grid-template-columns: 22px minmax(120px, 200px) 1fr; gap: 8px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border-soft); font-size: 13px; }
+.gd-flag { font-size: 16px; }
+.gd-name { color: #fff; font-weight: 600; }
+.gd-perks { display: flex; flex-wrap: wrap; gap: 4px; }
+.gd-warn { margin: 6px 0; padding: 8px 12px; border-left: 3px solid var(--care-watch); background: rgba(224, 184, 79, 0.08); font-size: 12px; }
