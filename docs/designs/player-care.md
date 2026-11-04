@@ -403,6 +403,32 @@ App-only. The code is in `basic_os/care_incidents.py`, and the dials are under `
   - Only once the post-game chat has finished arriving and nothing else is being written.
   - Starters and captains start more; players who are down rarely do. Dials are under `chat` → `midweek`.
 
+## Tuning pass: team success (feature/care-team-success, after 9 real weeks)
+
+Wyoming went 12-0, cracked the AP poll (No. 23, then No. 16) and made the Mountain West Championship Game, yet nearly
+every need went down every week: a win only slowed morale's drain. Now every player gets a lift after the weekly drain:
+- **A win:** morale +3, focus +2.
+- **A win streak:** +1 per straight win from the third, up to +4.
+- **Ranked:** +2 a week.
+- **Ranking milestones, once each:** first time in the poll is morale +15 and focus +5. The top 15, 10, 5 and No. 1
+  are +8 each.
+- **Season milestones, once a season:**
+  - Making the conference title game: +10 morale, +5 focus. It's detected as a late-season rematch, since the save
+    marks it as a regular-season week.
+  - Winning the title: +15 morale, +5 focus.
+  - A bowl berth: +6 morale.
+  - The AD emails about each one.
+- **A ceiling:** team success alone fills a need up to 90. Awards and the coach's shout-outs can go past it.
+- **Home life's base drain** went from 4 to 3. Most of the roster is from out of state.
+
+On the real roster, a 12-0 ranked team jumps to about 83 morale and holds around 88-90 ("on top of the world" in the
+group chat). Academics, home life and health still drain, so care still matters for them.
+
+**School lore:** `school_lore.json` holds real program history (14 conference titles, the last in 1993; never a Mountain
+West title; the 2016 MW title game; the 1967 Sugar Bowl team and its No. 5 peak). `lore.py` adds the dynasty's finished
+seasons from the save. The group chat and the dispatch get it as facts, and history years are allowed in players'
+messages (other numbers aren't). A model can't know a school's history; it has to be given the facts.
+
 ## Build order (when un-tabled)
 
 1. **In-game test:** one edited Hot/Cold, ability, injury and heal, loaded in CFB27 to see what the game honours.

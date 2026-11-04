@@ -235,6 +235,10 @@ def game_facts():
         facts.append(f"Wyoming is {wins}-{losses}" + (f", on {care.a_or_an(standing['streak'])} {standing['streak']}-game win streak" if standing['streak'] >= 3 else "") +
                      (f", ranked No. {standing['rank']} in the AP poll" + (" for the first time, a huge milestone for the school" if standing.get('first_ranked') else "")
                       if standing['rank'] else "") + ".")
+        import lore
+        if standing.get('title_game'):
+            facts.append(f"Wyoming made the {lore.conference_name()} Championship Game and plays {standing['title_game']} for the title.")
+        facts.append(lore.context().strip())
     if nxt and not nxt['is_played']:
         facts.append(f"Next game: Week {nxt['week_id']} {'at' if nxt.get('site') == 'Away' else 'against'} {nxt['opponent_name']}.")
     return " ".join(facts)
@@ -253,6 +257,15 @@ TD_LENGTH = re.compile(r"\d+[- ]?(?:yd|yard)s?\W*(?:td|touchdown|score)|(?:td|to
 
 def drop_td_lengths(text):
     return " ".join(s for s in sentences.split(text) if not TD_LENGTH.search(s))
+
+def bad_number(text):
+    """A number in a player's message that isn't a year from the school's history ("'93", "2016" are fine; stats aren't:
+    they get credited to the wrong player)."""
+    import lore
+    years = set(re.findall(r"\b(?:19|20)\d{2}\b", lore.context()))
+    for year in years:
+        text = re.sub(r"\b" + year + r"\b|['’]" + year[2:] + r"\b", "", text)
+    return bool(re.search(r"\d", text))
 
 def repeats(text, previous):
     return bool(previous) and difflib.SequenceMatcher(None, text.lower(), previous.lower()).ratio() >= TOO_SIMILAR
@@ -320,7 +333,7 @@ def compose(selected_model, week, posts_count=POSTS, replies_count=REPLIES):
             target = r.get('reply_to')
             if isinstance(target, int) and 0 <= target < len(posts) and posts[target]['author'] != r['author']:
                 text = scrub(fact_check.drop_invented(r['text'], allowed), people)
-                if text and not re.search(r"\d", text):   # a reply quoting stats tends to give them to the wrong player
+                if text and not bad_number(text):   # a reply quoting stats tends to give them to the wrong player
                     replies.append({"author": r['author'], "text": text, "reply_to": target})
     sid = lambda name: by_name[name]['save_id']
     return ([{"save_id": sid(p['author']), "text": p['text']} for p in posts],
@@ -364,7 +377,7 @@ def answer(selected_model, coach_text, responder_ids, history, addressed_ids=())
     asked = {c['name'] for c in people if c['save_id'] in addressed_ids}
     for r in ask(selected_model, prompt, by_name, "replies"):
         text = scrub(ai_engine.strip_tags(r['text']), people)
-        if not text or re.search(r"\d", text) or r['author'] in [o['author'] for o in out]:
+        if not text or bad_number(text) or r['author'] in [o['author'] for o in out]:
             continue
         is_asked = r['author'] in asked
         copied = len(text) >= COPY_MIN_LENGTH and any(repeats(text, line) for line in said + [o['text'] for o in out])
@@ -407,7 +420,7 @@ def chatter(selected_model, starter_id, replier_ids, history, rng=None):
     said = [line.split(": ", 1)[-1] for line in history[-10:]]
     for r in ask(selected_model, prompt, by_name, "messages"):
         text = scrub(r['text'], people)
-        if text and not re.search(r"\d", text) and not any(repeats(text, line) for line in said if len(text) >= COPY_MIN_LENGTH):
+        if text and not bad_number(text) and not any(repeats(text, line) for line in said if len(text) >= COPY_MIN_LENGTH):
             out.append({"save_id": by_name[r['author']]['save_id'], "text": text})
     if not out or out[0]['save_id'] != starter['save_id']:   # the conversation has to start with the starter
         return []

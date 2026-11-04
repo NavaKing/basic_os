@@ -139,8 +139,45 @@ class TeamSuccess(unittest.TestCase):
         conn.commit()
         conn.close()
         schedule = {g['week_id']: g for g in database.query_full_schedule()}
-        self.assertEqual(care.team_standing(4, schedule), {"streak": 2, "rank": 24, "first_ranked": True})
-        self.assertEqual(care.team_standing(5, schedule), {"streak": 3, "rank": 14, "milestone": 15})
+        pick = lambda d: {k: d[k] for k in ("streak", "rank", "first_ranked", "milestone") if k in d}
+        self.assertEqual(pick(care.team_standing(4, schedule)), {"streak": 2, "rank": 24, "first_ranked": True})
+        self.assertEqual(pick(care.team_standing(5, schedule)), {"streak": 3, "rank": 14, "milestone": 15})
+
+
+class SeasonMilestones(unittest.TestCase):
+    def test_title_game_championship_and_bowl_lift_once_a_season(self):
+        conn = database.get_db_connection()
+        for table in ("schedule_tracking", "league_polls", "league_teams", "league_games", "care_state"):
+            conn.execute(f"DELETE FROM {table}")
+        conn.execute("INSERT INTO league_teams (team_id, name, short_name, is_user, conference) VALUES (142, 'Wyoming', 'WYO', 1, 'MW')")
+        conn.executemany("INSERT INTO schedule_tracking (week_id, opponent_name, is_played, wyo_score, opp_score, game_date) VALUES (?, ?, ?, ?, ?, ?)",
+                         [(10, "UNLV Rebels", 1, 35, 28, "2026-11-07"), (13, "UConn Huskies", 1, 45, 0, "2026-11-28"),
+                          (15, "UNLV Rebels", 0, None, None, "2026-12-05")])
+        conn.commit()
+        conn.close()
+        schedule = {g['week_id']: g for g in database.query_full_schedule()}
+        standing = care.team_standing(15, schedule)
+        self.assertEqual((standing['title_game'], standing.get('made_title_game')), ("UNLV Rebels", True))
+        boost, reasons = care.team_boost(standing, tuning())
+        self.assertIn("making the conference championship game", reasons)
+        care.set_state("title_game_2026", 15)   # what advance() records after the week
+        self.assertNotIn('made_title_game', care.team_standing(15, schedule))
+        group = database.get_db_connection()
+        group.execute("UPDATE schedule_tracking SET is_played = 1, wyo_score = 31, opp_score = 24 WHERE week_id = 15")
+        group.commit()
+        group.close()
+        schedule = {g['week_id']: g for g in database.query_full_schedule()}
+        self.assertTrue(care.team_standing(16, schedule).get('conference_champs'))
+
+    def test_lore_facts_for_the_writers(self):
+        import lore
+        conn = database.get_db_connection()
+        conn.execute("DELETE FROM league_teams")
+        conn.execute("INSERT INTO league_teams (team_id, name, short_name, is_user, conference) VALUES (142, 'Wyoming', 'WYO', 1, 'MW')")
+        conn.commit()
+        conn.close()
+        self.assertEqual(lore.conference_name(), "Mountain West")
+        self.assertIn("never won a Mountain West title", lore.context())
 
 
 class Stored(unittest.TestCase):
