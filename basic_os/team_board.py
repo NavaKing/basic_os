@@ -226,6 +226,13 @@ def game_facts():
     last = database.query_last_played_week()
     nxt = database.query_active_week()
     facts = [ai_engine.build_prev_context(last)] if last else []
+    wins, losses = database.query_season_record()
+    if wins + losses:
+        now = nxt['week_id'] if nxt and not nxt['is_played'] else ((last['week_id'] + 1) if last else 1)   # this week's poll
+        standing = care.team_standing(now, {g['week_id']: g for g in database.query_full_schedule()})
+        facts.append(f"Wyoming is {wins}-{losses}" + (f", on {care.a_or_an(standing['streak'])} {standing['streak']}-game win streak" if standing['streak'] >= 3 else "") +
+                     (f", ranked No. {standing['rank']} in the AP poll" + (" for the first time, a huge milestone for the school" if standing.get('first_ranked') else "")
+                      if standing['rank'] else "") + ".")
     if nxt and not nxt['is_played']:
         facts.append(f"Next game: Week {nxt['week_id']} {'at' if nxt.get('site') == 'Away' else 'against'} {nxt['opponent_name']}.")
     return " ".join(facts)

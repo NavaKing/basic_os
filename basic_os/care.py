@@ -239,6 +239,10 @@ def run_week(players, ctx, tuning, council, mentors, rng):
     events = []
     game_notes = []
     by_id = {p['save_id']: p for p in players}
+    team_lift, reasons = team_boost(ctx, tuning)
+    if team_lift:
+        lifts = ", ".join(f"{NEED_LABELS[n].split(' /')[0].lower()} +{v}" for n, v in team_lift.items())
+        events.append((None, "team", f"The team is riding {', '.join(reasons)}: everyone's {lifts}."))
     low_captains = [by_id[c] for c in council if c in by_id and by_id[c]['needs']['morale'] < tuning['council']['low_morale']]
     if low_captains:
         events.append((None, "council", f"{low_captains[0]['name']} is down, and the locker room feels it: everyone's morale drains faster this week."))
@@ -258,6 +262,7 @@ def run_week(players, ctx, tuning, council, mentors, rng):
         if ctx.get('senior_day') and p['class'] == "Senior":
             drain['morale'] -= tuning['senior_day_morale']
         boost, trust, label = game_boost(p, tuning)
+        boost = {n: boost.get(n, 0) + team_lift.get(n, 0) for n in set(boost) | set(team_lift)}
         for need in NEEDS:
             pulled = p['needs'][need] - drain[need] + tuning['staff_rate'] * (tuning['staff_target'] - p['needs'][need])
             p['needs'][need] = round(max(0, min(100, pulled + boost.get(need, 0))), 1)
@@ -322,7 +327,60 @@ def week_context(week):
         ctx['holiday'] = any((start <= md <= end) if start <= end else (md >= start or md <= end) for start, end in tuning['calendar']['holiday_dates'])
     home_weeks = [w for w, g in schedule.items() if g.get('site') == "Home" and w <= 14]
     ctx['senior_day'] = bool(this and home_weeks and week == max(home_weeks))
+    ctx.update(team_standing(week, schedule))
     return ctx
+
+def team_standing(week, schedule):
+    """The win streak going into `week`, our poll rank, and any ranking milestone reached for the first time this week
+    (from the save's polls, so it needs no memory of its own)."""
+    played = [g for w, g in sorted(schedule.items()) if w < week and g['is_played'] and g['wyo_score'] is not None]
+    streak = 0
+    for g in reversed(played):
+        if g['wyo_score'] <= g['opp_score']:
+            break
+        streak += 1
+    us = (league.query_user_team() or {}).get('team_id')
+    rank = league.query_poll(week - 2).get(us) if us else None
+    earlier = [r for r in (row['media_rank'] for row in league.query_rows(
+        "SELECT media_rank FROM league_polls WHERE team_id = ? AND poll_week < ?", (us, week - 2))) if r]
+    best_before = min(earlier) if earlier else 999
+    out = {"streak": streak, "rank": rank if rank and rank <= 25 else None}
+    if out['rank'] and best_before > 25:
+        out['first_ranked'] = True
+    for threshold in load_tuning()['team']['milestones']:
+        if out['rank'] and out['rank'] <= threshold < best_before and best_before <= 25:
+            out['milestone'] = threshold
+    return out
+
+def a_or_an(number):
+    """'an' before 8, 11, 18 and 80-something ("an 11-game win streak"), 'a' otherwise."""
+    return "an" if str(number).startswith("8") or number in (11, 18) else "a"
+
+def team_boost(ctx, tuning):
+    """What the team's success gives every player this week: ({need: points}, [reasons])."""
+    t = tuning['team']
+    boost, reasons = {}, []
+    def add(need, points):
+        boost[need] = boost.get(need, 0) + points
+    if ctx.get('won'):
+        add("morale", t['win_morale'])
+        add("focus", t['win_focus'])
+        reasons.append("the win")
+    streak = ctx.get('streak', 0)
+    if streak >= t['streak_from']:
+        add("morale", min(t['streak_cap'], (streak - t['streak_from'] + 1) * t['streak_per_win']))
+        reasons.append(f"{a_or_an(streak)} {streak}-game win streak")
+    if ctx.get('rank'):
+        add("morale", t['ranked_morale'])
+        reasons.append(f"being ranked No. {ctx['rank']}")
+    if ctx.get('first_ranked'):
+        add("morale", t['first_ranked_morale'])
+        add("focus", t['first_ranked_focus'])
+        reasons.append("cracking the poll for the first time")
+    elif ctx.get('milestone'):
+        add("morale", t['milestone_morale'])
+        reasons.append("the No. 1 ranking" if ctx['milestone'] == 1 else f"cracking the top {ctx['milestone']}")
+    return boost, reasons
 
 def game_results(week, tuning):
     """{save_id: {"played", "standout", "award"}} for our game in `week`, or {} when there was no game (a bye, or

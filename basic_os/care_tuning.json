@@ -31,7 +31,7 @@
   "drain": {
     "morale": 5,
     "academics": 4,
-    "home": 4,
+    "home": 3,
     "focus": 5,
     "health": 4
   },
@@ -359,5 +359,23 @@
         60
       ]
     }
+  },
+  "team": {
+    "_about": "Team success lifts everyone after the weekly drain, so a winning team's needs can go up: a win, a win streak (streak_per_win for every straight win from streak_from on, up to streak_cap), being ranked, and once-only milestones (first time in the poll, then top 15, 10, 5 and No. 1).",
+    "win_morale": 2,
+    "win_focus": 1,
+    "streak_from": 3,
+    "streak_per_win": 1,
+    "streak_cap": 3,
+    "ranked_morale": 1,
+    "first_ranked_morale": 15,
+    "first_ranked_focus": 5,
+    "milestone_morale": 8,
+    "milestones": [
+      15,
+      10,
+      5,
+      1
+    ]
   }
 }

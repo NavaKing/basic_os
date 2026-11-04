@@ -149,7 +149,12 @@ def staff_emails(players, week, ctx, tuning):
                        "body": f"Coach, these guys are running low and could use a lighter week: {names}. "
                                "Resting one means fewer reps for him in practice this week (it doesn't change your depth chart).",
                        "actions": [{"key": "rest", "label": f"Rest {p['name']}", "targets": [p['save_id']]} for p in worn]})
-    if ctx.get('lost'):
+    if ctx.get('first_ranked') or ctx.get('milestone'):
+        what = "in the AP poll" if ctx.get('first_ranked') else ("No. 1 in the country" if ctx['milestone'] == 1 else f"in the top {ctx['milestone']}")
+        emails.append({"sender": "ad", "subject": f"We're ranked No. {ctx['rank']}",
+                       "body": f"Coach, we're {what}. Phones are ringing, recruits are calling and the boosters are thrilled. This is a "
+                               "big moment for the whole school. Enjoy it with the guys, then keep them hungry.", "actions": []})
+    elif ctx.get('lost'):
         emails.append({"sender": "ad", "subject": "After Saturday",
                        "body": "Coach, tough one. The boosters noticed, but I'm more interested in how the locker room takes it. "
                                "Keep an eye on the guys this week.", "actions": []})

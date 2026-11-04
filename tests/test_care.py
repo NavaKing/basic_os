@@ -102,6 +102,37 @@ class GamePerformance(unittest.TestCase):
         self.assertEqual(care.drain_for(player(game=None), {}, t), on)   # no game that week (a bye): nobody counts as benched
 
 
+class TeamSuccess(unittest.TestCase):
+    def test_wins_streaks_and_rankings_lift_everyone(self):
+        t = tuning()
+        tt = t['team']
+        boost, reasons = care.team_boost({"won": True, "streak": 12, "rank": 16}, t)
+        self.assertEqual(boost, {"morale": tt['win_morale'] + tt['streak_cap'] + tt['ranked_morale'], "focus": tt['win_focus']})
+        boost, reasons = care.team_boost({"won": True, "streak": 10, "rank": 23, "first_ranked": True}, t)
+        self.assertEqual(boost['morale'], tt['win_morale'] + tt['streak_cap'] + tt['ranked_morale'] + tt['first_ranked_morale'])
+        self.assertIn("cracking the poll for the first time", reasons)
+        self.assertEqual(care.team_boost({"lost": True, "streak": 0}, t), ({}, []))
+        self.assertEqual(care.a_or_an(11) + " " + care.a_or_an(12), "an a")
+        p = player(needs={n: 60 for n in care.NEEDS})
+        events = care.run_week([p], {"week": 1, "won": True, "streak": 12, "rank": 16}, t, [], {}, NO_RNG)
+        self.assertGreater(p['needs']['morale'], 60)   # a winning, ranked team's morale goes up
+        self.assertTrue(any(kind == "team" for _, kind, _ in events))
+
+    def test_standing_from_the_schedule_and_polls(self):
+        conn = database.get_db_connection()
+        for table in ("schedule_tracking", "league_polls", "league_teams"):
+            conn.execute(f"DELETE FROM {table}")
+        conn.execute("INSERT INTO league_teams (team_id, name, is_user) VALUES (142, 'Wyoming', 1)")
+        conn.executemany("INSERT INTO schedule_tracking (week_id, opponent_name, is_played, wyo_score, opp_score) VALUES (?, 'X', 1, ?, ?)",
+                         [(1, 10, 20), (2, 30, 3), (3, 30, 3), (4, 30, 3)])
+        conn.executemany("INSERT INTO league_polls (poll_week, team_id, media_rank) VALUES (?, 142, ?)", [(1, 40), (2, 24), (3, 14)])
+        conn.commit()
+        conn.close()
+        schedule = {g['week_id']: g for g in database.query_full_schedule()}
+        self.assertEqual(care.team_standing(4, schedule), {"streak": 2, "rank": 24, "first_ranked": True})
+        self.assertEqual(care.team_standing(5, schedule), {"streak": 3, "rank": 14, "milestone": 15})
+
+
 class Stored(unittest.TestCase):
     def setUp(self):
         conn = database.get_db_connection()
