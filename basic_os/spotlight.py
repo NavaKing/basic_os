@@ -41,6 +41,13 @@ def find(name):
     matches = [p for p in league.query_players().values() if p['name'].lower() == name.strip().lower()]
     return max(matches, key=lambda p: p.get('stars') or 0) if matches else None
 
+def count(value, words):
+    """'1 rushing touchdown', '35 passing touchdowns' (an 'interceptions thrown' style phrase keeps its plural noun first)."""
+    if value == 1:
+        first, _, rest = words.partition(" thrown")
+        words = (first[:-1] if first.endswith("s") else first) + (" thrown" if rest or words.endswith(" thrown") else "")
+    return f"{value:,} {words}"
+
 def team_record(team_id):
     wins = losses = 0
     for g in league.query_rows("SELECT * FROM league_games WHERE played = 1 AND (home_id = ? OR away_id = ?)", (team_id, team_id)):
@@ -60,14 +67,14 @@ def season_line(player_id):
         stats = g['stats'] if isinstance(g.get('stats'), dict) else json.loads(g['stats_json'])
         for key, _ in STAT_WORDS:
             totals[key] = totals.get(key, 0) + (stats.get(key) or 0)
-    parts = [f"{totals[k]:,} {words}" for k, words in STAT_WORDS if totals.get(k)]
+    parts = [count(totals[k], words) for k, words in STAT_WORDS if totals.get(k)]
     season = f"{', '.join(parts)} in {len(games)} games"
     key = next((k for k in ("PASSYARDS", "RUSHYARDS", "RECEIVEYARDS", "TACKLES") if totals.get(k)), None)
     best = ""
     if key:
         top = max(games, key=lambda g: (g['stats'] if isinstance(g.get('stats'), dict) else json.loads(g['stats_json'])).get(key) or 0)
         stats = top['stats'] if isinstance(top.get('stats'), dict) else json.loads(top['stats_json'])
-        best = f"His best game: Week {top['week']}, " + ", ".join(f"{stats[k]} {w}" for k, w in STAT_WORDS if stats.get(k)) + "."
+        best = f"His best game: Week {top['week']}, " + ", ".join(count(stats[k], w) for k, w in STAT_WORDS if stats.get(k)) + "."
     return season, best
 
 def facts(spot):
@@ -88,7 +95,7 @@ def facts(spot):
         staff = json.loads(team.get('staff_json') or "{}")
         coaches = [f"{role} {staff[key]['name']}" for key, role in (("hc", "head coach"), ("oc", "offensive coordinator"), ("dc", "defensive coordinator")) if staff.get(key)]
         if coaches:
-            lines.append(f"{school}'s staff: {', '.join(coaches)}.")
+            lines.append(f"{school}{chr(39) if school.endswith('s') else chr(39) + 's'} staff: {', '.join(coaches)}.")
     if spot.get('news'):
         lines.append(f"This week's news: {spot['news']}")
     if team and team.get('team_id') != us.get('team_id'):
