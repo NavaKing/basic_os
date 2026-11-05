@@ -7,6 +7,7 @@ import time
 import database
 import events
 import league
+import spotlight
 import media
 import roster
 import scouting
@@ -241,6 +242,8 @@ def segments(ours, theirs):
         (f"where {ours} has to be better (a win can still expose problems)", ("us_bad",), 5),
         (f"the {theirs} side: where they shined and where they have to be better", ("them",), 4),
         ("how this game fits with the earlier games this season", ("season", "result"), 3),
+        *([("the spotlight segment: the player everyone is talking about this week, his season and this week's news about him", ("spotlight",), 6)]
+          if spotlight.get() else []),
         ("a look ahead at next week's opponent and what to watch for", ("ahead",), 4),
         ("a short sign-off that names next week's opponent", ("result", "ahead"), 2),
     ]
@@ -490,6 +493,9 @@ def generate_episode(selected_model, draft, request_hosts=None):
         past = career.context(opponent=theirs.get('name'))
         if past:
             facts.append(("season", spoken_names(past.strip())))
+        spot = spotlight.context("podcast")
+        if spot:
+            facts += [("spotlight", spoken_names(spot.strip())), ("result", spoken_names(spot.strip()))]   # the cold open teases it too
         title, summary, lines = write_script(selected_model, hosts, ours, theirs, week, facts)
 
         conn = database.get_db_connection()
@@ -534,6 +540,8 @@ def weekly_segments(us_name):
         ("the polls: who rose, who fell, and the playoff picture", ("polls", "cfp"), 5),
         ("the Heisman race", ("heisman",), 4),
         (f"a quick hit on {us_name}'s week", ("ours",), 3),
+        *([("the spotlight segment: the player everyone is talking about this week, his season and this week's news about him", ("spotlight",), 6)]
+          if spotlight.get() else []),
         ("the hottest and coldest streaks, then a short sign-off", ("streaks",), 3),
     ]
 
@@ -645,6 +653,9 @@ def generate_weekly_episode(selected_model, week=None, request_hosts=None):
     hosts = hosts_from(request_hosts)
     us_name = spoken_names(us['name'])
     facts, headlines = weekly_facts(page, us_name, our_week_line(week, us))
+    spot = spotlight.context("podcast")
+    if spot:
+        facts.append(("spotlight", spoken_names(spot.strip())))
 
     progress.start()
     try:

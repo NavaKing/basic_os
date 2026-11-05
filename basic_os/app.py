@@ -33,6 +33,7 @@ import care_incidents
 import group_chat
 import game_day
 import dynasty
+import spotlight
 import os
 from urllib.parse import urlsplit
 from flask import Flask, Response, render_template, request, jsonify, send_from_directory, abort, url_for, redirect
@@ -233,8 +234,23 @@ def home():
         recap=recap.build_recap(recap.default_week()) if recap.default_week() is not None else None,
         sync_status=sync_status,
         dynasty=dynasty.current(),
+        spotlight=spotlight.status(),
         scoreboard=recap.scoreboard()
     )
+
+@app.route('/spotlight', methods=['GET', 'POST', 'DELETE'])
+def spotlight_week():
+    """A spotlight week: everything written this week is about one player. POST {name or player_id, news}; DELETE ends it."""
+    if request.method == 'DELETE':
+        return jsonify(spotlight.stop())
+    if request.method == 'POST':
+        data = request.get_json(silent=True) or {}
+        player = spotlight.find(data.get('name') or "") if data.get('name') else {"player_id": data.get('player_id')}
+        try:
+            return jsonify(spotlight.start((player or {}).get('player_id'), str(data.get('news') or "")))
+        except ValueError as e:
+            return jsonify({"error": str(e)}), 400
+    return jsonify(spotlight.status())
 
 @app.route('/portraits/<kind>/<path:file_name>')
 def portrait(kind, file_name):

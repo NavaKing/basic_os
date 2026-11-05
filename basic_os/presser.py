@@ -111,7 +111,9 @@ def week_facts(role):
         facts.append(f"The offense ranks No. {row['off_rank']} nationally.")
     if role == "dc" and row.get('def_rank'):
         facts.append(f"The defense ranks No. {row['def_rank']} nationally.")
-    return " ".join(facts)
+    import spotlight
+    facts.append(spotlight.context("presser").strip())
+    return " ".join(f for f in facts if f)
 
 # ---------- The press conference ----------
 

@@ -49,6 +49,14 @@ function start(name, fn) {
 }
 
 start('tabs', initTabs);
+start('spotlight', () => {
+    const end = document.getElementById('spotlight_end');
+    if (end) end.addEventListener('click', async () => {
+        end.disabled = true;
+        await fetch('/spotlight', { method: 'DELETE' });
+        location.reload();
+    });
+});
 start('team colours', () => applyTeamColors());
 start('team pages', initTeamPages);
 start('backups', initBackups);
