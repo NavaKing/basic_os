@@ -13,6 +13,7 @@ import care
 import database
 import fact_check
 import league
+import spotlight
 import media
 import roster
 import sentences
@@ -251,7 +252,9 @@ def game_facts():
             facts.append(past.strip())
         facts.append(f"Next game: Week {nxt['week_id']}{', the ' + event if event else ''}, {'at' if nxt.get('site') == 'Away' else 'against'} {nxt['opponent_name']}"
                      + (" (a College Football Playoff game)" if league.is_playoff(event) else "") + ".")
-    return " ".join(facts)
+    import spotlight
+    facts.append(spotlight.context("chat").strip())
+    return " ".join(f for f in facts if f)
 
 def scrub(text, people):
     """Drops the prompt's mood notes when the model copies them into a post ('... in a good place 🤙'): a note
@@ -326,6 +329,8 @@ def compose(selected_model, week, posts_count=POSTS, replies_count=REPLIES):
               "not 'a 30 yard TD'. Vary them: no two start or end the same way, never repeat a player's last post, and avoid "
               "'felt good', 'gotta keep' and thanking the o-line for holes. "
               'Respond with ONLY JSON: {"posts": [{"author": "Exact Name", "text": "message text"}, ...]}')
+    if spotlight.get():   # a spotlight week: he is the topic, not their own stat lines
+        prompt += " SPOTLIGHT OVERRIDE: ignore the stat-line and angle instructions above; every message is about the spotlight player, with no numbers."
     raw = ask(selected_model, prompt, by_name, "posts")
     if not raw:
         raise RuntimeError("The model didn't return any group chat messages. Is Ollama running?")

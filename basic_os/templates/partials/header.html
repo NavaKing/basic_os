@@ -7,6 +7,10 @@
     <div class="site-header-text">
         <h1 class="site-title">{{ us.full_name }} <span class="site-year">{{ season_year }}</span></h1>
         <p class="site-subtitle">{{ us.full_name }} Football Custom Local Companion Engine{% if sync_status %} &middot; {{ sync_status }}{% endif %}{% if dynasty and not dynasty.fixed %} &middot; {{ dynasty.label }} <a class="dynasty-switch" href="/choose">Switch dynasty</a>{% endif %}</p>
+        {% if spotlight and spotlight.active %}
+        <p class="spotlight-banner">Spotlight week: <strong>{{ spotlight.name }}</strong> ({{ spotlight.position }}, {{ spotlight.team }}). Everything generated this week is about him.
+            <button type="button" class="spotlight-end" id="spotlight_end">End</button></p>
+        {% endif %}
     </div>
     <div class="generator">
         <select id="model_select" aria-label="AI model">

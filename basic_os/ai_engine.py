@@ -276,6 +276,12 @@ def generate_dynasty_content(selected_model, storyline_context="", player_lines=
         article_prompt += history
     if past:
         article_prompt += past + " Work it into sentence 2 or 3 if it fits."
+    import spotlight
+    spot = spotlight.context("dispatch")
+    if spot:   # a spotlight week: the dispatch is a feature on him instead
+        article_prompt = ("IMPORTANT: every player is a man on a men's college football team, so always use he/him/his for players. "
+                          f"Write an immersive 3-sentence dispatch layout entry.{spot} For the passing mention, our own week: {prev_context} {headline}"
+                          " Do not output raw code strings or brackets.")
 
     try:
         progress.step("Writing the dispatch")
@@ -312,9 +318,14 @@ def generate_dynasty_content(selected_model, storyline_context="", player_lines=
     plan.append(f"The remaining posts hype the upcoming Week {active_stats['week_id']} game vs {active_stats['opponent_name']}."
                 + (f" {stakes} Talk about what it means: the round, the stakes, the rankings." if stakes else ""))
     plan.append(f"Exactly {PHOTO_TWEETS} posts include a photo: give only those posts a \"photo\" field with one vivid sentence describing what the photo shows (the scene, people, action and setting). The other posts have no photo field.")
+    spot_feed = spotlight.context("feed")
+    if spot_feed:   # a spotlight week: every post is about him (the photo instruction stays)
+        plan = [f"All {TWEET_COUNT} posts are about the spotlight player, each a different take." + spot_feed, plan[-1]]
     tweet_prompt = (
         "IMPORTANT: every player mentioned is a man on a men's college football team, so always use he/him/his for players, whatever their first name. "
-        f"Create {TWEET_COUNT} distinct mock Twitter/X posts about {team.user_team()['name']} Football. Recent context: {prev_context}. "
+        f"Create {TWEET_COUNT} distinct mock Twitter/X posts about "
+        + (f"{spotlight.status()['name']}, the player in this week's spotlight" if spot_feed else f"{team.user_team()['name']} Football")
+        + f". Recent context: {prev_context}. "
         + " ".join(plan)
         + " Every post is written by a fan or sports media account, never by a player, and each comes from a different, creative account handle."
         + " Refer to players by name and position, never depth chart codes like HB2, and never invent stats or injuries."
